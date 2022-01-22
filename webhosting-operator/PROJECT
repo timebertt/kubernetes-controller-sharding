@@ -1,0 +1,6 @@
+domain: timebertt.dev
+layout:
+- go.kubebuilder.io/v3
+projectName: webhosting-operator
+repo: github.com/timebertt/kubernetes-controller-sharding/webhosting-operator
+version: "3"
