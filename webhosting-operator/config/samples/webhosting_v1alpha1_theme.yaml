@@ -1,0 +1,6 @@
+apiVersion: webhosting.timebertt.dev/v1alpha1
+kind: Theme
+metadata:
+  name: theme-sample
+spec:
+  # TODO(user): Add fields here

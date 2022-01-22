@@ -13,4 +13,12 @@ resources:
   kind: Website
   path: github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+  controller: true
+  domain: timebertt.dev
+  group: webhosting
+  kind: Theme
+  path: github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"

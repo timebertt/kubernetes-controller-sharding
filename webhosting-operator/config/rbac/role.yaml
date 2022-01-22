@@ -8,6 +8,32 @@ rules:
 - apiGroups:
   - webhosting.timebertt.dev
   resources:
+  - themes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
+  - themes/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
+  - themes/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
   - websites
   verbs:
   - create
