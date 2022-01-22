@@ -1,6 +1,7 @@
 apiVersion: webhosting.timebertt.dev/v1alpha1
 kind: Theme
 metadata:
-  name: theme-sample
+  name: jucy
 spec:
-  # TODO(user): Add fields here
+  color: "limegreen"
+  fontFamily: "Arial"

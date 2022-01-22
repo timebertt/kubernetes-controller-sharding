@@ -20,44 +20,46 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// ThemeSpec defines the desired state of Theme
+// ThemeSpec defines the desired state of a Theme.
 type ThemeSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Theme. Edit theme_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Color is a CSS color for a Website.
+	Color string `json:"color"`
+	// FontFamily is a font family for a Website.
+	FontFamily string `json:"fontFamily"`
 }
 
-// ThemeStatus defines the observed state of Theme
+// ThemeStatus defines the observed state of a Theme.
 type ThemeStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster
 
-// Theme is the Schema for the themes API
+// Theme is the Schema for the themes API.
 type Theme struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   ThemeSpec   `json:"spec,omitempty"`
+	// Spec contains the specification of the desired behavior of the Theme.
+	// +optional
+	Spec ThemeSpec `json:"spec,omitempty"`
+	// Status contains the most recently observed status of the Theme.
+	// +optional
 	Status ThemeStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// ThemeList contains a list of Theme
+// ThemeList contains a list of Themes.
 type ThemeList struct {
 	metav1.TypeMeta `json:",inline"`
+	// Standard list metadata.
+	// +optional
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Theme `json:"items"`
+	// Items is the list of Themes.
+	Items []Theme `json:"items"`
 }
 
 func init() {

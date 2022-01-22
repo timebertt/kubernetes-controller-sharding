@@ -18,7 +18,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Theme is the Schema for the themes API
+        description: Theme is the Schema for the themes API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -33,15 +33,22 @@ spec:
           metadata:
             type: object
           spec:
-            description: ThemeSpec defines the desired state of Theme
+            description: Spec contains the specification of the desired behavior of
+              the Theme.
             properties:
-              foo:
-                description: Foo is an example field of Theme. Edit theme_types.go
-                  to remove/update
+              color:
+                description: Color is a CSS color for a Website.
                 type: string
+              fontFamily:
+                description: FontFamily is a font family for a Website.
+                type: string
+            required:
+            - color
+            - fontFamily
             type: object
           status:
-            description: ThemeStatus defines the observed state of Theme
+            description: Status contains the most recently observed status of the
+              Theme.
             type: object
         type: object
     served: true
