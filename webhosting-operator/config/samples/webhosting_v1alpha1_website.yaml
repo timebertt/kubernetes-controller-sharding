@@ -1,0 +1,6 @@
+apiVersion: webhosting.timebertt.dev/v1alpha1
+kind: Website
+metadata:
+  name: website-sample
+spec:
+  # TODO(user): Add fields here

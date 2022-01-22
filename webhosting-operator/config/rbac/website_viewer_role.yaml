@@ -1,0 +1,20 @@
+# permissions for end users to view websites.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: website-viewer-role
+rules:
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
+  - websites
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
+  - websites/status
+  verbs:
+  - get

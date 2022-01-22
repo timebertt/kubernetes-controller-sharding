@@ -3,4 +3,14 @@ layout:
 - go.kubebuilder.io/v3
 projectName: webhosting-operator
 repo: github.com/timebertt/kubernetes-controller-sharding/webhosting-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: timebertt.dev
+  group: webhosting
+  kind: Website
+  path: github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"
