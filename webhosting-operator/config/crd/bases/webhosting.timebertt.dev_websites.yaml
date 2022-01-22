@@ -18,7 +18,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Website is the Schema for the websites API
+        description: Website enables declarative management of hosted websites.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -33,15 +33,26 @@ spec:
           metadata:
             type: object
           spec:
-            description: WebsiteSpec defines the desired state of Website
+            description: Spec contains the specification of the desired behavior of
+              the Website.
             properties:
-              foo:
-                description: Foo is an example field of Website. Edit website_types.go
-                  to remove/update
+              theme:
+                description: Theme references a Theme object to be used for this Website.
                 type: string
+            required:
+            - theme
             type: object
           status:
-            description: WebsiteStatus defines the observed state of Website
+            description: Status contains the most recently observed status of the
+              Website.
+            properties:
+              observedGeneration:
+                description: The generation observed by the Website controller.
+                format: int64
+                type: integer
+              phase:
+                description: Phase is the current phase of this Website.
+                type: string
             type: object
         type: object
     served: true

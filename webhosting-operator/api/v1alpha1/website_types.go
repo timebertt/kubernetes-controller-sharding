@@ -20,43 +20,61 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// WebsiteSpec defines the desired state of Website
+// WebsiteSpec defines the desired state of a Website.
 type WebsiteSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Website. Edit website_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Theme references a Theme object to be used for this Website.
+	Theme string `json:"theme"`
 }
 
-// WebsiteStatus defines the observed state of Website
+// WebsiteStatus defines the observed state of a Website.
 type WebsiteStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// The generation observed by the Website controller.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+	// Phase is the current phase of this Website.
+	// +optional
+	Phase WebsitePhase `json:"phase,omitempty"`
 }
+
+// WebsitePhase describes the phase of a Website.
+type WebsitePhase string
+
+const (
+	// PhasePending means that the Website is not ready yet.
+	PhasePending WebsitePhase = "Pending"
+	// PhaseReady means that the Website is ready and available.
+	PhaseReady WebsitePhase = "Ready"
+	// PhaseError means that there is a problem running the Website.
+	PhaseError WebsitePhase = "Error"
+)
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// Website is the Schema for the websites API
+// Website enables declarative management of hosted websites.
 type Website struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   WebsiteSpec   `json:"spec,omitempty"`
+	// Spec contains the specification of the desired behavior of the Website.
+	// +optional
+	Spec WebsiteSpec `json:"spec,omitempty"`
+	// Status contains the most recently observed status of the Website.
+	// +optional
 	Status WebsiteStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// WebsiteList contains a list of Website
+// WebsiteList contains a list of Websites.
 type WebsiteList struct {
 	metav1.TypeMeta `json:",inline"`
+	// Standard list metadata.
+	// +optional
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Website `json:"items"`
+	// Items is the list of Websites.
+	Items []Website `json:"items"`
 }
 
 func init() {
