@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/api/v1alpha1"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/templates"
 )
 
 // WebsiteReconciler reconciles a Website object.
@@ -148,6 +149,11 @@ func (r *WebsiteReconciler) recordErrorAndUpdateStatus(ctx context.Context, webs
 }
 
 func (r *WebsiteReconciler) ConfigMapForWebsite(name string, website *webhostingv1alpha1.Website, theme *webhostingv1alpha1.Theme) (*corev1.ConfigMap, error) {
+	indexHTML, err := templates.RenderIndexHTML(name, website, theme)
+	if err != nil {
+		return nil, err
+	}
+
 	configMap := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: corev1.SchemeGroupVersion.String(),
@@ -159,7 +165,7 @@ func (r *WebsiteReconciler) ConfigMapForWebsite(name string, website *webhosting
 			Labels:    labels(name),
 		},
 		Data: map[string]string{
-			"index.html": "<html><title>" + name + "</title><body>" + name + "</body></html>",
+			"index.html": indexHTML,
 		},
 	}
 

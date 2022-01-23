@@ -1,7 +1,7 @@
 apiVersion: webhosting.timebertt.dev/v1alpha1
 kind: Theme
 metadata:
-  name: jucy
+  name: exciting
 spec:
-  color: "limegreen"
-  fontFamily: "Arial"
+  color: darkcyan
+  fontFamily: Menlo

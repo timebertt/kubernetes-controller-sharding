@@ -1,0 +1,46 @@
+<html lang="en-US">
+<head>
+  <title>{{ .Website.Name }}</title>
+  <style>
+      body {
+          background-color: {{ .Theme.Spec.Color }};
+          font-family: {{ .Theme.Spec.FontFamily }}, Arial, sans-serif;
+      }
+
+      .box {
+          background-color: #2D2D2D;
+          margin: 30px auto auto;
+          width: 50%;
+          border: 10px solid cornflowerblue;
+          padding: 20px;
+      }
+
+      h1 {
+          text-align: center;
+          color: coral;
+          font-size: 50px;
+      }
+
+      p {
+          color: white;
+          font-size: 20px;
+          font-family: "Source Code Pro", Menlo, Monaco, fixed-width, monospace;
+      }
+
+      a {
+          color: cornflowerblue;
+      }
+  </style>
+</head>
+<body>
+<div class="box">
+  <h1>Welcome to {{ .Website.Name }}</h1>
+  <p>Server name: {{ .ServerName }}</p>
+  <p>This page is hosted on Kubernetes using
+    <a target="_blank"
+       href="https://github.com/timebertt/kubernetes-controller-sharding/tree/master/webhosting-operator">
+      webhosting-operator</a>.
+  </p>
+</div>
+</body>
+</html>

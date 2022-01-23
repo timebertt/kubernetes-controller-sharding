@@ -4,4 +4,4 @@ metadata:
   name: homepage
   namespace: project-foo
 spec:
-  theme: jucy
+  theme: exciting

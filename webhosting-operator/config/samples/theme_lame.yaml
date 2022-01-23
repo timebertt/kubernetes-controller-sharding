@@ -1,0 +1,7 @@
+apiVersion: webhosting.timebertt.dev/v1alpha1
+kind: Theme
+metadata:
+  name: lame
+spec:
+  color: darkgray
+  fontFamily: Times
