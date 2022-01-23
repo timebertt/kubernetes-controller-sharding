@@ -100,14 +100,16 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
-.PHONY: kind-up
-kind-up: ## Launch a kind cluster for testing the operator.
-	kind create cluster --name webhosting --kubeconfig $(PROJECT_DIR)/dev/kind_kubeconfig.yaml
-	# now run `export KUBECONFIG=$PWD/dev/kind_kubeconfig.yaml` to target the created kind cluster.
+.PHONY: k3d-up
+k3d-up: ## Launch a k3d cluster for testing the operator.
+	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml k3d cluster create webhosting -p "8088:80@loadbalancer"
+	# now run `export KUBECONFIG=$$PWD/dev/k3d_kubeconfig.yaml` to target the created k3d cluster.
 
-.PHONY: kind-down
-kind-down: ## Tear down the kind testing cluster.
-	kind delete cluster --name webhosting
+.PHONY: k3d-down
+k3d-down: ## Tear down the k3d testing cluster.
+	k3d cluster delete webhosting
+
+##@ Tools
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 .PHONY: controller-gen

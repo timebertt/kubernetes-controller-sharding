@@ -3,7 +3,7 @@
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$/webhosting-operator" />
     <envs>
-      <env name="KUBECONFIG" value="$PROJECT_DIR$/webhosting-operator/dev/kind_kubeconfig.yaml" />
+      <env name="KUBECONFIG" value="$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml" />
     </envs>
     <EXTENSION ID="net.ashald.envfile">
       <option name="IS_ENABLED" value="false" />
