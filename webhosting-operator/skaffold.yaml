@@ -1,0 +1,18 @@
+apiVersion: skaffold/v2beta25
+kind: Config
+metadata:
+  name: webhosting-operator
+build:
+  local:
+    useBuildkit: true
+  artifacts:
+  - image: controller
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  kustomize:
+    paths:
+    - config/default
+  kubectl:
+    manifests:
+    - config/samples/project_namespace.yaml

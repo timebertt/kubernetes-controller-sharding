@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="prepare-deploy" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
+    <makefile filename="$PROJECT_DIR$/webhosting-operator/Makefile" target="manifests kustomize" workingDirectory="$PROJECT_DIR$/webhosting-operator" arguments="">
+      <envs>
+        <env name="KUBECONFIG" value="$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml" />
+      </envs>
+    </makefile>
+    <method v="2" />
+  </configuration>
+</component>
