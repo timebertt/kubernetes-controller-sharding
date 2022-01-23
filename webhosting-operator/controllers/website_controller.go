@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -85,7 +86,6 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	// retrieve theme
-	log = log.WithValues("theme", website.Spec.Theme)
 	theme := &webhostingv1alpha1.Theme{}
 	if err := r.Get(ctx, client.ObjectKey{Name: website.Spec.Theme}, theme); err != nil {
 		if apierrors.IsNotFound(err) {
@@ -95,6 +95,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	serverName := calculateServerName(website)
+	log = log.WithValues("theme", website.Spec.Theme, "serverName", serverName)
 
 	// get current deployment status
 	currentDeployment := &appsv1.Deployment{}
@@ -127,7 +128,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying Ingress: %v", err)
 	}
 
-	deployment, err := r.DeploymentForWebsite(serverName, website)
+	deployment, err := r.DeploymentForWebsite(serverName, website, configMap)
 	if err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing Deployment: %v", err)
 	}
@@ -259,7 +260,12 @@ func (r *WebsiteReconciler) IngressForWebsite(serverName string, website *webhos
 }
 
 // DeploymentForWebsite creates a Deployment object to be applied for the given website.
-func (r *WebsiteReconciler) DeploymentForWebsite(serverName string, website *webhostingv1alpha1.Website) (*appsv1.Deployment, error) {
+func (r *WebsiteReconciler) DeploymentForWebsite(serverName string, website *webhostingv1alpha1.Website, configMap *corev1.ConfigMap) (*appsv1.Deployment, error) {
+	configMapChecksum, err := calculateConfigMapChecksum(configMap)
+	if err != nil {
+		return nil, fmt.Errorf("error calculating checksum of ConfigMap: %w", err)
+	}
+
 	deployment := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: appsv1.SchemeGroupVersion.String(),
@@ -279,6 +285,9 @@ func (r *WebsiteReconciler) DeploymentForWebsite(serverName string, website *web
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: getLabelsForServer(website.Name, serverName),
+					Annotations: map[string]string{
+						"checksum/configmap": configMapChecksum,
+					},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
@@ -303,7 +312,7 @@ func (r *WebsiteReconciler) DeploymentForWebsite(serverName string, website *web
 						Name: "website-data",
 						VolumeSource: corev1.VolumeSource{
 							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{Name: serverName},
+								LocalObjectReference: corev1.LocalObjectReference{Name: configMap.Name},
 								Items: []corev1.KeyToPath{{
 									Key:  keyIndexHTML,
 									Path: "index.html",
@@ -314,7 +323,7 @@ func (r *WebsiteReconciler) DeploymentForWebsite(serverName string, website *web
 						Name: "website-config",
 						VolumeSource: corev1.VolumeSource{
 							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{Name: serverName},
+								LocalObjectReference: corev1.LocalObjectReference{Name: configMap.Name},
 								Items: []corev1.KeyToPath{{
 									Key:  keyNginxConf,
 									Path: "nginx.conf",
@@ -345,6 +354,19 @@ func calculateServerName(website *webhostingv1alpha1.Website) string {
 	// Take a sha256 sum and include the first 6 hex characters.
 	checksum := sha256.Sum256([]byte(website.UID))
 	return website.Name + "-" + hex.EncodeToString(checksum[:])[:6]
+}
+
+// calculateConfigMapChecksum calculates a checksum of the given ConfigMap's data. It is supposed to be added to the
+// pod template to trigger rolling updates on ConfigMap changes. This is to force nginx to reload changed config and
+// content.
+func calculateConfigMapChecksum(configMap *corev1.ConfigMap) (string, error) {
+	dataBytes, err := json.Marshal(configMap.Data)
+	if err != nil {
+		return "", err
+	}
+
+	checksum := sha256.Sum256(dataBytes)
+	return hex.EncodeToString(checksum[:]), nil
 }
 
 const websiteThemeField = ".spec.theme"
