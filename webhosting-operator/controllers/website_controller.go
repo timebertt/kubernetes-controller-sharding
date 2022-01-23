@@ -28,6 +28,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
@@ -35,8 +36,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/api/v1alpha1"
 )
@@ -55,6 +59,7 @@ type WebsiteReconciler struct {
 // Reconcile reconciles a Website object.
 func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
+	log.V(1).Info("reconciling website")
 
 	website := &webhostingv1alpha1.Website{}
 	if err := r.Get(ctx, req.NamespacedName, website); err != nil {
@@ -122,12 +127,8 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// update status
 	newPhase := webhostingv1alpha1.PhasePending
-	if deploymentConditions := currentDeployment.Status.Conditions; len(deploymentConditions) > 0 {
-		for _, cond := range deploymentConditions {
-			if cond.Type == appsv1.DeploymentAvailable && cond.Status == corev1.ConditionTrue {
-				newPhase = webhostingv1alpha1.PhaseReady
-			}
-		}
+	if cond := GetDeploymentCondition(currentDeployment.Status.Conditions, appsv1.DeploymentAvailable); cond != nil && cond.Status == corev1.ConditionTrue {
+		newPhase = webhostingv1alpha1.PhaseReady
 	}
 	website.Status.Phase = newPhase
 
@@ -259,50 +260,128 @@ func calculateDownstreamName(website *webhostingv1alpha1.Website) string {
 	return website.Name + "-" + hex.EncodeToString(checksum[:])[:6]
 }
 
+const websiteThemeField = ".spec.theme"
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &webhostingv1alpha1.Website{}, websiteThemeField, func(obj client.Object) []string {
+		website := obj.(*webhostingv1alpha1.Website)
+		return []string{website.Spec.Theme}
+	}); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&webhostingv1alpha1.Website{}).
-		Owns(&appsv1.Deployment{}).
+		For(&webhostingv1alpha1.Website{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		// watch deployments in order to update phase on relevant changes
+		Owns(&appsv1.Deployment{}, builder.WithPredicates(DeploymentConditionsChanged)).
 		// watch owned objects for relevant changes to reconcile them back if changed
-		Owns(&corev1.ConfigMap{}, builder.WithPredicates(configMapDataChanged)).
-		Owns(&corev1.Service{}, builder.WithPredicates(serviceSpecChanged)).
+		Owns(&corev1.ConfigMap{}, builder.WithPredicates(ConfigMapDataChanged)).
+		Owns(&corev1.Service{}, builder.WithPredicates(ServiceSpecChanged)).
+		// watch themes to rollout theme changes to all referencing websites
+		Watches(
+			&source.Kind{Type: &webhostingv1alpha1.Theme{}},
+			handler.EnqueueRequestsFromMapFunc(r.MapThemeToWebsites),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+		).
 		Complete(r)
 }
 
-var (
-	configMapDataChanged = predicate.Funcs{
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			if e.ObjectOld == nil || e.ObjectNew == nil {
-				return false
-			}
-
-			oldConfigMap, ok := e.ObjectOld.(*corev1.ConfigMap)
-			if !ok {
-				return false
-			}
-			newConfigMap, ok := e.ObjectNew.(*corev1.ConfigMap)
-			if !ok {
-				return false
-			}
-			return !apiequality.Semantic.DeepEqual(oldConfigMap.Data, newConfigMap.Data)
-		},
+// MapThemeToWebsites maps a theme to all websites that use it.
+func (r *WebsiteReconciler) MapThemeToWebsites(theme client.Object) []reconcile.Request {
+	websiteList := &webhostingv1alpha1.WebsiteList{}
+	err := r.List(context.TODO(), websiteList, client.MatchingFields{websiteThemeField: theme.GetName()})
+	if err != nil {
+		return []reconcile.Request{}
 	}
-	serviceSpecChanged = predicate.Funcs{
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			if e.ObjectOld == nil || e.ObjectNew == nil {
-				return false
-			}
 
-			oldService, ok := e.ObjectOld.(*corev1.Service)
-			if !ok {
-				return false
-			}
-			newService, ok := e.ObjectNew.(*corev1.Service)
-			if !ok {
-				return false
-			}
-			return !apiequality.Semantic.DeepEqual(oldService.Spec, newService.Spec)
-		},
+	requests := make([]reconcile.Request, len(websiteList.Items))
+	for i, website := range websiteList.Items {
+		requests[i] = reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      website.GetName(),
+				Namespace: website.GetNamespace(),
+			},
+		}
 	}
-)
+	return requests
+}
+
+// DeploymentConditionsChanged is a predicate for filtering relevant Deployment events.
+var DeploymentConditionsChanged = predicate.Funcs{
+	CreateFunc: func(e event.CreateEvent) bool {
+		return false
+	},
+	UpdateFunc: func(e event.UpdateEvent) bool {
+		if e.ObjectOld == nil || e.ObjectNew == nil {
+			return false
+		}
+
+		oldDeployment, ok := e.ObjectOld.(*appsv1.Deployment)
+		if !ok {
+			return false
+		}
+		newDeployment, ok := e.ObjectNew.(*appsv1.Deployment)
+		if !ok {
+			return false
+		}
+
+		oldAvailable := GetDeploymentCondition(oldDeployment.Status.Conditions, appsv1.DeploymentAvailable)
+		newAvailable := GetDeploymentCondition(newDeployment.Status.Conditions, appsv1.DeploymentAvailable)
+		return !apiequality.Semantic.DeepEqual(oldAvailable, newAvailable)
+	},
+}
+
+// ConfigMapDataChanged is a predicate for filtering relevant ConfigMap events.
+var ConfigMapDataChanged = predicate.Funcs{
+	CreateFunc: func(e event.CreateEvent) bool {
+		return false
+	},
+	UpdateFunc: func(e event.UpdateEvent) bool {
+		if e.ObjectOld == nil || e.ObjectNew == nil {
+			return false
+		}
+
+		oldConfigMap, ok := e.ObjectOld.(*corev1.ConfigMap)
+		if !ok {
+			return false
+		}
+		newConfigMap, ok := e.ObjectNew.(*corev1.ConfigMap)
+		if !ok {
+			return false
+		}
+		return !apiequality.Semantic.DeepEqual(oldConfigMap.Data, newConfigMap.Data)
+	},
+}
+
+// ServiceSpecChanged is a predicate for filtering relevant Service events.
+var ServiceSpecChanged = predicate.Funcs{
+	CreateFunc: func(e event.CreateEvent) bool {
+		return false
+	},
+	UpdateFunc: func(e event.UpdateEvent) bool {
+		if e.ObjectOld == nil || e.ObjectNew == nil {
+			return false
+		}
+
+		oldService, ok := e.ObjectOld.(*corev1.Service)
+		if !ok {
+			return false
+		}
+		newService, ok := e.ObjectNew.(*corev1.Service)
+		if !ok {
+			return false
+		}
+		return !apiequality.Semantic.DeepEqual(oldService.Spec, newService.Spec)
+	},
+}
+
+// GetDeploymentCondition returns the condition with the given type or nil, if it is not included.
+func GetDeploymentCondition(conditions []appsv1.DeploymentCondition, conditionType appsv1.DeploymentConditionType) *appsv1.DeploymentCondition {
+	for _, cond := range conditions {
+		if cond.Type == conditionType {
+			return &cond
+		}
+	}
+	return nil
+}
