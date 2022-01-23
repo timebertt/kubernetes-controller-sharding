@@ -24,6 +24,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -93,16 +94,16 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error getting Theme %s: %v", website.Spec.Theme, err)
 	}
 
-	downstreamName := calculateDownstreamName(website)
+	serverName := calculateServerName(website)
 
 	// get current deployment status
 	currentDeployment := &appsv1.Deployment{}
-	if err := r.Get(ctx, client.ObjectKey{Namespace: website.Namespace, Name: downstreamName}, currentDeployment); client.IgnoreNotFound(err) != nil {
+	if err := r.Get(ctx, client.ObjectKey{Namespace: website.Namespace, Name: serverName}, currentDeployment); client.IgnoreNotFound(err) != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error getting Deployment: %v", err)
 	}
 
 	// create downstream objects
-	configMap, err := r.ConfigMapForWebsite(downstreamName, website, theme)
+	configMap, err := r.ConfigMapForWebsite(serverName, website, theme)
 	if err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing ConfigMap: %v", err)
 	}
@@ -110,7 +111,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying ConfigMap: %v", err)
 	}
 
-	service, err := r.ServiceForWebsite(downstreamName, website)
+	service, err := r.ServiceForWebsite(serverName, website)
 	if err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing Service: %v", err)
 	}
@@ -118,7 +119,15 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying Service: %v", err)
 	}
 
-	deployment, err := r.DeploymentForWebsite(downstreamName, website)
+	ingress, err := r.IngressForWebsite(serverName, website)
+	if err != nil {
+		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing Ingress: %v", err)
+	}
+	if err := r.Patch(ctx, ingress, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying Ingress: %v", err)
+	}
+
+	deployment, err := r.DeploymentForWebsite(serverName, website)
 	if err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing Deployment: %v", err)
 	}
@@ -148,8 +157,19 @@ func (r *WebsiteReconciler) recordErrorAndUpdateStatus(ctx context.Context, webs
 	return fmt.Errorf(messageFmt, args...)
 }
 
-func (r *WebsiteReconciler) ConfigMapForWebsite(name string, website *webhostingv1alpha1.Website, theme *webhostingv1alpha1.Theme) (*corev1.ConfigMap, error) {
-	indexHTML, err := templates.RenderIndexHTML(name, website, theme)
+const (
+	keyIndexHTML = "index.html"
+	keyNginxConf = "nginx.conf"
+	portNameHTTP = "http"
+)
+
+// ConfigMapForWebsite creates a ConfigMap object to be applied for the given website.
+func (r *WebsiteReconciler) ConfigMapForWebsite(serverName string, website *webhostingv1alpha1.Website, theme *webhostingv1alpha1.Theme) (*corev1.ConfigMap, error) {
+	indexHTML, err := templates.RenderIndexHTML(serverName, website, theme)
+	if err != nil {
+		return nil, err
+	}
+	nginxConf, err := templates.RenderNginxConf(serverName, website)
 	if err != nil {
 		return nil, err
 	}
@@ -160,36 +180,38 @@ func (r *WebsiteReconciler) ConfigMapForWebsite(name string, website *webhosting
 			Kind:       "ConfigMap",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      serverName,
 			Namespace: website.Namespace,
-			Labels:    labels(name),
+			Labels:    getLabelsForServer(website.Name, serverName),
 		},
 		Data: map[string]string{
-			"index.html": indexHTML,
+			keyIndexHTML: indexHTML,
+			keyNginxConf: nginxConf,
 		},
 	}
 
 	return configMap, ctrl.SetControllerReference(website, configMap, r.Scheme)
 }
 
-func (r *WebsiteReconciler) ServiceForWebsite(name string, website *webhostingv1alpha1.Website) (*corev1.Service, error) {
+// ServiceForWebsite creates a Service object to be applied for the given website.
+func (r *WebsiteReconciler) ServiceForWebsite(serverName string, website *webhostingv1alpha1.Website) (*corev1.Service, error) {
 	service := &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: corev1.SchemeGroupVersion.String(),
 			Kind:       "Service",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      serverName,
 			Namespace: website.Namespace,
-			Labels:    labels(name),
+			Labels:    getLabelsForServer(website.Name, serverName),
 		},
 		Spec: corev1.ServiceSpec{
-			Selector: labels(name),
+			Selector: getLabelsForServer(website.Name, serverName),
 			Type:     corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{{
-				Name:       "http",
+				Name:       portNameHTTP,
 				Port:       8080,
-				TargetPort: intstr.FromString("http"),
+				TargetPort: intstr.FromString(portNameHTTP),
 				Protocol:   corev1.ProtocolTCP,
 			}},
 		},
@@ -198,33 +220,72 @@ func (r *WebsiteReconciler) ServiceForWebsite(name string, website *webhostingv1
 	return service, ctrl.SetControllerReference(website, service, r.Scheme)
 }
 
-func (r *WebsiteReconciler) DeploymentForWebsite(name string, website *webhostingv1alpha1.Website) (*appsv1.Deployment, error) {
+// IngressForWebsite creates a Ingress object to be applied for the given website.
+func (r *WebsiteReconciler) IngressForWebsite(serverName string, website *webhostingv1alpha1.Website) (*networkingv1.Ingress, error) {
+	pathType := networkingv1.PathTypePrefix
+	ingress := &networkingv1.Ingress{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: networkingv1.SchemeGroupVersion.String(),
+			Kind:       "Ingress",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serverName,
+			Namespace: website.Namespace,
+			Labels:    getLabelsForServer(website.Name, serverName),
+		},
+		Spec: networkingv1.IngressSpec{
+			Rules: []networkingv1.IngressRule{{
+				IngressRuleValue: networkingv1.IngressRuleValue{
+					HTTP: &networkingv1.HTTPIngressRuleValue{
+						Paths: []networkingv1.HTTPIngressPath{{
+							Path:     fmt.Sprintf("/%s/%s", website.Namespace, website.Name),
+							PathType: &pathType,
+							Backend: networkingv1.IngressBackend{
+								Service: &networkingv1.IngressServiceBackend{
+									Name: serverName,
+									Port: networkingv1.ServiceBackendPort{
+										Name: portNameHTTP,
+									},
+								},
+							},
+						}},
+					},
+				},
+			}},
+		},
+	}
+
+	return ingress, ctrl.SetControllerReference(website, ingress, r.Scheme)
+}
+
+// DeploymentForWebsite creates a Deployment object to be applied for the given website.
+func (r *WebsiteReconciler) DeploymentForWebsite(serverName string, website *webhostingv1alpha1.Website) (*appsv1.Deployment, error) {
 	deployment := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: appsv1.SchemeGroupVersion.String(),
 			Kind:       "Deployment",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      serverName,
 			Namespace: website.Namespace,
-			Labels:    labels(name),
+			Labels:    getLabelsForServer(website.Name, serverName),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: labels(name),
+				MatchLabels: getLabelsForServer(website.Name, serverName),
 			},
 			Replicas:             pointer.Int32(1),
 			RevisionHistoryLimit: pointer.Int32(2),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels(name),
+					Labels: getLabelsForServer(website.Name, serverName),
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Name:  "nginx",
 						Image: "nginx:1.21-alpine",
 						Ports: []corev1.ContainerPort{{
-							Name:          "http",
+							Name:          portNameHTTP,
 							ContainerPort: 80,
 							Protocol:      corev1.ProtocolTCP,
 						}},
@@ -232,13 +293,32 @@ func (r *WebsiteReconciler) DeploymentForWebsite(name string, website *webhostin
 							Name:      "website-data",
 							ReadOnly:  true,
 							MountPath: "/usr/share/nginx/html",
+						}, {
+							Name:      "website-config",
+							ReadOnly:  true,
+							MountPath: "/etc/nginx/conf.d",
 						}},
 					}},
 					Volumes: []corev1.Volume{{
 						Name: "website-data",
 						VolumeSource: corev1.VolumeSource{
 							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{Name: name},
+								LocalObjectReference: corev1.LocalObjectReference{Name: serverName},
+								Items: []corev1.KeyToPath{{
+									Key:  keyIndexHTML,
+									Path: "index.html",
+								}},
+							},
+						},
+					}, {
+						Name: "website-config",
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
+								LocalObjectReference: corev1.LocalObjectReference{Name: serverName},
+								Items: []corev1.KeyToPath{{
+									Key:  keyNginxConf,
+									Path: "nginx.conf",
+								}},
 							},
 						},
 					}},
@@ -250,15 +330,16 @@ func (r *WebsiteReconciler) DeploymentForWebsite(name string, website *webhostin
 	return deployment, ctrl.SetControllerReference(website, deployment, r.Scheme)
 }
 
-func labels(name string) map[string]string {
+func getLabelsForServer(name, serverName string) map[string]string {
 	return map[string]string{
 		"app":        "website",
 		"website":    name,
+		"server":     serverName,
 		"managed-by": "webhosting-operator",
 	}
 }
 
-func calculateDownstreamName(website *webhostingv1alpha1.Website) string {
+func calculateServerName(website *webhostingv1alpha1.Website) string {
 	// Customers might delete the website and create a new one with the same name.
 	// To avoid clashes in that case, we need to include the website's UID in the name of owned objects.
 	// Take a sha256 sum and include the first 6 hex characters.
