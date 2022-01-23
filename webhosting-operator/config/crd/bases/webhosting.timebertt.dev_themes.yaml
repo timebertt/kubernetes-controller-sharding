@@ -15,7 +15,17 @@ spec:
     singular: theme
   scope: Cluster
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.color
+      name: Color
+      type: string
+    - jsonPath: .spec.fontFamily
+      name: Font Family
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: Theme is the Schema for the themes API.

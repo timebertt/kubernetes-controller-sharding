@@ -35,6 +35,9 @@ type ThemeStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster
+//+kubebuilder:printcolumn:name="Color",type=string,JSONPath=`.spec.color`
+//+kubebuilder:printcolumn:name="Font Family",type=string,JSONPath=`.spec.fontFamily`
+//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // Theme is the Schema for the themes API.
 type Theme struct {
