@@ -58,6 +58,11 @@ type WebsiteReconciler struct {
 //+kubebuilder:rbac:groups=webhosting.timebertt.dev,resources=websites,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=webhosting.timebertt.dev,resources=websites/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=webhosting.timebertt.dev,resources=websites/finalizers,verbs=update
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=list;watch;create;patch
+//+kubebuilder:rbac:groups="",resources=services,verbs=list;watch;create;patch
+//+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=list;watch;create;patch
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=list;watch;create;patch
+//+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // Reconcile reconciles a Website object.
 func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
