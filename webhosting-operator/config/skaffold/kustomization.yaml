@@ -1,5 +1,5 @@
 resources:
-- ../base
+- ../default
 
 patchesStrategicMerge:
 - manager_debug_patch.yaml
