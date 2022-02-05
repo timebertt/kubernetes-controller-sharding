@@ -132,5 +132,8 @@ func setOptionsDefaults(opts ctrl.Options) ctrl.Options {
 		opts.HealthProbeBindAddress = ":8080"
 	}
 
+	// allows us to quickly handover leadership on restarts
+	opts.LeaderElectionReleaseOnCancel = true
+
 	return opts
 }

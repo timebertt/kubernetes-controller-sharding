@@ -6,7 +6,9 @@ metrics:
   bindAddress: 127.0.0.1:8080
 webhook:
   port: 9443
+gracefulShutDown: 15s
 leaderElection:
   leaderElect: true
+  resourceLock: leases
   resourceName: 87da1037.timebertt.dev
 

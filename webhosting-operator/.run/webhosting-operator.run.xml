@@ -2,6 +2,7 @@
   <configuration default="false" name="webhosting-operator local" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$/webhosting-operator" />
+    <parameters value="--config=config/skaffold/controller_manager_config.yaml" />
     <envs>
       <env name="KUBECONFIG" value="$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml" />
     </envs>
@@ -13,7 +14,7 @@
   </configuration>
   <configuration default="false" name="webhosting-operator skaffold" type="google-container-tools-skaffold-run-config" factoryName="google-container-tools-skaffold-run-config-dev" show_console_on_std_err="false" show_console_on_std_out="false" kubeconfigFile="{&quot;displayName&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml&quot;,&quot;path&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml&quot;}">
     <option name="allowRunningInParallel" value="false" />
-    <option name="buildEnvironment" value="Local" />
+    <option name="buildEnvironment" />
     <option name="cleanupDeployments" value="false" />
     <option name="deployToCurrentContext" value="true" />
     <option name="deployToMinikube" value="false" />
