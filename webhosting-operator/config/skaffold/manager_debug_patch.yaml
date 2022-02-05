@@ -10,8 +10,6 @@ spec:
         runAsNonRoot: false
       containers:
       - name: manager
-        args:
-        - "--metrics-bind-address=:8080"
         ports:
         - name: metrics
           containerPort: 8080

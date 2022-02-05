@@ -50,31 +50,19 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	var probeAddr string
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-	opts := zap.Options{
+	opts := options{}
+	opts.AddFlags(flag.CommandLine)
+
+	zapOpts := zap.Options{
 		Development: true,
 		TimeEncoder: zapcore.ISO8601TimeEncoder,
 	}
-	opts.BindFlags(flag.CommandLine)
+	zapOpts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zapOpts)))
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "87da1037.timebertt.dev",
-	})
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), opts.Complete())
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -111,4 +99,38 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+type options struct {
+	configFile string
+}
+
+func (o *options) AddFlags(fs *flag.FlagSet) {
+	fs.StringVar(&o.configFile, "config", "",
+		"The controller will load its initial configuration from this file. "+
+			"Omit this flag to use the default configuration values. "+
+			"Command-line flags override configuration from this file.")
+}
+
+func (o *options) Complete() ctrl.Options {
+	opts := ctrl.Options{Scheme: scheme}
+	if o.configFile != "" {
+		var err error
+		opts, err = opts.AndFrom(ctrl.ConfigFile().AtPath(o.configFile))
+		if err != nil {
+			setupLog.Error(err, "unable to load the config file")
+			os.Exit(1)
+		}
+	}
+
+	// apply some sensible defaults
+	return setOptionsDefaults(opts)
+}
+
+func setOptionsDefaults(opts ctrl.Options) ctrl.Options {
+	if opts.HealthProbeBindAddress == "" { // "" disables the health server
+		opts.HealthProbeBindAddress = ":8080"
+	}
+
+	return opts
 }

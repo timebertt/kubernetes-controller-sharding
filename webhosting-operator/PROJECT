@@ -1,3 +1,4 @@
+componentConfig: true
 domain: timebertt.dev
 layout:
 - go.kubebuilder.io/v3
