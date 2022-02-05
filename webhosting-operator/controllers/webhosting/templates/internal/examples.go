@@ -19,7 +19,7 @@ package internal
 import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/api/v1alpha1"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
 )
 
 // CreateExamples returns an example set of values for testing purposes.

@@ -13,7 +13,7 @@
       </ENTRIES>
     </EXTENSION>
     <kind value="PACKAGE" />
-    <package value="github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/templates/testserver" />
+    <package value="github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting/templates/testserver" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$/webhosting-operator/controllers/templates/testserver/server.go" />
     <method v="2">

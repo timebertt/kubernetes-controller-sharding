@@ -2,6 +2,7 @@ componentConfig: true
 domain: timebertt.dev
 layout:
 - go.kubebuilder.io/v3
+multigroup: true
 projectName: webhosting-operator
 repo: github.com/timebertt/kubernetes-controller-sharding/webhosting-operator
 resources:
@@ -12,7 +13,7 @@ resources:
   domain: timebertt.dev
   group: webhosting
   kind: Website
-  path: github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/api/v1alpha1
+  path: github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -20,6 +21,6 @@ resources:
   domain: timebertt.dev
   group: webhosting
   kind: Theme
-  path: github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/api/v1alpha1
+  path: github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1
   version: v1alpha1
 version: "3"

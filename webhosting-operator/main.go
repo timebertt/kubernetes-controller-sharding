@@ -32,8 +32,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/api/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers"
+	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -68,7 +68,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.WebsiteReconciler{
+	if err = (&webhosting.WebsiteReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("website-controller"),
@@ -76,7 +76,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Website")
 		os.Exit(1)
 	}
-	if err = (&controllers.ThemeReconciler{
+	if err = (&webhosting.ThemeReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {

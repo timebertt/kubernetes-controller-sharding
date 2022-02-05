@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="webhosting-operator" type="GoApplicationRunConfiguration" factoryName="Go Application">
+  <configuration default="false" name="webhosting-operator local" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$/webhosting-operator" />
     <envs>
@@ -11,9 +11,9 @@
     <filePath value="$PROJECT_DIR$/webhosting-operator/main.go" />
     <method v="2" />
   </configuration>
-  <configuration default="false" name="webhosting-operator" type="google-container-tools-skaffold-run-config" factoryName="google-container-tools-skaffold-run-config-dev" show_console_on_std_err="false" show_console_on_std_out="false" kubeconfigFile="{&quot;displayName&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml&quot;,&quot;path&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml&quot;}">
+  <configuration default="false" name="webhosting-operator skaffold" type="google-container-tools-skaffold-run-config" factoryName="google-container-tools-skaffold-run-config-dev" show_console_on_std_err="false" show_console_on_std_out="false" kubeconfigFile="{&quot;displayName&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml&quot;,&quot;path&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml&quot;}">
     <option name="allowRunningInParallel" value="false" />
-    <option name="buildEnvironment" />
+    <option name="buildEnvironment" value="Local" />
     <option name="cleanupDeployments" value="false" />
     <option name="deployToCurrentContext" value="true" />
     <option name="deployToMinikube" value="false" />

@@ -20,8 +20,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/templates"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/templates/internal"
+	. "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting/templates"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting/templates/internal"
 )
 
 var _ = Describe("index.html", func() {
