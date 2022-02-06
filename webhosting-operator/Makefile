@@ -1,4 +1,3 @@
-
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
@@ -55,9 +54,36 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+.PHONY: modules
+modules: ## Runs go mod to ensure modules are up to date.
+	go mod tidy
+
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test -race ./...
+
+##@ Verification
+
+.PHONY: verify-fmt
+verify-fmt: fmt ## Verify go code is formatted.
+	@if !(git diff --quiet HEAD); then \
+		echo "unformatted files are out of date, please run 'make fmt'"; exit 1; \
+	fi
+
+.PHONY: verify-generate
+verify-generate: manifests generate ## Verify generated files are up to date.
+	@if !(git diff --quiet HEAD); then \
+		echo "generated files are out of date, please run 'make manifests generate'"; exit 1; \
+	fi
+
+.PHONY: verify-modules
+verify-modules: modules ## Verify go module files are up to date.
+	@if !(git diff --quiet HEAD -- go.sum go.mod); then \
+		echo "go module files are out of date, please run 'make modules'"; exit 1; \
+	fi
+
+.PHONY: verify
+verify: verify-fmt verify-generate verify-modules test ## Verify everything (all verify-* rules + test).
 
 ##@ Build
 
