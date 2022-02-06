@@ -72,14 +72,12 @@ jobs:
         images: |
           ghcr.io/${{ github.repository }}/${{ matrix.name }}
         tags: |
-          type=semver,pattern={{version}}
-          type=schedule
           type=ref,event=branch
           type=ref,event=tag
           type=ref,event=pr
           type=sha
         flavor: |
-          latest=${{ github.ref == 'refs/heads/master' }}
+          latest=${{ endsWith(github.ref, github.event.repository.default_branch) }}
 
     - name: Build and push
       uses: docker/build-push-action@v2

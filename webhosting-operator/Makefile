@@ -126,9 +126,18 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
+.PHONY: deploy-prerequisites
+deploy-prerequisites: kustomize ## Deploy prerequisites (e.g. ingress controller).
+	$(KUSTOMIZE) build config/ingress-nginx | kubectl apply -f -
+
+.PHONY: undeploy-prerequisites
+undeploy-prerequisites: ## Deploy prerequisites (e.g. ingress controller). Call with ignore-not-found=true to ignore resource not found errors during deletion.
+	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+
 .PHONY: k3d-up
 k3d-up: ## Launch a k3d cluster for testing the operator.
-	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml k3d cluster create webhosting -p "8088:80@loadbalancer"
+	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml k3d cluster create webhosting -p "8088:80@loadbalancer" --k3s-arg "--disable=traefik@server:0"
+	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(MAKE) deploy-prerequisites
 	# now run `export KUBECONFIG=$$PWD/dev/k3d_kubeconfig.yaml` to target the created k3d cluster.
 
 .PHONY: k3d-down
