@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting"
 	//+kubebuilder:scaffold:imports
@@ -46,6 +47,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(webhostingv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(configv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -62,7 +64,12 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zapOpts)))
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), opts.Complete())
+	if err := opts.Complete(); err != nil {
+		setupLog.Error(err, "unable to load config")
+		os.Exit(1)
+	}
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), opts.managerOptions)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -103,6 +110,9 @@ func main() {
 
 type options struct {
 	configFile string
+
+	managerOptions          ctrl.Options
+	controllerManagerConfig *configv1alpha1.ControllerManagerConfig
 }
 
 func (o *options) AddFlags(fs *flag.FlagSet) {
@@ -112,19 +122,21 @@ func (o *options) AddFlags(fs *flag.FlagSet) {
 			"Command-line flags override configuration from this file.")
 }
 
-func (o *options) Complete() ctrl.Options {
+func (o *options) Complete() error {
+	o.controllerManagerConfig = &configv1alpha1.ControllerManagerConfig{}
+
 	opts := ctrl.Options{Scheme: scheme}
 	if o.configFile != "" {
 		var err error
-		opts, err = opts.AndFrom(ctrl.ConfigFile().AtPath(o.configFile))
+		opts, err = opts.AndFrom(ctrl.ConfigFile().AtPath(o.configFile).OfKind(o.controllerManagerConfig))
 		if err != nil {
-			setupLog.Error(err, "unable to load the config file")
-			os.Exit(1)
+			return err
 		}
 	}
 
 	// apply some sensible defaults
-	return setOptionsDefaults(opts)
+	o.managerOptions = setOptionsDefaults(opts)
+	return nil
 }
 
 func setOptionsDefaults(opts ctrl.Options) ctrl.Options {
