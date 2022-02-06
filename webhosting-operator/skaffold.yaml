@@ -1,0 +1,24 @@
+apiVersion: skaffold/v2beta25
+kind: Config
+metadata:
+  name: webhosting-operator
+build:
+  local:
+    useBuildkit: true
+  artifacts:
+  - image: controller
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  kustomize:
+    paths:
+    - config/skaffold
+  kubectl:
+    manifests:
+    - config/samples/project_namespace.yaml
+portForward:
+- resourceType: deployment
+  namespace: webhosting-operator-system
+  resourceName: webhosting-operator-controller-manager
+  port: metrics
+  localPort: 8080

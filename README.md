@@ -14,3 +14,5 @@ TBA
 ## Test setup
 
 TBA
+
+[webhosting-operator](webhosting-operator) is developed as a demo use case and for evaluating different sharding approaches.

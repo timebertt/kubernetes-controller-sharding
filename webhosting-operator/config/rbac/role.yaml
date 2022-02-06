@@ -1,0 +1,102 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - create
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
+  - themes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
+  - themes/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
+  - themes/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
+  - websites
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
+  - websites/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
+  - websites/status
+  verbs:
+  - get
+  - patch
+  - update

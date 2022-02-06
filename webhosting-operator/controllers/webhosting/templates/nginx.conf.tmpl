@@ -1,0 +1,13 @@
+server {
+    listen       80;
+    listen  [::]:80;
+    server_name  localhost;
+
+    # rewrite /namespace/name to / for requests proxied from Ingress controller
+    # this way, we don't need any Ingress controller specific configuration or objects
+    rewrite ^/{{ .Website.ObjectMeta.Namespace }}/{{ .Website.ObjectMeta.Name }}(.*)$ /$1 last;
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html;
+    }
+}

@@ -1,0 +1,24 @@
+# permissions for end users to edit websites.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: website-editor-role
+rules:
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
+  - websites
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
+  - websites/status
+  verbs:
+  - get

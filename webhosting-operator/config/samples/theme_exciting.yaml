@@ -1,0 +1,7 @@
+apiVersion: webhosting.timebertt.dev/v1alpha1
+kind: Theme
+metadata:
+  name: exciting
+spec:
+  color: darkcyan
+  fontFamily: Menlo
