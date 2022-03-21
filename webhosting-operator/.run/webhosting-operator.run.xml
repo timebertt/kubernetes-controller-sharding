@@ -1,9 +1,10 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="webhosting-operator local" type="GoApplicationRunConfiguration" factoryName="Go Application">
+  <configuration default="false" name="webhosting-operator process (k3d)" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$/webhosting-operator" />
-    <parameters value="--config=config/skaffold/controller_manager_config.yaml" />
+    <parameters value="--config=config/manager/controller_manager_config.yaml" />
     <envs>
+      <env name="LEADER_ELECT" value="false" />
       <env name="KUBECONFIG" value="$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml" />
     </envs>
     <kind value="PACKAGE" />

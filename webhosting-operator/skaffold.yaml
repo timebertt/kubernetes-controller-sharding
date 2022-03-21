@@ -12,7 +12,7 @@ build:
 deploy:
   kustomize:
     paths:
-    - config/skaffold
+    - config/debug
   kubectl:
     manifests:
     - config/samples/project_namespace.yaml

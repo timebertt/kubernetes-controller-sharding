@@ -44,6 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting/templates"
 )
@@ -53,6 +54,8 @@ type WebsiteReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+
+	Config *configv1alpha1.ControllerManagerConfig
 }
 
 //+kubebuilder:rbac:groups=webhosting.timebertt.dev,resources=websites,verbs=get;list;watch;create;update;patch;delete
@@ -228,7 +231,6 @@ func (r *WebsiteReconciler) ServiceForWebsite(serverName string, website *webhos
 
 // IngressForWebsite creates a Ingress object to be applied for the given website.
 func (r *WebsiteReconciler) IngressForWebsite(serverName string, website *webhostingv1alpha1.Website) (*networkingv1.Ingress, error) {
-	pathType := networkingv1.PathTypePrefix
 	ingress := &networkingv1.Ingress{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: networkingv1.SchemeGroupVersion.String(),
@@ -239,29 +241,73 @@ func (r *WebsiteReconciler) IngressForWebsite(serverName string, website *webhos
 			Namespace: website.Namespace,
 			Labels:    getLabelsForServer(website.Name, serverName),
 		},
-		Spec: networkingv1.IngressSpec{
-			Rules: []networkingv1.IngressRule{{
-				IngressRuleValue: networkingv1.IngressRuleValue{
-					HTTP: &networkingv1.HTTPIngressRuleValue{
-						Paths: []networkingv1.HTTPIngressPath{{
-							Path:     fmt.Sprintf("/%s/%s", website.Namespace, website.Name),
-							PathType: &pathType,
-							Backend: networkingv1.IngressBackend{
-								Service: &networkingv1.IngressServiceBackend{
-									Name: serverName,
-									Port: networkingv1.ServiceBackendPort{
-										Name: portNameHTTP,
-									},
-								},
-							},
-						}},
+	}
+
+	// base ingress rule value
+	pathType := networkingv1.PathTypePrefix
+	ingressRuleValue := networkingv1.IngressRuleValue{
+		HTTP: &networkingv1.HTTPIngressRuleValue{
+			Paths: []networkingv1.HTTPIngressPath{{
+				Path:     fmt.Sprintf("/%s/%s", website.Namespace, website.Name),
+				PathType: &pathType,
+				Backend: networkingv1.IngressBackend{
+					Service: &networkingv1.IngressServiceBackend{
+						Name: serverName,
+						Port: networkingv1.ServiceBackendPort{
+							Name: portNameHTTP,
+						},
 					},
 				},
 			}},
 		},
 	}
 
+	// add default rule without hosts
+	ingress.Spec.Rules = []networkingv1.IngressRule{{
+		IngressRuleValue: ingressRuleValue,
+	}}
+
+	applyIngressConfigToIngress(r.Config.Ingress, ingress)
 	return ingress, ctrl.SetControllerReference(website, ingress, r.Scheme)
+}
+
+func applyIngressConfigToIngress(config *configv1alpha1.IngressConfiguration, ingress *networkingv1.Ingress) {
+	if config == nil {
+		// nothing to apply, go with defaults
+		return
+	}
+
+	// apply annotations
+	for key, value := range config.Annotations {
+		metav1.SetMetaDataAnnotation(&ingress.ObjectMeta, key, value)
+	}
+
+	// apply hosts
+	if len(config.Hosts) > 0 {
+		// use default rule for each host in config
+		ingressRuleValue := ingress.Spec.Rules[0].IngressRuleValue
+
+		ingress.Spec.Rules = make([]networkingv1.IngressRule, len(config.Hosts))
+		for i, host := range config.Hosts {
+			ingress.Spec.Rules[i] = networkingv1.IngressRule{
+				Host:             host,
+				IngressRuleValue: ingressRuleValue,
+			}
+		}
+	}
+
+	// apply TLS config
+	if len(config.TLS) > 0 {
+		ingress.Spec.TLS = make([]networkingv1.IngressTLS, len(config.TLS))
+		for i, tls := range config.TLS {
+			tls = *tls.DeepCopy()
+			// tls secret not given, generate website specific secret name
+			if tls.SecretName == "" {
+				tls.SecretName = ingress.Name + "-tls"
+			}
+			ingress.Spec.TLS[i] = tls
+		}
+	}
 }
 
 // DeploymentForWebsite creates a Deployment object to be applied for the given website.

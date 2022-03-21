@@ -11,3 +11,12 @@ leaderElection:
   leaderElect: true
   resourceLock: leases
   resourceName: 87da1037.timebertt.dev
+ingress:
+  annotations:
+    cert.gardener.cloud/issuer: letsencrypt
+    cert.gardener.cloud/purpose: managed
+  hosts:
+  - webhosting.timebertt.dev
+  tls:
+  - hosts:
+    - webhosting.timebertt.dev

@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: system
+spec:
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      securityContext:
+        # delve can't run as non-root (when using skaffold debug)
+        runAsNonRoot: false
+      containers:
+      - name: manager
+        env:
+        # disable leader election for debugging and use Deployment strategy Recreate.
+        # other option would have been to increase the durations and rely on ReleaseOnCancel to release the lease,
+        # however the delve debugger seems to kill the child process too fast for the leader elector to release the lease
+        # (probably, this is because the network connection to the skaffold/dlv client breaks off during termination)
+        - name: LEADER_ELECT
+          value: "false"
+      terminationGracePeriodSeconds: 5
