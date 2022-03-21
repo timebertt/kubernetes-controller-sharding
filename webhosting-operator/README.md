@@ -55,7 +55,7 @@ In this case, you need to manually deploy the prerequisites.
 An ingress controller like [ingress-nginx](https://github.com/kubernetes/ingress-nginx/) is needed to expose `Websites`. Deploy it via:
 
 ```bash
-make deploy-prerequisites
+k apply -k config/ingress-nginx/with-dns # including service annotations for public dns
 ```
 
 ### 2. Deploy the Operator
@@ -64,6 +64,9 @@ Deploy `webhosting-operator` using the `latest` tag:
 
 ```bash
 make deploy
+
+# or: configure the operator to make ingresses available via public dns 
+make deploy WITH_DNS=true
 ```
 
 Alternatively, build the image and deploy it using [skaffold](https://skaffold.dev/):

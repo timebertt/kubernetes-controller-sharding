@@ -1,0 +1,22 @@
+apiVersion: config.webhosting.timebertt.dev/v1alpha1
+kind: ControllerManagerConfig
+health:
+  healthProbeBindAddress: :8081
+metrics:
+  bindAddress: 127.0.0.1:8080
+webhook:
+  port: 9443
+gracefulShutDown: 15s
+leaderElection:
+  leaderElect: true
+  resourceLock: leases
+  resourceName: 87da1037.timebertt.dev
+ingress:
+  annotations:
+    cert.gardener.cloud/issuer: letsencrypt
+    cert.gardener.cloud/purpose: managed
+  hosts:
+  - webhosting.timebertt.dev
+  tls:
+  - hosts:
+    - webhosting.timebertt.dev
