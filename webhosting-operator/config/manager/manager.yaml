@@ -31,6 +31,10 @@ spec:
         - /manager
         image: controller:latest
         name: manager
+        ports:
+        - name: metrics
+          containerPort: 8080
+          protocol: TCP
         securityContext:
           allowPrivilegeEscalation: false
         livenessProbe:

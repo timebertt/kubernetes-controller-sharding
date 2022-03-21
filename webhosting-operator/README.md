@@ -79,8 +79,6 @@ skaffold run
 skaffold dev
 ```
 
-> If you want to deploy to a remote cluster using skaffold, you need to point the `SKAFFOLD_DEFAULT_REPO` environment variable to a public repository that you have push access to.
-
 ### 3. Create Sample Objects
 
 Create sample project namespace as well as two websites using two different themes:

@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	"strconv"
 
 	"go.uber.org/zap/zapcore"
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -126,18 +127,36 @@ func (o *options) AddFlags(fs *flag.FlagSet) {
 func (o *options) Complete() error {
 	o.controllerManagerConfig = &configv1alpha1.ControllerManagerConfig{}
 
+	var err error
 	opts := ctrl.Options{Scheme: scheme}
 	if o.configFile != "" {
-		var err error
 		opts, err = opts.AndFrom(ctrl.ConfigFile().AtPath(o.configFile).OfKind(o.controllerManagerConfig))
 		if err != nil {
 			return err
 		}
 	}
 
+	opts, err = applyOptionsOverrides(opts)
+	if err != nil {
+		return err
+	}
+
 	// apply some sensible defaults
 	o.managerOptions = setOptionsDefaults(opts)
 	return nil
+}
+
+func applyOptionsOverrides(opts ctrl.Options) (ctrl.Options, error) {
+	// allow overriding leader election via env var for debugging purposes
+	if leaderElectEnv, ok := os.LookupEnv("LEADER_ELECT"); ok {
+		leaderElect, err := strconv.ParseBool(leaderElectEnv)
+		if err != nil {
+			return ctrl.Options{}, err
+		}
+		opts.LeaderElection = leaderElect
+	}
+
+	return opts, nil
 }
 
 func setOptionsDefaults(opts ctrl.Options) ctrl.Options {
