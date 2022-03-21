@@ -1,0 +1,85 @@
+apiVersion: core.gardener.cloud/v1beta1
+kind: Shoot
+metadata:
+  name: sharding
+  namespace: garden-timebertt
+spec:
+  addons:
+    kubernetesDashboard:
+      enabled: false
+    nginxIngress:
+      enabled: false
+  cloudProfileName: gcp
+  dns:
+    providers:
+    - secretName: google-clouddns-timebertt-dev
+      type: google-clouddns
+  extensions:
+  - type: shoot-cert-service
+    providerConfig:
+      apiVersion: service.cert.extensions.gardener.cloud/v1alpha1
+      issuers:
+      - email: timebertt@gmail.com
+        name: letsencrypt
+        server: https://acme-v02.api.letsencrypt.org/directory
+      - email: timebertt@gmail.com
+        name: letsencrypt-staging
+        server: https://acme-staging-v02.api.letsencrypt.org/directory
+  hibernation:
+    schedules:
+    - location: Europe/Berlin
+      start: 00 19 * * 1,2,3,4,5,6,0
+  kubernetes:
+    allowPrivilegedContainers: true
+    kubeAPIServer:
+      enableBasicAuthentication: false
+    kubeProxy:
+      mode: IPTables
+    version: "1.22"
+    verticalPodAutoscaler:
+      enabled: true
+  maintenance:
+    autoUpdate:
+      kubernetesVersion: true
+      machineImageVersion: true
+    timeWindow:
+      begin: 030000+0200
+      end: 040000+0200
+  networking:
+    nodes: 10.250.0.0/16
+    pods: 100.96.0.0/11
+    services: 100.64.0.0/13
+    type: calico
+  provider:
+    controlPlaneConfig:
+      apiVersion: gcp.provider.extensions.gardener.cloud/v1alpha1
+      kind: ControlPlaneConfig
+      zone: europe-west1-c
+    infrastructureConfig:
+      apiVersion: gcp.provider.extensions.gardener.cloud/v1alpha1
+      kind: InfrastructureConfig
+      networks:
+        workers: 10.250.0.0/16
+    type: gcp
+    workers:
+    - cri:
+        name: containerd
+      machine:
+        image:
+          name: gardenlinux
+        type: n1-standard-4
+      maxSurge: 1
+      maxUnavailable: 0
+      maximum: 2
+      minimum: 1
+      name: worker
+      systemComponents:
+        allow: true
+      volume:
+        size: 50Gi
+        type: pd-ssd
+      zones:
+      - europe-west1-c
+  purpose: development
+  region: europe-west1
+  secretBindingName: shoot-operator-gcp

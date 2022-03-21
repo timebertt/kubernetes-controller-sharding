@@ -135,8 +135,8 @@ undeploy-prerequisites: ## Deploy prerequisites (e.g. ingress controller). Call 
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: k3d-up
-k3d-up: ## Launch a k3d cluster for testing the operator.
-	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml k3d cluster create webhosting -p "8088:80@loadbalancer" --k3s-arg "--disable=traefik@server:0"
+k3d-up: k3d ## Launch a k3d cluster for testing the operator.
+	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(K3D) cluster create webhosting -p "8088:80@loadbalancer" --k3s-arg "--disable=traefik@server:0"
 	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(MAKE) deploy-prerequisites
 	# now run `export KUBECONFIG=$$PWD/dev/k3d_kubeconfig.yaml` to target the created k3d cluster.
 
@@ -156,12 +156,17 @@ KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.
 	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v3@v3.8.7)
 
+K3D = $(shell pwd)/bin/k3d
+.PHONY: k3d
+k3d: ## Download k3d locally if necessary.
+	$(call go-get-tool,$(K3D),github.com/rancher/k3d/v5@v5.3.0)
+
 ENVTEST = $(shell pwd)/bin/setup-envtest
 .PHONY: envtest
 envtest: ## Download envtest-setup locally if necessary.
 	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
 
-# go-get-tool will 'go get' any package $2 and install it to $1.
+# go-get-tool will 'go install' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 define go-get-tool
 @[ -f $(1) ] || { \
@@ -170,7 +175,7 @@ TMP_DIR=$$(mktemp -d) ;\
 cd $$TMP_DIR ;\
 go mod init tmp ;\
 echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
+GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
 rm -rf $$TMP_DIR ;\
 }
 endef
