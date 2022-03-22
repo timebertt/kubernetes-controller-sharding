@@ -55,7 +55,7 @@ In this case, you need to manually deploy the prerequisites.
 An ingress controller like [ingress-nginx](https://github.com/kubernetes/ingress-nginx/) is needed to expose `Websites`. Deploy it via:
 
 ```bash
-k apply -k config/ingress-nginx/with-dns # including service annotations for public dns
+k apply --server-side -k config/ingress-nginx/with-dns # including service annotations for public dns
 ```
 
 ### 2. Deploy the Operator
@@ -109,3 +109,19 @@ ingress.networking.k8s.io/official-698696   nginx   *       172.19.0.2   80     
 ```
 
 Navigate to [localhost:8088/project-foo/homepage](http://localhost:8088/project-foo/homepage) and [localhost:8088/project-foo/official](http://localhost:8088/project-foo/official) in your browser to visit the websites.
+
+## 4. Deploy Monitoring Components
+
+Deploy a customized installation of [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) for observing the operator:
+
+```bash
+k apply --server-side -k config/monitoring/crds
+k wait crd -l app.kubernetes.io/name=prometheus-operator --for=condition=NamesAccepted --for=condition=Established
+k apply --server-side -k config/monitoring
+```
+
+Access grafana and prometheus:
+```bash
+k port-forward -n monitoring svc/grafana 3000
+k port-forward -n monitoring svc/prometheus-k8s 9090
+```
