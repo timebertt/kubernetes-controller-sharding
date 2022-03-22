@@ -115,6 +115,9 @@ Navigate to [localhost:8088/project-foo/homepage](http://localhost:8088/project-
 Deploy a customized installation of [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) for observing the operator:
 
 ```bash
+# generate grafana admin password
+cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32 > config/monitoring/grafana_admin_pass.secret.txt
+
 k apply --server-side -k config/monitoring/crds
 k wait crd -l app.kubernetes.io/name=prometheus-operator --for=condition=NamesAccepted --for=condition=Established
 k apply --server-side -k config/monitoring

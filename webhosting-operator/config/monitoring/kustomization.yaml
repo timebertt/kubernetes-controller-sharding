@@ -4,3 +4,15 @@ kind: Kustomization
 resources:
 - namespace.yaml
 - kube-prometheus
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+secretGenerator:
+- name: grafana-admin
+  namespace: monitoring
+  files:
+  - password=grafana_admin_pass.secret.txt
+
+patchesStrategicMerge:
+- patch_grafana_admin.yaml
