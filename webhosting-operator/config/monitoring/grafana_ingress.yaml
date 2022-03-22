@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    dns.gardener.cloud/class: garden
+    dns.gardener.cloud/dnsnames: grafana.webhosting.timebertt.dev
+    cert.gardener.cloud/issuer: letsencrypt
+    cert.gardener.cloud/purpose: managed
+  labels:
+    app.kubernetes.io/component: grafana
+    app.kubernetes.io/name: grafana
+  name: grafana
+  namespace: monitoring
+spec:
+  rules:
+  - host: grafana.webhosting.timebertt.dev
+    http:
+      paths:
+      - backend:
+          service:
+            name: grafana
+            port:
+              name: http
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - grafana.webhosting.timebertt.dev
+    secretName: grafana-tls

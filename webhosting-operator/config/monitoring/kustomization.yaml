@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
 - namespace.yaml
 - kube-prometheus
+- grafana_ingress.yaml
 
 generatorOptions:
   disableNameSuffixHash: true
