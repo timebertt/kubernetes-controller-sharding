@@ -134,7 +134,7 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 
 .PHONY: k3d-up
 k3d-up: k3d ## Launch a k3d cluster for testing the operator.
-	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(K3D) cluster create webhosting -p "8088:80@loadbalancer" --k3s-arg "--disable=traefik@server:0"
+	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(K3D) cluster create webhosting -i "docker.io/rancher/k3s:v1.22.7-k3s1" -p "8088:80@loadbalancer" --k3s-arg "--disable=traefik@server:0"
 	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(KUSTOMIZE) build config/ingress-nginx/default | kubectl apply -f -
 	# now run `export KUBECONFIG=$$PWD/dev/k3d_kubeconfig.yaml` to target the created k3d cluster.
 
