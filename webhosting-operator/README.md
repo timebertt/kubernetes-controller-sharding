@@ -36,26 +36,39 @@ There are three resources involved:
 
 ## Setup
 
+### TL;DR
+
+All necessary steps for a quick start:
+
+```bash
+make k3d-up
+export KUBECONFIG=$PWD/dev/k3d_kubeconfig.yaml
+make deploy
+k apply -f config/samples
+make deploy-monitoring
+```
+
 ### 1. Create a Kubernetes Cluster
+
+#### k3d (local)
 
 Create a local cluster in docker containers via [k3d](https://k3d.io/) using a provided make target.
 It already takes care of deploying the prerequisites and configuring the needed port mappings.
 
 ```bash
 make k3d-up
+export KUBECONFIG=$PWD/dev/k3d_kubeconfig.yaml
 ```
 
-Alternatively, you can also create a cluster in the cloud. If you have a Gardener installation available, you can create a `Shoot` cluster similar to the one in the [sample manifest](./shoot.yaml):
+#### Shoot Cluster (remote)
+
+Alternatively, you can also create a cluster in the cloud. If you have a Gardener installation available, you can create a `Shoot` cluster similar to the one in the [sample manifest](./shoot.yaml) and deploy the prerequisites manually:
 
 ```bash
 k apply -f shoot.yaml
-```
-
-In this case, you need to manually deploy the prerequisites.
-An ingress controller like [ingress-nginx](https://github.com/kubernetes/ingress-nginx/) is needed to expose `Websites`. Deploy it via:
-
-```bash
-k apply --server-side -k config/ingress-nginx/with-dns # including service annotations for public dns
+export KUBECONFIG=/path/to/kubeconfig
+# deploy ingress-nginx with service annotations for exposing websites via public dns
+make deploy-ingress-nginx WITH_DNS=true
 ```
 
 ### 2. Deploy the Operator
@@ -69,19 +82,19 @@ make deploy
 make deploy WITH_DNS=true
 ```
 
-Alternatively, build the image and deploy it using [skaffold](https://skaffold.dev/):
+Alternatively, build a fresh image and deploy it using [skaffold](https://skaffold.dev/):
 
 ```bash
 # one-time deploy
 skaffold run
 
-# or: dev-loop (rebuild on code changes)
+# or: dev loop (rebuild on code changes)
 skaffold dev
 ```
 
 ### 3. Create Sample Objects
 
-Create sample project namespace as well as two websites using two different themes:
+Create a sample project namespace as well as two websites using two different themes:
 
 ```bash
 k apply -f config/samples
@@ -115,16 +128,12 @@ Navigate to [localhost:8088/project-foo/homepage](http://localhost:8088/project-
 Deploy a customized installation of [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) for observing the operator:
 
 ```bash
-# generate grafana admin password
-cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32 > config/monitoring/grafana_admin_pass.secret.txt
-
-k apply --server-side -k config/monitoring/crds
-k wait crd -l app.kubernetes.io/name=prometheus-operator --for=condition=NamesAccepted --for=condition=Established
-k apply --server-side -k config/monitoring
+make deploy-monitoring
 ```
 
 Access grafana and prometheus:
 ```bash
+cat config/monitoring/grafana_admin_pass.secret.txt
 k port-forward -n monitoring svc/grafana 3000
 k port-forward -n monitoring svc/prometheus-k8s 9090
 ```
