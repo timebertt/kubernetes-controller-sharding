@@ -14,5 +14,13 @@ spec:
             secretKeyRef:
               name: grafana-admin
               key: password
-        - name: GF_USERS_VIEWERS_CAN_EDIT
+        - name: GF_AUTH_ANONYMOUS_ENABLED
           value: "true"
+        - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+          value: "Viewer"
+        - name: GF_USERS_VIEWERS_CAN_EDIT
+          value: "false"
+        - name: GF_ALERTING_ENABLED
+          value: "false"
+        - name: GF_UNIFIED_ALERTING_ENABLED
+          value: "false"

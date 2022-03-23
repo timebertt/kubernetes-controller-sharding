@@ -3,8 +3,10 @@ kind: Kustomization
 
 resources:
 - namespace.yaml
+- rbac-proxy_clusterrole.yaml
 - kube-prometheus
 - grafana_ingress.yaml
+- webhosting-exporter
 - webhosting-operator_servicemonitor.yaml
 # provide prometheus running in namespace "monitoring" with the permissions required for service discovery in namespace
 # "webhosting-operator-system"

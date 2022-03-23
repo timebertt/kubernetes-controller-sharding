@@ -1,5 +1,6 @@
 # Image URL to use all building/pushing image targets
 IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator:latest
+EXPORTER_IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 # if WITH_DNS is set to true, we configure the operator to make ingresses available via public dns
@@ -91,19 +92,26 @@ verify: verify-fmt verify-generate verify-modules test ## Verify everything (all
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	go build -o bin/manager main.go
+	go build -o bin/webhosting-operator main.go
+	go build -o bin/webhosting-exporter ./cmd/webhosting-exporter
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go
+run: manifests generate fmt vet ## Run the webhosting-operator from your host.
+	go run ./main.go --config=config/manager/controller_manager_config.yaml
+
+.PHONY: run-exporter
+run-exporter: ## Run the webhosting-exporter from your host.
+	go run ./cmd/webhosting-exporter --port=8180 --telemetry-port=8181 --kubeconfig=$(KUBECONFIG)
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
+	docker build -t ${IMG} --target webhosting-operator .
+	docker build -t ${EXPORTER_IMG} --target webhosting-exporter .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+	docker push ${EXPORTER_IMG}
 
 ##@ Deployment
 
@@ -112,15 +120,15 @@ ifndef ignore-not-found
 endif
 
 .PHONY: install
-install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+install: manifests kustomize ## Install CRDs into K8s cluster specified in $KUBECONFIG.
 	$(KUSTOMIZE) build config/crd | kubectl apply -f -
 
 .PHONY: uninstall
-uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+uninstall: manifests kustomize ## Uninstall CRDs from K8s cluster specified in $KUBECONFIG. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: deploy
-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+deploy: manifests kustomize ## Deploy controller to K8s cluster specified in $KUBECONFIG.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 ifneq ($(WITH_DNS), true)
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
@@ -129,18 +137,35 @@ else
 endif
 
 .PHONY: undeploy
-undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+undeploy: kustomize ## Undeploy controller from K8s cluster specified in $KUBECONFIG. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: k3d-up
 k3d-up: k3d ## Launch a k3d cluster for testing the operator.
 	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(K3D) cluster create webhosting -i "docker.io/rancher/k3s:v1.22.7-k3s1" -p "8088:80@loadbalancer" --k3s-arg "--disable=traefik@server:0"
-	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(KUSTOMIZE) build config/ingress-nginx/default | kubectl apply -f -
-	# now run `export KUBECONFIG=$$PWD/dev/k3d_kubeconfig.yaml` to target the created k3d cluster.
+	# run `export KUBECONFIG=$$PWD/dev/k3d_kubeconfig.yaml` to target the created k3d cluster.
+	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(MAKE) deploy-ingress-nginx
 
 .PHONY: k3d-down
 k3d-down: ## Tear down the k3d testing cluster.
 	k3d cluster delete webhosting
+
+.PHONY: deploy-ingress-nginx
+deploy-ingress-nginx: kustomize ## Deploy ingress-nginx to K8s cluster specified in $KUBECONFIG.
+ifneq ($(WITH_DNS), true)
+	$(KUSTOMIZE) build config/ingress-nginx/default | kubectl apply --server-side -f -
+else
+	$(KUSTOMIZE) build config/ingress-nginx/with-dns | kubectl apply --server-side -f -
+endif
+	kubectl -n ingress-nginx wait deploy ingress-nginx-controller --for=condition=Available
+
+.PHONY: deploy-monitoring
+deploy-monitoring: kustomize ## Deploy monitoring stack to K8s cluster specified in $KUBECONFIG.
+	[ -f "config/monitoring/grafana_admin_pass.secret.txt" ] || cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32 > config/monitoring/grafana_admin_pass.secret.txt
+	# generated grafana admin password to config/monitoring/grafana_admin_pass.secret.txt
+	$(KUSTOMIZE) build config/monitoring/crds | kubectl apply --server-side -f -
+	kubectl wait crd -l app.kubernetes.io/name=prometheus-operator --for=condition=NamesAccepted --for=condition=Established
+	$(KUSTOMIZE) build config/monitoring | kubectl apply --server-side -f -
 
 ##@ Tools
 
@@ -152,7 +177,7 @@ controller-gen: ## Download controller-gen locally if necessary.
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 .PHONY: kustomize
 kustomize: ## Download kustomize locally if necessary.
-	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v3@v3.8.7)
+	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.5.2)
 
 K3D = $(shell pwd)/bin/k3d
 .PHONY: k3d

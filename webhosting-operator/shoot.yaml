@@ -27,8 +27,11 @@ spec:
         server: https://acme-staging-v02.api.letsencrypt.org/directory
   hibernation:
     schedules:
-    - location: Europe/Berlin
-      start: 00 19 * * 1,2,3,4,5,6,0
+    - start: '00 19 * * 1,2,3,4,5'
+      end: '30 07 * * 1,2,3,4,5'
+      location: Europe/Berlin
+    - start: '00 19 * * 6,0'
+      location: Europe/Berlin
   kubernetes:
     allowPrivilegedContainers: true
     kubeAPIServer:

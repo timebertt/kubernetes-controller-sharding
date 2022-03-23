@@ -434,7 +434,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&webhostingv1alpha1.Website{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		// watch deployments in order to update phase on relevant changes
-		Owns(&appsv1.Deployment{}, builder.WithPredicates(DeploymentConditionsChanged)).
+		Owns(&appsv1.Deployment{}, builder.WithPredicates(DeploymentReadinessChanged)).
 		// watch owned objects for relevant changes to reconcile them back if changed
 		Owns(&corev1.ConfigMap{}, builder.WithPredicates(ConfigMapDataChanged)).
 		Owns(&corev1.Service{}, builder.WithPredicates(ServiceSpecChanged)).
@@ -467,8 +467,8 @@ func (r *WebsiteReconciler) MapThemeToWebsites(theme client.Object) []reconcile.
 	return requests
 }
 
-// DeploymentConditionsChanged is a predicate for filtering relevant Deployment events.
-var DeploymentConditionsChanged = predicate.Funcs{
+// DeploymentReadinessChanged is a predicate for filtering relevant Deployment events.
+var DeploymentReadinessChanged = predicate.Funcs{
 	CreateFunc: func(e event.CreateEvent) bool {
 		return false
 	},
@@ -484,6 +484,10 @@ var DeploymentConditionsChanged = predicate.Funcs{
 		newDeployment, ok := e.ObjectNew.(*appsv1.Deployment)
 		if !ok {
 			return false
+		}
+
+		if !apiequality.Semantic.DeepEqual(oldDeployment.Status.ReadyReplicas, newDeployment.Status.ReadyReplicas) {
+			return true
 		}
 
 		oldAvailable := GetDeploymentCondition(oldDeployment.Status.Conditions, appsv1.DeploymentAvailable)
