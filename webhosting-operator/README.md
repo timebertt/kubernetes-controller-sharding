@@ -125,7 +125,7 @@ Navigate to [localhost:8088/project-foo/homepage](http://localhost:8088/project-
 
 ## 4. Deploy Monitoring Components
 
-Deploy a customized installation of [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) for observing the operator:
+Deploy a customized installation of [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) including `webhosting-exporter` for observing the operator and its objects:
 
 ```bash
 make deploy-monitoring
