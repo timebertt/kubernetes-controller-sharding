@@ -91,11 +91,16 @@ verify: verify-fmt verify-generate verify-modules test ## Verify everything (all
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	go build -o bin/manager main.go
+	go build -o bin/webhosting-operator main.go
+	go build -o bin/webhosting-exporter ./cmd/webhosting-exporter
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go
+run: manifests generate fmt vet ## Run the webhosting-operator from your host.
+	go run ./main.go --config=config/manager/controller_manager_config.yaml
+
+.PHONY: run-exporter
+run-exporter: ## Run the webhosting-exporter from your host.
+	go run ./cmd/webhosting-exporter --port=8180 --telemetry-port=8181 --kubeconfig=$(KUBECONFIG)
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
