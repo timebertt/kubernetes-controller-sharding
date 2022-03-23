@@ -40,6 +40,7 @@ var (
 	exporterResources = options.ResourceSet{}
 	customFactories   = []customresource.RegistryFactory{
 		newWebsiteFactory(),
+		newThemeFactory(),
 	}
 )
 
