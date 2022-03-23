@@ -21,25 +21,33 @@ RUN go mod download
 
 # Copy the go source
 COPY main.go main.go
+COPY cmd/ cmd/
 COPY apis/ apis/
 COPY controllers/ controllers/
 
 # Build
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" \
-    -o manager main.go
+    go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o manager main.go && \
+    go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o webhosting-exporter ./cmd/webhosting-exporter
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot AS webhosting-operator
+FROM gcr.io/distroless/static:nonroot AS base
 
 # Define GOTRACEBACK to mark this container as using the Go language runtime
 # for `skaffold debug` (https://skaffold.dev/docs/workflows/debug/).
 ENV GOTRACEBACK=single
 
 WORKDIR /
-COPY --from=builder /workspace/manager .
 USER 65532:65532
 
+FROM base AS webhosting-operator
+
+COPY --from=builder /workspace/manager .
 ENTRYPOINT ["/manager"]
+
+FROM base AS webhosting-exporter
+
+COPY --from=builder /workspace/webhosting-exporter .
+ENTRYPOINT ["/webhosting-exporter"]

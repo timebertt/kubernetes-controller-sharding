@@ -1,5 +1,6 @@
 # Image URL to use all building/pushing image targets
 IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator:latest
+EXPORTER_IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 # if WITH_DNS is set to true, we configure the operator to make ingresses available via public dns
@@ -104,11 +105,13 @@ run-exporter: ## Run the webhosting-exporter from your host.
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
+	docker build -t ${IMG} --target webhosting-operator .
+	docker build -t ${EXPORTER_IMG} --target webhosting-exporter .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+	docker push ${EXPORTER_IMG}
 
 ##@ Deployment
 

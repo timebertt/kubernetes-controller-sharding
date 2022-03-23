@@ -45,6 +45,8 @@ jobs:
         include:
         - name: webhosting-operator
           context: webhosting-operator
+        - name: webhosting-exporter
+          context: webhosting-operator
     steps:
     - uses: actions/checkout@v2
     - name: Cache Docker layers
