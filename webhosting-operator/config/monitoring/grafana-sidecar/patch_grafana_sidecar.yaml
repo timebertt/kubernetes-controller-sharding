@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  template:
+    spec:
+      containers:
+      - name: grafana-sc-dashboard
+        image: quay.io/kiwigrid/k8s-sidecar:1.15.1
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: METHOD
+          value: WATCH
+        - name: LABEL
+          value: grafana_dashboard
+        - name: FOLDER
+          value: /grafana-dashboard-definitions-sidecar/0
+        - name: RESOURCE
+          value: configmap
+        volumeMounts:
+        - name: sc-dashboard-volume
+          mountPath: /grafana-dashboard-definitions-sidecar/0
+      - name: grafana
+        volumeMounts:
+        - name: sc-dashboard-volume
+          mountPath: /grafana-dashboard-definitions-sidecar/0
+      volumes:
+      - name: sc-dashboard-volume
+        emptyDir: {}

@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- name: grafana-dashboards
+  namespace: monitoring
+  behavior: merge
+  files:
+  - dashboards-sidecar.yaml
+
+patchesStrategicMerge:
+- patch_grafana_sidecar.yaml
+
+resources:
+- sidecar_clusterrole.yaml
+- sidecar_clusterrolebinding.yaml
