@@ -123,6 +123,15 @@ ingress.networking.k8s.io/official-698696   nginx   *       172.19.0.2   80     
 
 Navigate to [localhost:8088/project-foo/homepage](http://localhost:8088/project-foo/homepage) and [localhost:8088/project-foo/official](http://localhost:8088/project-foo/official) in your browser to visit the websites.
 
+Generate some more samples with:
+```bash
+$ k create ns project-bar project-baz
+$ go run ./cmd/samples-generator # create a random amount of websites per namespace (up to 50 each)
+created 32 Websites in project "project-foo"
+created 25 Websites in project "project-bar"
+created 23 Websites in project "project-baz"
+```
+
 ## 4. Deploy Monitoring Components
 
 Deploy a customized installation of [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) including `webhosting-exporter` for observing the operator and its objects:

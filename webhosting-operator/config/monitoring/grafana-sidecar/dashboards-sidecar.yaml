@@ -1,0 +1,9 @@
+apiVersion: 1
+providers:
+- folder: Default
+  folderUid: ""
+  name: "1"
+  options:
+    path: /grafana-dashboard-definitions-sidecar/0
+  orgId: 1
+  type: file

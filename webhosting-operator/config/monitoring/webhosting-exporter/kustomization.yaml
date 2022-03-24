@@ -3,6 +3,9 @@ kind: Kustomization
 
 namespace: monitoring
 
+generatorOptions:
+  disableNameSuffixHash: true
+
 labels:
 - pairs:
     app.kubernetes.io/component: exporter
@@ -22,3 +25,11 @@ images:
 - name: exporter
   newName: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter
   newTag: latest
+
+configMapGenerator:
+- name: grafana-dashboard-webhosting
+  files:
+  - dashboard-webhosting.json
+  options:
+    labels:
+      grafana_dashboard: "true"
