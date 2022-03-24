@@ -121,7 +121,9 @@ ingress.networking.k8s.io/homepage-72833b   nginx   *       172.19.0.2   80     
 ingress.networking.k8s.io/official-698696   nginx   *       172.19.0.2   80      10s
 ```
 
-Navigate to [localhost:8088/project-foo/homepage](http://localhost:8088/project-foo/homepage) and [localhost:8088/project-foo/official](http://localhost:8088/project-foo/official) in your browser to visit the websites.
+Navigate to http://localhost:8088/project-foo/homepage and http://localhost:8088/project-foo/official in your browser to visit the websites.
+
+You can also check out the publicly hosted `Websites` at https://webhosting.timebertt.dev/project-foo/homepage and https://webhosting.timebertt.dev/project-foo/official.
 
 Generate some more samples with:
 ```bash
@@ -146,3 +148,5 @@ cat config/monitoring/grafana_admin_pass.secret.txt
 k port-forward -n monitoring svc/grafana 3000
 k port-forward -n monitoring svc/prometheus-k8s 9090
 ```
+
+You can also visit the [public Grafana dashboard](https://grafana.webhosting.timebertt.dev/d/NbmNpqEnk/webhosting?orgId=1&refresh=10s) to see what's currently going on in my cluster. 
