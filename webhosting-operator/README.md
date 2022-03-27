@@ -134,7 +134,7 @@ created 25 Websites in project "project-bar"
 created 23 Websites in project "project-baz"
 ```
 
-## 4. Deploy Monitoring Components
+### 4. Deploy Monitoring Components
 
 Deploy a customized installation of [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) including `webhosting-exporter` for observing the operator and its objects:
 
