@@ -15,7 +15,7 @@ Typically, [Kubernetes controllers](https://kubernetes.io/docs/concepts/architec
 When deploying multiple instances of the same controller, there will only be one active instance at any given time, other instances will be in stand-by.
 This is done to prevent controllers from performing uncoordinated and conflicting actions (reconciliations).
 
-If the current leader goes down and looses leadership (e.g. network failure, rolling update) another instance takes over leadership and becomes the active instance.
+If the current leader goes down and loses leadership (e.g. network failure, rolling update) another instance takes over leadership and becomes the active instance.
 Such setup can be described as an "active-passive HA-setup". It minimizes "controller downtime" and facilitates fast fail-overs.
 However, it cannot be considered as "horizontal scaling" as work is not distributed among multiple instances.
 
