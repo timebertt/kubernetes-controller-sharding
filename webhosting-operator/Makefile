@@ -157,7 +157,7 @@ ifneq ($(WITH_DNS), true)
 else
 	$(KUSTOMIZE) build config/ingress-nginx/with-dns | kubectl apply --server-side -f -
 endif
-	kubectl -n ingress-nginx wait deploy ingress-nginx-controller --for=condition=Available
+	kubectl -n ingress-nginx wait deploy ingress-nginx-controller --for=condition=Available --timeout=2m
 
 .PHONY: deploy-monitoring
 deploy-monitoring: kustomize ## Deploy monitoring stack to K8s cluster specified in $KUBECONFIG.
@@ -172,17 +172,17 @@ deploy-monitoring: kustomize ## Deploy monitoring stack to K8s cluster specified
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0)
+	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2)
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 .PHONY: kustomize
 kustomize: ## Download kustomize locally if necessary.
-	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.5.2)
+	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.5.5)
 
 K3D = $(shell pwd)/bin/k3d
 .PHONY: k3d
 k3d: ## Download k3d locally if necessary.
-	$(call go-get-tool,$(K3D),github.com/rancher/k3d/v5@v5.3.0)
+	$(call go-get-tool,$(K3D),github.com/k3d-io/k3d/v5@v5.4.3)
 
 ENVTEST = $(shell pwd)/bin/setup-envtest
 .PHONY: envtest
