@@ -2,7 +2,7 @@
 IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator:latest
 EXPORTER_IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.23
+ENVTEST_K8S_VERSION = 1.24
 # if WITH_DNS is set to true, we configure the operator to make ingresses available via public dns
 WITH_DNS = false
 
@@ -142,7 +142,7 @@ undeploy: kustomize ## Undeploy controller from K8s cluster specified in $KUBECO
 
 .PHONY: k3d-up
 k3d-up: k3d ## Launch a k3d cluster for testing the operator.
-	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(K3D) cluster create webhosting -i "docker.io/rancher/k3s:v1.22.7-k3s1" -p "8088:80@loadbalancer" --k3s-arg "--disable=traefik@server:0"
+	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(K3D) cluster create webhosting -i "docker.io/rancher/k3s:v1.24.2-k3s2" -p "8088:80@loadbalancer" --k3s-arg "--disable=traefik@server:0"
 	# run `export KUBECONFIG=$$PWD/dev/k3d_kubeconfig.yaml` to target the created k3d cluster.
 	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(MAKE) deploy-ingress-nginx
 
