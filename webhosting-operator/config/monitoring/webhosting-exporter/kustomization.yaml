@@ -7,10 +7,10 @@ generatorOptions:
   disableNameSuffixHash: true
 
 labels:
-- pairs:
+- includeSelectors: true
+  pairs:
     app.kubernetes.io/component: exporter
     app.kubernetes.io/name: webhosting-exporter
-  includeSelectors: true
 
 resources:
 - clusterrole.yaml
@@ -27,9 +27,9 @@ images:
   newTag: latest
 
 configMapGenerator:
-- name: grafana-dashboard-webhosting
-  files:
+- files:
   - dashboard-webhosting.json
+  name: grafana-dashboard-webhosting
   options:
     labels:
       grafana_dashboard: "true"

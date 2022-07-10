@@ -25,7 +25,7 @@
     <option name="mappings">
       <list />
     </option>
-    <option name="moduleDeploymentType" value="DEPLOY_EVERYTHING" />
+    <option name="moduleDeploymentType" value="DEPLOY_MODULE_SUBSET" />
     <option name="projectPathOnTarget" />
     <option name="resourceDeletionTimeoutMins" value="2" />
     <option name="selectedOptions">
@@ -42,8 +42,6 @@
     <option name="skaffoldWatchMode" value="ON_DEMAND" />
     <option name="statusCheck" value="true" />
     <option name="verbosity" value="WARN" />
-    <method v="2">
-      <option name="RunConfigurationTask" enabled="true" run_configuration_name="prepare-deploy" run_configuration_type="MAKEFILE_TARGET_RUN_CONFIGURATION" />
-    </method>
+    <method v="2" />
   </configuration>
 </component>

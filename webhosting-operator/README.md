@@ -46,7 +46,11 @@ export KUBECONFIG=$PWD/dev/k3d_kubeconfig.yaml
 make deploy
 k apply -f config/samples
 make deploy-monitoring
+k port-forward -n monitoring svc/grafana 3000
 ```
+
+Now, visit the sample websites: http://localhost:8088/project-foo/homepage and http://localhost:8088/project-foo/official.
+Also, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/webhosting?orgId=1&refresh=10s).
 
 ### 1. Create a Kubernetes Cluster
 
@@ -86,10 +90,10 @@ Alternatively, build a fresh image and deploy it using [skaffold](https://skaffo
 
 ```bash
 # one-time deploy
-skaffold run
+skaffold run -m webhosting-operator
 
 # or: dev loop (rebuild on code changes)
-skaffold dev
+skaffold dev -m webhosting-operator
 ```
 
 ### 3. Create Sample Objects
@@ -139,14 +143,27 @@ created 23 Websites in project "project-baz"
 Deploy a customized installation of [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) including `webhosting-exporter` for observing the operator and its objects:
 
 ```bash
+# use the latest tag for webhosting-exporter
 make deploy-monitoring
-```
 
-Access grafana and prometheus:
-```bash
-cat config/monitoring/grafana_admin_pass.secret.txt
+# access grafana and prometheus
 k port-forward -n monitoring svc/grafana 3000
 k port-forward -n monitoring svc/prometheus-k8s 9090
+
+# get the grafana admin password
+cat config/monitoring/grafana_admin_pass.secret.txt
 ```
+
+Alternatively, build a fresh image and deploy it using [skaffold](https://skaffold.dev/):
+
+```bash
+# one-time deploy
+skaffold run -m monitoring --port-forward=user
+
+# or: dev loop (rebuild on code changes)
+skaffold dev -m monitoring --port-forward=user
+```
+
+Now, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/webhosting?orgId=1&refresh=10s) at http://127.0.0.1:3000.
 
 You can also visit the [public Grafana dashboard](https://grafana.webhosting.timebertt.dev/d/NbmNpqEnk/webhosting?orgId=1&refresh=10s) to see what's currently going on in my cluster. 

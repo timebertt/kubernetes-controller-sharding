@@ -139,7 +139,7 @@ uninstall: $(KUSTOMIZE) $(KUBECTL) manifests ## Uninstall CRDs from K8s cluster 
 
 .PHONY: deploy
 deploy: $(KUSTOMIZE) $(KUBECTL) manifests ## Deploy controller to K8s cluster specified in $KUBECONFIG.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd config/manager && $(abspath $(KUSTOMIZE)) edit set image controller=${IMG}
 ifneq ($(WITH_DNS), true)
 	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
 else
@@ -173,8 +173,9 @@ endif
 
 .PHONY: deploy-monitoring
 deploy-monitoring: $(KUSTOMIZE) $(KUBECTL) ## Deploy monitoring stack to K8s cluster specified in $KUBECONFIG.
-	[ -f "config/monitoring/grafana_admin_pass.secret.txt" ] || cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32 > config/monitoring/grafana_admin_pass.secret.txt
+	[ -f config/monitoring/grafana_admin_pass.secret.txt ] || cat /dev/urandom | tr -dc "a-zA-Z0-9" | head -c 32 > config/monitoring/grafana_admin_pass.secret.txt
 	# generated grafana admin password to config/monitoring/grafana_admin_pass.secret.txt
 	$(KUSTOMIZE) build config/monitoring/crds | $(KUBECTL) apply --server-side -f -
 	$(KUBECTL) wait crd -l app.kubernetes.io/name=prometheus-operator --for=condition=NamesAccepted --for=condition=Established
+	cd config/monitoring/webhosting-exporter && $(abspath $(KUSTOMIZE)) edit set image exporter=${EXPORTER_IMG}
 	$(KUSTOMIZE) build config/monitoring | $(KUBECTL) apply --server-side -f -
