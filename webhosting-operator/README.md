@@ -80,7 +80,7 @@ Alternatively, you can also create a cluster in the cloud. If you have a Gardene
 
 ```bash
 k apply -f shoot.yaml
-export KUBECONFIG=/path/to/kubeconfig
+# gardenctl target ...
 # deploy ingress-nginx with service annotations for exposing websites via public dns
 make deploy-ingress-nginx WITH_DNS=true
 ```

@@ -164,6 +164,8 @@ k3d-down: $(K3D) ## Tear down the k3d testing cluster.
 
 .PHONY: deploy-ingress-nginx
 deploy-ingress-nginx: $(KUSTOMIZE) $(KUBECTL) ## Deploy ingress-nginx to K8s cluster specified in $KUBECONFIG.
+	@# job template is immutable, delete old jobs to prepare for upgrade
+	$(KUBECTL) -n ingress-nginx delete job --ignore-not-found ingress-nginx-admission-create ingress-nginx-admission-patch
 ifneq ($(WITH_DNS), true)
 	$(KUSTOMIZE) build config/ingress-nginx/default | $(KUBECTL) apply --server-side -f -
 else
