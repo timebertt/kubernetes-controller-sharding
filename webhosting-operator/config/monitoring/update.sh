@@ -6,11 +6,11 @@ set -o pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-kube_prometheus_version="v0.10.0"
+kube_prometheus_version="v0.11.0"
 echo "> Fetching kube-prometheus@$kube_prometheus_version"
 
 tmp_dir=$(mktemp -d)
-trap "rm -rf $tmp_dir" EXIT
+trap 'rm -rf "$tmp_dir"' EXIT
 
 tarball="$tmp_dir/archive.tar.gz"
 curl -sSLo "$tarball" https://github.com/prometheus-operator/kube-prometheus/archive/refs/tags/$kube_prometheus_version.tar.gz
@@ -58,7 +58,7 @@ tar -xzf "$tarball" --strip-components=2 --wildcards "kube-prometheus-*/manifest
 
 # drop unneeded stuff
 rm -rf setup
-rm alertmanager-*.yaml nodeExporter-*.yaml
+rm alertmanager-*.yaml
 # this will override metrics-server APIService (conflicts with gardener-resource-manager), drop it
 rm prometheusAdapter-apiService.yaml
 

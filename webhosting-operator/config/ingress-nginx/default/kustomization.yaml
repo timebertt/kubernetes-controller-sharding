@@ -3,7 +3,7 @@ kind: Kustomization
 
 namespace: ingress-nginx
 resources:
-- github.com/kubernetes/ingress-nginx/deploy/static/provider/cloud?ref=controller-v1.1.1
+- github.com/kubernetes/ingress-nginx/deploy/static/provider/cloud?ref=controller-v1.2.0
 
 patchesStrategicMerge:
 - patch_default_ingress_class.yaml

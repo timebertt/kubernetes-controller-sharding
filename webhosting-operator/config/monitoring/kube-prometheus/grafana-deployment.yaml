@@ -5,7 +5,7 @@ metadata:
     app.kubernetes.io/component: grafana
     app.kubernetes.io/name: grafana
     app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: 8.3.3
+    app.kubernetes.io/version: 8.5.5
   name: grafana
   namespace: monitoring
 spec:
@@ -18,18 +18,19 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/grafana-config: 8a40383dc6577c8b30c5bf006ba9ab7e
-        checksum/grafana-dashboardproviders: cf4ac6c4d98eb91172b3307d9127acc5
-        checksum/grafana-datasources: 2e669e49f44117d62bc96ea62c2d39d3
+        checksum/grafana-config: 4d376802c61554030cfd50d569dabda7
+        checksum/grafana-dashboardproviders: 2d9c006bd11b55212fbb797fdc6d153b
+        checksum/grafana-datasources: efad9cbfdaacad9fdecdff58cc032954
       labels:
         app.kubernetes.io/component: grafana
         app.kubernetes.io/name: grafana
         app.kubernetes.io/part-of: kube-prometheus
-        app.kubernetes.io/version: 8.3.3
+        app.kubernetes.io/version: 8.5.5
     spec:
+      automountServiceAccountToken: false
       containers:
       - env: []
-        image: grafana/grafana:8.3.3
+        image: grafana/grafana:8.5.5
         name: grafana
         ports:
         - containerPort: 3000
@@ -45,6 +46,12 @@ spec:
           requests:
             cpu: 100m
             memory: 100Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
         volumeMounts:
         - mountPath: /var/lib/grafana
           name: grafana-storage
@@ -54,6 +61,9 @@ spec:
           readOnly: false
         - mountPath: /etc/grafana/provisioning/dashboards
           name: grafana-dashboards
+          readOnly: false
+        - mountPath: /tmp
+          name: tmp-plugins
           readOnly: false
         - mountPath: /grafana-dashboard-definitions/0/alertmanager-overview
           name: grafana-dashboard-alertmanager-overview
@@ -66,6 +76,9 @@ spec:
           readOnly: false
         - mountPath: /grafana-dashboard-definitions/0/controller-manager
           name: grafana-dashboard-controller-manager
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/0/grafana-overview
+          name: grafana-dashboard-grafana-overview
           readOnly: false
         - mountPath: /grafana-dashboard-definitions/0/k8s-resources-cluster
           name: grafana-dashboard-k8s-resources-cluster
@@ -143,6 +156,9 @@ spec:
       - configMap:
           name: grafana-dashboards
         name: grafana-dashboards
+      - emptyDir:
+          medium: Memory
+        name: tmp-plugins
       - configMap:
           name: grafana-dashboard-alertmanager-overview
         name: grafana-dashboard-alertmanager-overview
@@ -155,6 +171,9 @@ spec:
       - configMap:
           name: grafana-dashboard-controller-manager
         name: grafana-dashboard-controller-manager
+      - configMap:
+          name: grafana-dashboard-grafana-overview
+        name: grafana-dashboard-grafana-overview
       - configMap:
           name: grafana-dashboard-k8s-resources-cluster
         name: grafana-dashboard-k8s-resources-cluster

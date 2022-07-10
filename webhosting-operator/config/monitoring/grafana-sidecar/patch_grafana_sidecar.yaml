@@ -6,6 +6,7 @@ metadata:
 spec:
   template:
     spec:
+      automountServiceAccountToken: true
       containers:
       - name: grafana-sc-dashboard
         image: quay.io/kiwigrid/k8s-sidecar:1.15.1

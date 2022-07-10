@@ -38,9 +38,10 @@ spec:
       enableBasicAuthentication: false
     kubeProxy:
       mode: IPTables
-    version: "1.22"
+    version: "1.24"
     verticalPodAutoscaler:
       enabled: true
+    enableStaticTokenKubeconfig: false
   maintenance:
     autoUpdate:
       kubernetesVersion: true

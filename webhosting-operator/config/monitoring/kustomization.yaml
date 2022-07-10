@@ -26,3 +26,12 @@ secretGenerator:
 
 patchesStrategicMerge:
 - patch_grafana_admin.yaml
+
+patches:
+- path: patch_grafana_networkpolicy.yaml
+  target:
+    group: networking.k8s.io
+    version: v1
+    kind: NetworkPolicy
+    name: grafana
+    namespace: monitoring

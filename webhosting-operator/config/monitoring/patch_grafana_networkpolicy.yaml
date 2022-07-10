@@ -1,0 +1,14 @@
+- op: add
+  path: /spec/ingress/-
+  value:
+    from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: ingress-nginx
+          app.kubernetes.io/component: controller
+      namespaceSelector:
+        matchLabels:
+          app.kubernetes.io/name: ingress-nginx
+    ports:
+    - port: 3000
+      protocol: TCP
