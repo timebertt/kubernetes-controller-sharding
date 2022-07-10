@@ -58,7 +58,7 @@ tar -xzf "$tarball" --strip-components=2 --wildcards "kube-prometheus-*/manifest
 
 # drop unneeded stuff
 rm -rf setup
-rm alertmanager-*.yaml nodeExporter-*.yaml
+rm alertmanager-*.yaml
 # this will override metrics-server APIService (conflicts with gardener-resource-manager), drop it
 rm prometheusAdapter-apiService.yaml
 

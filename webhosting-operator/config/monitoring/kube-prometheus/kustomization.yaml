@@ -36,6 +36,14 @@ resources:
 - kubernetesControlPlane-serviceMonitorKubeControllerManager.yaml
 - kubernetesControlPlane-serviceMonitorKubeScheduler.yaml
 - kubernetesControlPlane-serviceMonitorKubelet.yaml
+- nodeExporter-clusterRole.yaml
+- nodeExporter-clusterRoleBinding.yaml
+- nodeExporter-daemonset.yaml
+- nodeExporter-networkPolicy.yaml
+- nodeExporter-prometheusRule.yaml
+- nodeExporter-service.yaml
+- nodeExporter-serviceAccount.yaml
+- nodeExporter-serviceMonitor.yaml
 - prometheus-clusterRole.yaml
 - prometheus-clusterRoleBinding.yaml
 - prometheus-networkPolicy.yaml
