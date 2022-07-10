@@ -1,5 +1,5 @@
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
   labels:
     app.kubernetes.io/component: prometheus
@@ -10,14 +10,31 @@ metadata:
   name: prometheus-k8s
   namespace: monitoring
 spec:
-  endpoints:
-  - interval: 30s
-    port: web
-  - interval: 30s
-    port: reloader-web
-  selector:
+  egress:
+  - {}
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: prometheus
+    ports:
+    - port: 9090
+      protocol: TCP
+    - port: 8080
+      protocol: TCP
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: grafana
+    ports:
+    - port: 9090
+      protocol: TCP
+  podSelector:
     matchLabels:
       app.kubernetes.io/component: prometheus
       app.kubernetes.io/instance: k8s
       app.kubernetes.io/name: prometheus
       app.kubernetes.io/part-of: kube-prometheus
+  policyTypes:
+  - Egress
+  - Ingress

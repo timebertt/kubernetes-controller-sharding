@@ -7,6 +7,7 @@ resources:
 - blackboxExporter-clusterRoleBinding.yaml
 - blackboxExporter-configuration.yaml
 - blackboxExporter-deployment.yaml
+- blackboxExporter-networkPolicy.yaml
 - blackboxExporter-service.yaml
 - blackboxExporter-serviceAccount.yaml
 - blackboxExporter-serviceMonitor.yaml
@@ -15,6 +16,8 @@ resources:
 - grafana-dashboardDefinitions.yaml
 - grafana-dashboardSources.yaml
 - grafana-deployment.yaml
+- grafana-networkPolicy.yaml
+- grafana-prometheusRule.yaml
 - grafana-service.yaml
 - grafana-serviceAccount.yaml
 - grafana-serviceMonitor.yaml
@@ -22,6 +25,7 @@ resources:
 - kubeStateMetrics-clusterRole.yaml
 - kubeStateMetrics-clusterRoleBinding.yaml
 - kubeStateMetrics-deployment.yaml
+- kubeStateMetrics-networkPolicy.yaml
 - kubeStateMetrics-prometheusRule.yaml
 - kubeStateMetrics-service.yaml
 - kubeStateMetrics-serviceAccount.yaml
@@ -34,6 +38,7 @@ resources:
 - kubernetesControlPlane-serviceMonitorKubelet.yaml
 - prometheus-clusterRole.yaml
 - prometheus-clusterRoleBinding.yaml
+- prometheus-networkPolicy.yaml
 - prometheus-podDisruptionBudget.yaml
 - prometheus-prometheus.yaml
 - prometheus-prometheusRule.yaml
@@ -51,6 +56,7 @@ resources:
 - prometheusAdapter-clusterRoleServerResources.yaml
 - prometheusAdapter-configMap.yaml
 - prometheusAdapter-deployment.yaml
+- prometheusAdapter-networkPolicy.yaml
 - prometheusAdapter-podDisruptionBudget.yaml
 - prometheusAdapter-roleBindingAuthReader.yaml
 - prometheusAdapter-service.yaml
@@ -59,6 +65,7 @@ resources:
 - prometheusOperator-clusterRole.yaml
 - prometheusOperator-clusterRoleBinding.yaml
 - prometheusOperator-deployment.yaml
+- prometheusOperator-networkPolicy.yaml
 - prometheusOperator-prometheusRule.yaml
 - prometheusOperator-service.yaml
 - prometheusOperator-serviceAccount.yaml
