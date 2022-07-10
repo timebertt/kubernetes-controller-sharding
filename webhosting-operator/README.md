@@ -42,6 +42,16 @@ All necessary steps for a quick start:
 
 ```bash
 make k3d-up
+make up
+# in a different terminal
+export KUBECONFIG=$PWD/dev/k3d_kubeconfig.yaml
+k apply -f config/samples
+```
+
+Alternatively, use pre-built images (`latest`):
+
+```bash
+make k3d-up
 export KUBECONFIG=$PWD/dev/k3d_kubeconfig.yaml
 make deploy
 k apply -f config/samples
