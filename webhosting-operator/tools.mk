@@ -38,6 +38,10 @@ KUSTOMIZE_VERSION ?= v4.5.5
 $(KUSTOMIZE): $(call tool_version_file,$(KUSTOMIZE),$(KUSTOMIZE_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VERSION)
 
+GINKGO := $(TOOLS_BIN_DIR)/ginkgo
+$(GINKGO): go.mod
+	go build -o $(GINKGO) github.com/onsi/ginkgo/v2/ginkgo
+
 SETUP_ENVTEST := $(TOOLS_BIN_DIR)/setup-envtest
 $(SETUP_ENVTEST): go.mod
 	go build -o $(SETUP_ENVTEST) sigs.k8s.io/controller-runtime/tools/setup-envtest
