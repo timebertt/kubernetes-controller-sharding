@@ -22,6 +22,8 @@ import (
 	"strconv"
 
 	"go.uber.org/zap/zapcore"
+	"k8s.io/klog/v2"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -64,6 +66,7 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zapOpts)))
+	klog.SetLogger(ctrl.Log)
 
 	if err := opts.Complete(); err != nil {
 		setupLog.Error(err, "unable to load config")

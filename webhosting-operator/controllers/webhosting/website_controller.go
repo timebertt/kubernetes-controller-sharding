@@ -420,13 +420,12 @@ func calculateConfigMapChecksum(configMap *corev1.ConfigMap) (string, error) {
 	return hex.EncodeToString(checksum[:]), nil
 }
 
-const websiteThemeField = ".spec.theme"
+const websiteThemeField = "spec.theme"
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &webhostingv1alpha1.Website{}, websiteThemeField, func(obj client.Object) []string {
-		website := obj.(*webhostingv1alpha1.Website)
-		return []string{website.Spec.Theme}
+		return []string{obj.(*webhostingv1alpha1.Website).Spec.Theme}
 	}); err != nil {
 		return err
 	}
@@ -438,7 +437,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		// watch owned objects for relevant changes to reconcile them back if changed
 		Owns(&corev1.ConfigMap{}, builder.WithPredicates(ConfigMapDataChanged)).
 		Owns(&corev1.Service{}, builder.WithPredicates(ServiceSpecChanged)).
-		// watch themes to rollout theme changes to all referencing websites
+		// watch themes to roll out theme changes to all referencing websites
 		Watches(
 			&source.Kind{Type: &webhostingv1alpha1.Theme{}},
 			handler.EnqueueRequestsFromMapFunc(r.MapThemeToWebsites),

@@ -17,16 +17,22 @@ deploy:
       apply:
       - "--server-side"
     paths:
-    - config/debug
+    - config/default
   kubectl:
     manifests:
     - config/samples/project_namespace.yaml
+profiles:
+- name: debug
+  patches:
+  - op: replace
+    path: /deploy/kustomize/paths/0
+    value: config/debug
 portForward:
 - resourceType: deployment
   namespace: webhosting-operator-system
   resourceName: webhosting-operator-controller-manager
   port: metrics
-  localPort: 8080
+  localPort: 8081
 ---
 apiVersion: skaffold/v2beta29
 kind: Config
