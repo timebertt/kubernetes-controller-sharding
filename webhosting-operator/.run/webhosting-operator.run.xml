@@ -8,7 +8,7 @@
       <env name="KUBECONFIG" value="$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml" />
     </envs>
     <kind value="PACKAGE" />
-    <package value="github.com/timebertt/kubernetes-controller-sharding/webhosting-operator" />
+    <package value="github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/cmd/webhosting-operator" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$/webhosting-operator/main.go" />
     <method v="2" />

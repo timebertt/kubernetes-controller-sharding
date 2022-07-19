@@ -102,12 +102,12 @@ verify: verify-fmt verify-generate verify-modules test ## Verify everything (all
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	go build -o bin/webhosting-operator main.go
+	go build -o bin/webhosting-operator ./cmd/webhosting-operator
 	go build -o bin/webhosting-exporter ./cmd/webhosting-exporter
 
 .PHONY: run
 run: manifests generate fmt vet ## Run the webhosting-operator from your host.
-	go run ./main.go --config=config/manager/controller_manager_config.yaml
+	go run ./cmd/webhosting-operator --config=config/manager/controller_manager_config.yaml
 
 .PHONY: run-exporter
 run-exporter: ## Run the webhosting-exporter from your host.
