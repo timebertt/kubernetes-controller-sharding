@@ -150,7 +150,7 @@ endif
 undeploy: $(KUSTOMIZE) $(KUBECTL) ## Undeploy controller from K8s cluster specified in $KUBECONFIG. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
-k3d-up k3d-down up down: export KUBECONFIG = $(PROJECT_DIR)/dev/k3d_kubeconfig.yaml
+k3d-up k3d-down up dev down: export KUBECONFIG = $(PROJECT_DIR)/dev/k3d_kubeconfig.yaml
 
 .PHONY: k3d-up
 k3d-up: $(K3D) ## Launch a k3d cluster for testing the operator.
@@ -183,11 +183,15 @@ deploy-monitoring: $(KUSTOMIZE) $(KUBECTL) ## Deploy monitoring stack to K8s clu
 	$(KUSTOMIZE) build config/monitoring | $(KUBECTL) apply --server-side -f -
 
 # use static label for skaffold to prevent rolling all components on every skaffold invocation
-up down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
+up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
 
 .PHONY: up
 up: $(SKAFFOLD) ## Build all images and deploy everything to k3d.
 	$(SKAFFOLD) run --port-forward=user
+
+.PHONY: dev
+dev: $(SKAFFOLD) ## Start continuous dev loop with skaffold.
+	$(SKAFFOLD) dev --port-forward=user --cleanup=false --trigger=manual
 
 .PHONY: down
 down: $(SKAFFOLD) ## Remove everything from k3d.
