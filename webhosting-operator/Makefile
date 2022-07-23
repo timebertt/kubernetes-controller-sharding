@@ -187,7 +187,7 @@ up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
 
 .PHONY: up
 up: $(SKAFFOLD) ## Build all images and deploy everything to k3d.
-	$(SKAFFOLD) run --port-forward=user
+	$(SKAFFOLD) run --port-forward=user --tail
 
 .PHONY: dev
 dev: $(SKAFFOLD) ## Start continuous dev loop with skaffold.

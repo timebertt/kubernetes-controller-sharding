@@ -5,17 +5,17 @@ metadata:
   name: webhosting-operator
 build:
   local:
-    useBuildkit: true
+    concurrency: 0
   artifacts:
   - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator
-    docker:
-      dockerfile: Dockerfile
-      target: webhosting-operator
+    ko:
+      main: ./cmd/webhosting-operator
 deploy:
   kustomize:
     flags:
       apply:
       - "--server-side"
+      - "--force-conflicts"
     paths:
     - config/default
   kubectl:
@@ -43,10 +43,11 @@ deploy:
     flags:
       apply:
       - "--server-side"
+      - "--force-conflicts"
     paths:
     - config/monitoring/crds
 ---
-apiVersion: skaffold/v2beta25
+apiVersion: skaffold/v2beta29
 kind: Config
 metadata:
   name: monitoring
@@ -55,17 +56,17 @@ requires:
   - monitoring-crds
 build:
   local:
-    useBuildkit: true
+    concurrency: 0
   artifacts:
   - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter
-    docker:
-      dockerfile: Dockerfile
-      target: webhosting-exporter
+    ko:
+      main: ./cmd/webhosting-exporter
 deploy:
   kustomize:
     flags:
       apply:
       - "--server-side"
+      - "--force-conflicts"
     hooks:
       before:
       - host:

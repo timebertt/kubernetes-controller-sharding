@@ -28,9 +28,7 @@ spec:
       securityContext:
         runAsNonRoot: true
       containers:
-      - command:
-        - /manager
-        image: controller:latest
+      - image: controller:latest
         name: manager
         ports:
         - name: metrics
