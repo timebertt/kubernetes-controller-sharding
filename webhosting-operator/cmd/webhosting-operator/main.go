@@ -23,6 +23,7 @@ import (
 
 	"go.uber.org/zap/zapcore"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -157,6 +158,13 @@ func applyOptionsOverrides(opts ctrl.Options) (ctrl.Options, error) {
 			return ctrl.Options{}, err
 		}
 		opts.LeaderElection = leaderElect
+	}
+
+	opts.Sharded = true
+	// allow overriding shard ID
+	opts.ShardID = os.Getenv("SHARD_ID")
+	opts.CacheShardedFor = []client.Object{
+		&webhostingv1alpha1.Website{},
 	}
 
 	return opts, nil

@@ -10,6 +10,10 @@ build:
   - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator
     ko:
       main: ./cmd/webhosting-operator
+      dependencies:
+        paths:
+        - "**/*.go"
+        - "../../../../sigs.k8s.io/controller-runtime/**/*.go"
 deploy:
   kustomize:
     flags:

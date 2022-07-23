@@ -431,7 +431,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&webhostingv1alpha1.Website{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		For(&webhostingv1alpha1.Website{}, builder.Sharded{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		// watch deployments in order to update phase on relevant changes
 		Owns(&appsv1.Deployment{}, builder.WithPredicates(DeploymentReadinessChanged)).
 		// watch owned objects for relevant changes to reconcile them back if changed
