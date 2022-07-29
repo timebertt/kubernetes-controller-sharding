@@ -23,8 +23,6 @@ import (
 
 	"go.uber.org/zap/zapcore"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -38,6 +36,7 @@ import (
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/sharding"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting"
 	//+kubebuilder:scaffold:imports
 )
@@ -56,6 +55,7 @@ func init() {
 }
 
 func main() {
+	ctx := ctrl.SetupSignalHandler()
 	opts := options{}
 	opts.AddFlags(flag.CommandLine)
 
@@ -81,22 +81,24 @@ func main() {
 	}
 
 	if err = (&webhosting.WebsiteReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("website-controller"),
-		Config:   opts.controllerManagerConfig,
+		Config: opts.controllerManagerConfig,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Website")
 		os.Exit(1)
 	}
-	if err = (&webhosting.ThemeReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err = (&webhosting.ThemeReconciler{}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Theme")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
+
+	if err := (&sharding.Sharder{
+		Object:         &webhostingv1alpha1.Website{},
+		LeaseNamespace: "webhosting-operator-system",
+	}).SetupWithManager(ctx, mgr); err != nil {
+		setupLog.Error(err, "unable to set up sharding with manager")
+		os.Exit(1)
+	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -108,7 +110,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
@@ -163,9 +165,9 @@ func applyOptionsOverrides(opts ctrl.Options) (ctrl.Options, error) {
 	opts.Sharded = true
 	// allow overriding shard ID
 	opts.ShardID = os.Getenv("SHARD_ID")
-	opts.CacheShardedFor = []client.Object{
-		&webhostingv1alpha1.Website{},
-	}
+	// opts.CacheShardedFor = []client.Object{
+	// 	&webhostingv1alpha1.Website{},
+	// }
 
 	return opts, nil
 }

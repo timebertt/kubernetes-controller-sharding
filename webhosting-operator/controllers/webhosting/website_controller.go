@@ -37,6 +37,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -66,6 +67,12 @@ type WebsiteReconciler struct {
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=list;watch;create;patch
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=list;watch;create;patch
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+
+// InjectClient injects a client that has access to both the sharded cache and un-sharded cache.
+func (r *WebsiteReconciler) InjectClient(c client.Client) error {
+	r.Client = c
+	return nil
+}
 
 // Reconcile reconciles a Website object.
 func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -424,12 +431,20 @@ const websiteThemeField = "spec.theme"
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.Scheme == nil {
+		r.Scheme = mgr.GetScheme()
+	}
+	if r.Recorder == nil {
+		r.Recorder = mgr.GetEventRecorderFor("website-controller")
+	}
+
 	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &webhostingv1alpha1.Website{}, websiteThemeField, func(obj client.Object) []string {
 		return []string{obj.(*webhostingv1alpha1.Website).Spec.Theme}
 	}); err != nil {
 		return err
 	}
 
+	// TODO: add builder.Sharded{} for Owns as well
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&webhostingv1alpha1.Website{}, builder.Sharded{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		// watch deployments in order to update phase on relevant changes
@@ -443,6 +458,11 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.MapThemeToWebsites),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
+		WithOptions(controller.Options{
+			// TODO: concurrent reconciles
+			MaxConcurrentReconciles: 1,
+			RecoverPanic:            true,
+		}).
 		Complete(r)
 }
 

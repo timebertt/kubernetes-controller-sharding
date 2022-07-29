@@ -30,60 +30,83 @@ type Hash func(data []byte) uint64
 // DefaultHash is the default Hash used by Ring.
 var DefaultHash Hash = xxhash.Sum64
 
+// DefaultTokensPerNode is the default number of virtual nodes per node.
+const DefaultTokensPerNode = 100
+
 // New creates a new hash ring.
 func New(fn Hash, tokensPerNode int) *Ring {
 	if fn == nil {
 		fn = DefaultHash
 	}
 	if tokensPerNode <= 0 {
-		tokensPerNode = 100
+		tokensPerNode = DefaultTokensPerNode
 	}
 
 	return &Ring{
 		hash:          fn,
+		nodes:         make(map[string]struct{}),
 		tokensPerNode: tokensPerNode,
 		tokens:        make([]uint64, 0),
 		tokenToNode:   make(map[uint64]string),
 	}
 }
 
-// Ring implements consistent hashing (aka ring hash).
+// Ring implements consistent hashing, aka ring hash (thread-safe).
 // It hashes nodes and keys onto a ring of tokens. Keys are mapped to the next node on the ring.
 type Ring struct {
 	lock sync.RWMutex
 
 	hash          Hash
+	nodes         map[string]struct{}
 	tokensPerNode int
 	tokens        []uint64
 	tokenToNode   map[uint64]string
 }
 
 func (r *Ring) IsEmpty() bool {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+
+	return r.isEmptyLocked()
+}
+
+func (r *Ring) isEmptyLocked() bool {
 	return len(r.tokens) == 0
 }
 
-func (r *Ring) AddNode(hostname string) {
+func (r *Ring) AddNode(hostname string) bool {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+
+	if _, found := r.nodes[hostname]; found {
+		return false
+	}
+	r.nodes[hostname] = struct{}{}
 
 	for t := range r.nodeToTokens(hostname) {
 		r.tokens = append(r.tokens, t)
 		r.tokenToNode[t] = hostname
 	}
 	r.sortLocked()
+
+	return true
 }
 
-func (r *Ring) RemoveNode(hostname string) {
+func (r *Ring) RemoveNode(hostname string) bool {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+
+	if _, found := r.nodes[hostname]; found {
+		return false
+	}
+	delete(r.nodes, hostname)
 
 	tokens := r.nodeToTokens(hostname)
 	for t := range tokens {
 		delete(r.tokenToNode, t)
 	}
 
-	newVNodes := make([]uint64, 0, len(r.tokens)-r.tokensPerNode)
-
+	var newVNodes []uint64
 	for _, t := range r.tokens {
 		if _, ok := tokens[t]; ok {
 			// only remove token once
@@ -95,11 +118,17 @@ func (r *Ring) RemoveNode(hostname string) {
 
 	r.tokens = newVNodes
 	r.sortLocked()
+
+	return true
 }
 
 func (r *Ring) Hash(key string) string {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
+
+	if r.isEmptyLocked() {
+		return ""
+	}
 
 	// Hash key and walk the ring until we find the next virtual node
 	h := r.hash([]byte(key))

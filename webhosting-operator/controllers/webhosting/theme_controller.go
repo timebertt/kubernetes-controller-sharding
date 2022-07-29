@@ -48,6 +48,13 @@ func (r *ThemeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ThemeReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.Client == nil {
+		r.Client = mgr.GetClient()
+	}
+	if r.Scheme == nil {
+		r.Scheme = mgr.GetScheme()
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&webhostingv1alpha1.Theme{}).
 		Complete(r)
