@@ -82,7 +82,7 @@ Alternatively, you can also create a cluster in the cloud. If you have a Gardene
 k apply -f shoot.yaml
 # gardenctl target ...
 # deploy ingress-nginx with service annotations for exposing websites via public dns
-make deploy-ingress-nginx WITH_DNS=true
+make deploy-ingress-nginx OVERLAY=with-dns
 ```
 
 ### 2. Deploy the Operator
@@ -93,7 +93,7 @@ Deploy `webhosting-operator` using the `latest` tag:
 make deploy
 
 # or: configure the operator to make ingresses available via public dns 
-make deploy WITH_DNS=true
+make deploy OVERLAY=with-dns
 ```
 
 Alternatively, build a fresh image and deploy it using [skaffold](https://skaffold.dev/):

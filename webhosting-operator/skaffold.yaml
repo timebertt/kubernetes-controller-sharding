@@ -21,16 +21,18 @@ deploy:
       - "--server-side"
       - "--force-conflicts"
     paths:
-    - config/default
+    - config/manager/default
   kubectl:
     manifests:
     - config/samples/project_namespace.yaml
 profiles:
 - name: debug
+  activation:
+  - command: debug
   patches:
   - op: replace
     path: /deploy/kustomize/paths/0
-    value: config/debug
+    value: config/manager/debug
 portForward:
 - resourceType: deployment
   namespace: webhosting-operator-system
