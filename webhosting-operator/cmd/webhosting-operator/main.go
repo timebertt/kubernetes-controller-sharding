@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
 
@@ -54,6 +55,12 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
+const (
+	ShardModeBoth    = "both"
+	ShardModeSharder = "sharder"
+	ShardModeShard   = "shard"
+)
+
 func main() {
 	ctx := ctrl.SetupSignalHandler()
 	opts := options{}
@@ -80,24 +87,28 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&webhosting.WebsiteReconciler{
-		Config: opts.controllerManagerConfig,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Website")
-		os.Exit(1)
-	}
-	if err = (&webhosting.ThemeReconciler{}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Theme")
-		os.Exit(1)
+	if opts.shardMode != ShardModeSharder {
+		if err = (&webhosting.WebsiteReconciler{
+			Config: opts.controllerManagerConfig,
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Website")
+			os.Exit(1)
+		}
+		if err = (&webhosting.ThemeReconciler{}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Theme")
+			os.Exit(1)
+		}
 	}
 	//+kubebuilder:scaffold:builder
 
-	if err := (&sharding.Sharder{
-		Object:         &webhostingv1alpha1.Website{},
-		LeaseNamespace: "webhosting-operator-system",
-	}).SetupWithManager(ctx, mgr); err != nil {
-		setupLog.Error(err, "unable to set up sharding with manager")
-		os.Exit(1)
+	if opts.shardMode != ShardModeShard {
+		if err := (&sharding.Sharder{
+			Object:         &webhostingv1alpha1.Website{},
+			LeaseNamespace: "webhosting-operator-system",
+		}).SetupWithManager(ctx, mgr); err != nil {
+			setupLog.Error(err, "unable to set up sharding with manager")
+			os.Exit(1)
+		}
 	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -121,6 +132,7 @@ type options struct {
 
 	managerOptions          ctrl.Options
 	controllerManagerConfig *configv1alpha1.ControllerManagerConfig
+	shardMode               string
 }
 
 func (o *options) AddFlags(fs *flag.FlagSet) {
@@ -132,6 +144,14 @@ func (o *options) AddFlags(fs *flag.FlagSet) {
 
 func (o *options) Complete() error {
 	o.controllerManagerConfig = &configv1alpha1.ControllerManagerConfig{}
+	o.shardMode = os.Getenv("SHARD_MODE")
+	switch o.shardMode {
+	case "":
+		o.shardMode = ShardModeBoth
+	case ShardModeBoth, ShardModeSharder, ShardModeShard:
+	default:
+		return fmt.Errorf("invalid shard mode: %s", o.shardMode)
+	}
 
 	var err error
 	opts := ctrl.Options{Scheme: scheme}
@@ -142,7 +162,7 @@ func (o *options) Complete() error {
 		}
 	}
 
-	opts, err = applyOptionsOverrides(opts)
+	opts, err = applyOptionsOverrides(o, opts)
 	if err != nil {
 		return err
 	}
@@ -152,7 +172,7 @@ func (o *options) Complete() error {
 	return nil
 }
 
-func applyOptionsOverrides(opts ctrl.Options) (ctrl.Options, error) {
+func applyOptionsOverrides(o *options, opts ctrl.Options) (ctrl.Options, error) {
 	// allow overriding leader election via env var for debugging purposes
 	if leaderElectEnv, ok := os.LookupEnv("LEADER_ELECT"); ok {
 		leaderElect, err := strconv.ParseBool(leaderElectEnv)
@@ -162,12 +182,11 @@ func applyOptionsOverrides(opts ctrl.Options) (ctrl.Options, error) {
 		opts.LeaderElection = leaderElect
 	}
 
-	opts.Sharded = true
-	// allow overriding shard ID
-	opts.ShardID = os.Getenv("SHARD_ID")
-	// opts.CacheShardedFor = []client.Object{
-	// 	&webhostingv1alpha1.Website{},
-	// }
+	if o.shardMode != ShardModeSharder {
+		opts.Sharded = true
+		// allow overriding shard ID via env var
+		opts.ShardID = os.Getenv("SHARD_ID")
+	}
 
 	return opts, nil
 }
