@@ -23,7 +23,12 @@ import (
 	"strconv"
 
 	"go.uber.org/zap/zapcore"
+	coordinationv1 "k8s.io/api/coordination/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/controller/sharding"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -37,7 +42,7 @@ import (
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/sharding"
+	shardingcontroller "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/sharding"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting"
 	//+kubebuilder:scaffold:imports
 )
@@ -56,6 +61,8 @@ func init() {
 }
 
 const (
+	WebhostingOperator = "webhosting-operator"
+
 	ShardModeBoth    = "both"
 	ShardModeSharder = "sharder"
 	ShardModeShard   = "shard"
@@ -102,7 +109,7 @@ func main() {
 	//+kubebuilder:scaffold:builder
 
 	if opts.shardMode != ShardModeShard {
-		if err := (&sharding.Sharder{
+		if err := (&shardingcontroller.Sharder{
 			Object:         &webhostingv1alpha1.Website{},
 			LeaseNamespace: "webhosting-operator-system",
 			TokensPerNode:  1000,
@@ -187,6 +194,17 @@ func applyOptionsOverrides(o *options, opts ctrl.Options) (ctrl.Options, error) 
 		opts.Sharded = true
 		// allow overriding shard ID via env var
 		opts.ShardID = os.Getenv("SHARD_ID")
+	}
+
+	if o.shardMode != ShardModeShard {
+		// restrict lease cache to shard leases
+		opts.NewCache = cache.BuilderWithOptions(cache.Options{
+			SelectorsByObject: cache.SelectorsByObject{
+				&coordinationv1.Lease{}: cache.ObjectSelector{
+					Label: labels.SelectorFromSet(labels.Set{sharding.ShardLabel: WebhostingOperator}),
+				},
+			},
+		})
 	}
 
 	return opts, nil

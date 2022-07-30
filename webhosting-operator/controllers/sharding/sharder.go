@@ -79,8 +79,7 @@ func (r *shardingReconciler) Reconcile(ctx context.Context, req reconcile.Reques
 	}
 
 	leaseList := &coordinationv1.LeaseList{}
-	// TODO: add labels to shard leases
-	if err := r.Client.List(ctx, leaseList, client.InNamespace(r.LeaseNamespace)); err != nil {
+	if err := r.Client.List(ctx, leaseList); err != nil {
 		return reconcile.Result{}, fmt.Errorf("error listing shard leases: %w", err)
 	}
 
@@ -200,25 +199,22 @@ var objectPredicate = predicate.Funcs{
 
 // leasePredicate filters lease events to react on events that might need rebalancing.
 func (r *shardingReconciler) leasePredicate() predicate.Predicate {
-	return predicate.And(
-		isShardLease(r.LeaseNamespace),
-		predicate.Funcs{
-			CreateFunc: func(e event.CreateEvent) bool { return true },
-			UpdateFunc: func(e event.UpdateEvent) bool {
-				oldLease, ok := e.ObjectOld.(*coordinationv1.Lease)
-				if !ok {
-					return false
-				}
-				newLease, ok := e.ObjectNew.(*coordinationv1.Lease)
-				if !ok {
-					return false
-				}
+	return predicate.Funcs{
+		CreateFunc: func(e event.CreateEvent) bool { return true },
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			oldLease, ok := e.ObjectOld.(*coordinationv1.Lease)
+			if !ok {
+				return false
+			}
+			newLease, ok := e.ObjectNew.(*coordinationv1.Lease)
+			if !ok {
+				return false
+			}
 
-				return leases.ToState(oldLease, r.Clock) != leases.ToState(newLease, r.Clock)
-			},
-			DeleteFunc: func(_ event.DeleteEvent) bool { return true },
+			return leases.ToState(oldLease, r.Clock) != leases.ToState(newLease, r.Clock)
 		},
-	)
+		DeleteFunc: func(_ event.DeleteEvent) bool { return true },
+	}
 }
 
 // MapLeaseToObjects maps a lease to all sharded objects that are assigned to the corresponding shard

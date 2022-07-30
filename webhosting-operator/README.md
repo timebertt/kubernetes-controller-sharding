@@ -83,6 +83,7 @@ k apply -f shoot.yaml
 # gardenctl target ...
 # deploy ingress-nginx with service annotations for exposing websites via public dns
 make deploy-ingress-nginx OVERLAY=with-dns
+make deploy-kyverno
 ```
 
 ### 2. Deploy the Operator

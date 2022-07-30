@@ -152,7 +152,8 @@ k3d-up k3d-down up dev down: export KUBECONFIG = $(PROJECT_DIR)/dev/k3d_kubeconf
 k3d-up: $(K3D) ## Launch a k3d cluster for testing the operator.
 	$(K3D) cluster create webhosting -i "docker.io/rancher/k3s:v1.24.2-k3s2" -p "8088:80@loadbalancer" --k3s-arg "--disable=traefik@server:0"
 	# run `export KUBECONFIG=$$PWD/dev/k3d_kubeconfig.yaml` to target the created k3d cluster.
-	$(MAKE) deploy-ingress-nginx
+	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(MAKE) deploy-ingress-nginx
+	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(MAKE) deploy-kyverno
 
 .PHONY: k3d-down
 k3d-down: $(K3D) ## Tear down the k3d testing cluster.
@@ -164,6 +165,12 @@ deploy-ingress-nginx: $(KUSTOMIZE) $(KUBECTL) ## Deploy ingress-nginx to K8s clu
 	$(KUBECTL) -n ingress-nginx delete job --ignore-not-found ingress-nginx-admission-create ingress-nginx-admission-patch
 	$(KUSTOMIZE) build config/ingress-nginx/$(OVERLAY) | $(KUBECTL) apply --server-side -f -
 	$(KUBECTL) -n ingress-nginx wait deploy ingress-nginx-controller --for=condition=Available --timeout=2m
+
+.PHONY: deploy-kyverno
+deploy-kyverno: $(KUBECTL) ## Deploy kyverno to K8s cluster specified in $KUBECONFIG.
+	$(KUBECTL) apply --server-side --force-conflicts -k config/kyverno
+	$(KUBECTL) wait crd -l app.kubernetes.io/name=kyverno --for=condition=NamesAccepted --for=condition=Established
+	$(KUBECTL) apply --server-side --force-conflicts -k config/policy
 
 .PHONY: deploy-monitoring
 deploy-monitoring: $(KUSTOMIZE) $(KUBECTL) ## Deploy monitoring stack to K8s cluster specified in $KUBECONFIG.

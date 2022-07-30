@@ -19,7 +19,6 @@ package sharding
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	coordinationv1 "k8s.io/api/coordination/v1"
@@ -142,19 +141,9 @@ func (r *leaseReconciler) SetupWithManager(mgr manager.Manager) error {
 
 func (r *leaseReconciler) leasePredicate() predicate.Predicate {
 	// ignore deletion of shard leases
-	return predicate.And(
-		isShardLease(r.LeaseNamespace),
-		predicate.Funcs{
-			CreateFunc: func(_ event.CreateEvent) bool { return true },
-			UpdateFunc: func(_ event.UpdateEvent) bool { return true },
-			DeleteFunc: func(_ event.DeleteEvent) bool { return false },
-		},
-	)
-}
-
-func isShardLease(namespace string) predicate.Predicate {
-	return predicate.NewPredicateFuncs(func(obj client.Object) bool {
-		// TODO: drop prefix handling
-		return obj.GetNamespace() == namespace && strings.HasPrefix(obj.GetName(), "webhosting-operator-")
-	})
+	return predicate.Funcs{
+		CreateFunc: func(_ event.CreateEvent) bool { return true },
+		UpdateFunc: func(_ event.UpdateEvent) bool { return true },
+		DeleteFunc: func(_ event.DeleteEvent) bool { return false },
+	}
 }

@@ -17,8 +17,6 @@ limitations under the License.
 package leases
 
 import (
-	"strings"
-
 	coordinationv1 "k8s.io/api/coordination/v1"
 	"k8s.io/utils/clock"
 )
@@ -64,11 +62,6 @@ func (s Shards) IDs() []string {
 func ToShards(leases []coordinationv1.Lease, cl clock.Clock) Shards {
 	var shards Shards
 	for _, lease := range leases {
-		// TODO: fix this
-		if !strings.HasPrefix(lease.Name, "webhosting-operator-") {
-			continue
-		}
-
 		shards = append(shards, ToShard(&lease, cl))
 	}
 	return shards
