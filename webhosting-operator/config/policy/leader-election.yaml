@@ -1,0 +1,22 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: only-local-leader-election
+spec:
+  validationFailureAction: enforce
+  rules:
+  - name: check-lease-holder
+    match:
+      any:
+      - resources:
+          names:
+          - webhosting-operator
+          namespaces:
+          - webhosting-operator-system
+          kinds:
+          - Lease
+    validate:
+      message: "in-cluster leader is not allowed"
+      pattern:
+        spec:
+          holderIdentity: "!webhosting-operator-controller-manager-*"
