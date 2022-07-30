@@ -23,15 +23,12 @@ import (
 )
 
 func TestDistribution(t *testing.T) {
-	ring := New(DefaultHash, 1000)
+	ring := New(DefaultHash, DefaultTokensPerNode)
 
-	numHosts := 10
-	hosts := make([]string, numHosts)
+	hosts := generateHostnames(10)
 	dist := make(map[string]float64, len(hosts))
-	for i := range hosts {
-		host := fmt.Sprintf("10.42.0.%d", i)
-		hosts[i] = host
-		ring.AddNode(host)
+	ring.AddNodes(hosts...)
+	for _, host := range hosts {
 		dist[host] = 0
 	}
 
@@ -51,3 +48,29 @@ func TestDistribution(t *testing.T) {
 		fmt.Printf("\t%s: %.5f\n", host, dist[host])
 	}
 }
+
+func generateHostnames(n int) []string {
+	hosts := make([]string, n)
+	for i := range hosts {
+		host := fmt.Sprintf("10.42.0.%d", i)
+		hosts[i] = host
+	}
+	return hosts
+}
+
+func benchmarkRing(nodes int, tokensPerNode int, b *testing.B) {
+	hosts := generateHostnames(nodes)
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		ring := New(DefaultHash, tokensPerNode, hosts...)
+		ring.Hash("Website.webhosting.timebertt.dev/project-foo/homepage")
+	}
+}
+
+func BenchmarkRing3_100(b *testing.B)   { benchmarkRing(3, 100, b) }
+func BenchmarkRing3_1000(b *testing.B)  { benchmarkRing(3, 1000, b) }
+func BenchmarkRing5_100(b *testing.B)   { benchmarkRing(5, 100, b) }
+func BenchmarkRing5_1000(b *testing.B)  { benchmarkRing(5, 1000, b) }
+func BenchmarkRing10_100(b *testing.B)  { benchmarkRing(10, 100, b) }
+func BenchmarkRing10_1000(b *testing.B) { benchmarkRing(10, 1000, b) }

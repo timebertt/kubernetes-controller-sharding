@@ -46,7 +46,6 @@ func New(fn Hash, tokensPerNode int, initialNodes ...string) *Ring {
 		tokensPerNode: tokensPerNode,
 
 		tokens:      make([]uint64, 0, len(initialNodes)*tokensPerNode),
-		nodes:       make(map[string]struct{}, len(initialNodes)),
 		tokenToNode: make(map[uint64]string, len(initialNodes)),
 	}
 	r.AddNodes(initialNodes...)
@@ -60,7 +59,6 @@ type Ring struct {
 	tokensPerNode int
 
 	tokens      []uint64
-	nodes       map[string]struct{}
 	tokenToNode map[uint64]string
 }
 
@@ -68,52 +66,19 @@ func (r *Ring) IsEmpty() bool {
 	return len(r.tokens) == 0
 }
 
-func (r *Ring) AddNodes(hostnames ...string) {
-	for _, hostname := range hostnames {
-		r.AddNode(hostname)
-	}
-}
-
-func (r *Ring) AddNode(hostname string) bool {
-	if _, found := r.nodes[hostname]; found {
-		return false
-	}
-	r.nodes[hostname] = struct{}{}
-
-	for t := range r.nodeToTokens(hostname) {
-		r.tokens = append(r.tokens, t)
-		r.tokenToNode[t] = hostname
-	}
-	r.sortLocked()
-
-	return true
-}
-
-func (r *Ring) RemoveNode(hostname string) bool {
-	if _, found := r.nodes[hostname]; found {
-		return false
-	}
-	delete(r.nodes, hostname)
-
-	tokens := r.nodeToTokens(hostname)
-	for t := range tokens {
-		delete(r.tokenToNode, t)
-	}
-
-	var newVNodes []uint64
-	for _, t := range r.tokens {
-		if _, ok := tokens[t]; ok {
-			// only remove token once
-			delete(tokens, t)
-			continue
+func (r *Ring) AddNodes(nodes ...string) {
+	for _, node := range nodes {
+		for i := 0; i < r.tokensPerNode; i++ {
+			t := r.hash([]byte(fmt.Sprintf("%s-%d", node, i)))
+			r.tokens = append(r.tokens, t)
+			r.tokenToNode[t] = node
 		}
-		newVNodes = append(newVNodes)
 	}
 
-	r.tokens = newVNodes
-	r.sortLocked()
-
-	return true
+	// sort all tokens on the ring for binary searches
+	sort.Slice(r.tokens, func(i, j int) bool {
+		return r.tokens[i] < r.tokens[j]
+	})
 }
 
 func (r *Ring) Hash(key string) string {
@@ -135,20 +100,4 @@ func (r *Ring) Hash(key string) string {
 	}
 
 	return r.tokenToNode[r.tokens[i]]
-}
-
-func (r *Ring) nodeToTokens(hostname string) map[uint64]struct{} {
-	tokens := make(map[uint64]struct{}, r.tokensPerNode)
-	for i := 0; i < r.tokensPerNode; i++ {
-		t := r.hash([]byte(fmt.Sprintf("%s-%d", hostname, i)))
-		tokens[t] = struct{}{}
-	}
-	return tokens
-}
-
-// sortLocked sorts all tokens on the ring for later binary searches.
-func (r *Ring) sortLocked() {
-	sort.Slice(r.tokens, func(i, j int) bool {
-		return r.tokens[i] < r.tokens[j]
-	})
 }

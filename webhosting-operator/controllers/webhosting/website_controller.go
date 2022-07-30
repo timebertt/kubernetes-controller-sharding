@@ -461,8 +461,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
-			// TODO: concurrent reconciles
-			MaxConcurrentReconciles: 1,
+			MaxConcurrentReconciles: 5,
 			RecoverPanic:            true,
 		}).
 		Build(r)

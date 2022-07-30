@@ -55,6 +55,7 @@ type shardingReconciler struct {
 	Object         client.Object
 	KeyForObject   KeyFunc
 	LeaseNamespace string
+	TokensPerNode  int
 
 	groupKind  schema.GroupKind
 	metaObject *metav1.PartialObjectMetadata
@@ -85,10 +86,9 @@ func (r *shardingReconciler) Reconcile(ctx context.Context, req reconcile.Reques
 
 	var (
 		// determine ready shards and prepare hash ring
-		// TODO: double-check performance impact of calculating ring on every reconciliation
 		shards      = leases.ToShards(leaseList.Items, r.Clock)
 		readyShards = shards.ByState(leases.Uncertain).IDs()
-		ring        = consistenthash.New(consistenthash.DefaultHash, consistenthash.DefaultTokensPerNode, readyShards...)
+		ring        = consistenthash.New(consistenthash.DefaultHash, r.TokensPerNode, readyShards...)
 
 		// determine desired shard, might be empty if there is no ready shard
 		desiredShard = ring.Hash(r.KeyForObject(r.groupKind, obj))

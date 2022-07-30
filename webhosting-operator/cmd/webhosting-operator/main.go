@@ -105,6 +105,7 @@ func main() {
 		if err := (&sharding.Sharder{
 			Object:         &webhostingv1alpha1.Website{},
 			LeaseNamespace: "webhosting-operator-system",
+			TokensPerNode:  1000,
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to set up sharding with manager")
 			os.Exit(1)

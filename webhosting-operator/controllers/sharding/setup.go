@@ -29,6 +29,7 @@ type Sharder struct {
 
 	Object         client.Object
 	LeaseNamespace string
+	TokensPerNode  int
 }
 
 func (s *Sharder) SetupWithManager(mgr manager.Manager) error {
@@ -52,6 +53,7 @@ func (s *Sharder) SetupWithManager(mgr manager.Manager) error {
 
 		Object:         s.Object,
 		LeaseNamespace: s.LeaseNamespace,
+		TokensPerNode:  s.TokensPerNode,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("error adding sharder to manager: %w", err)
 	}
