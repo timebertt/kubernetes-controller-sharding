@@ -34,7 +34,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/sharding/cache"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/sharding/leases"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/consistenthash"
 )
@@ -51,8 +50,7 @@ type leaseReconciler struct {
 
 	LeaseNamespace string
 
-	ActualStateOfWorld *cache.ActualStateOfWorld
-	Ring               *consistenthash.Ring
+	Ring *consistenthash.Ring
 }
 
 //+kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;watch;update;patch;delete
@@ -70,8 +68,7 @@ func (r *leaseReconciler) Reconcile(ctx context.Context, req reconcile.Request) 
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
 	}
 
-	// update actual state of world
-	state := r.ActualStateOfWorld.SetLease(lease)
+	state := leases.ToShardState(lease, r.Clock)
 	log = log.WithValues("state", state)
 
 	// update state label if required

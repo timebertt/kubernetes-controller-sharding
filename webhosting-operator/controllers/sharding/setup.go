@@ -66,24 +66,25 @@ func (s *Sharder) SetupWithManager(ctx context.Context, mgr manager.Manager) err
 	}
 
 	if err := (&leaseReconciler{
-		Client:         mgr.GetClient(),
-		Clock:          s.Clock,
+		Client: mgr.GetClient(),
+		Clock:  s.Clock,
+
 		LeaseNamespace: s.LeaseNamespace,
 
-		Ring:               s.ring,
-		ActualStateOfWorld: s.actualStateOfWorld,
+		Ring: s.ring,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("error adding lease controller to manager: %w", err)
 	}
 
 	if err := (&shardingReconciler{
-		Client:         mgr.GetClient(),
-		Scheme:         mgr.GetScheme(),
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+		Clock:  s.Clock,
+
 		Object:         s.Object,
 		LeaseNamespace: s.LeaseNamespace,
 
-		Ring:               s.ring,
-		ActualStateOfWorld: s.actualStateOfWorld,
+		Ring: s.ring,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("error adding sharder to manager: %w", err)
 	}
