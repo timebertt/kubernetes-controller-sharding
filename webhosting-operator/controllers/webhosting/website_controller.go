@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -55,6 +56,7 @@ type WebsiteReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+	logger   logr.Logger
 
 	Config *configv1alpha1.ControllerManagerConfig
 }
@@ -445,7 +447,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// TODO: add builder.Sharded{} for Owns as well
-	return ctrl.NewControllerManagedBy(mgr).
+	c, err := ctrl.NewControllerManagedBy(mgr).
 		For(&webhostingv1alpha1.Website{}, builder.Sharded{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		// watch deployments in order to update phase on relevant changes
 		Owns(&appsv1.Deployment{}, builder.WithPredicates(DeploymentReadinessChanged)).
@@ -463,14 +465,21 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			MaxConcurrentReconciles: 1,
 			RecoverPanic:            true,
 		}).
-		Complete(r)
+		Build(r)
+	if err != nil {
+		return err
+	}
+
+	r.logger = c.GetLogger()
+
+	return nil
 }
 
 // MapThemeToWebsites maps a theme to all websites that use it.
 func (r *WebsiteReconciler) MapThemeToWebsites(theme client.Object) []reconcile.Request {
 	websiteList := &webhostingv1alpha1.WebsiteList{}
-	err := r.List(context.TODO(), websiteList, client.MatchingFields{websiteThemeField: theme.GetName()})
-	if err != nil {
+	if err := r.List(context.TODO(), websiteList, client.MatchingFields{websiteThemeField: theme.GetName()}); err != nil {
+		r.logger.Error(err, "failed to list websites belonging to theme", "theme", client.ObjectKeyFromObject(theme))
 		return []reconcile.Request{}
 	}
 
