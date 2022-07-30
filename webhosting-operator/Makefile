@@ -152,10 +152,7 @@ k3d-up k3d-down up dev down: export KUBECONFIG = $(PROJECT_DIR)/dev/k3d_kubeconf
 k3d-up: $(K3D) ## Launch a k3d cluster for testing the operator.
 	$(K3D) cluster create webhosting -i "docker.io/rancher/k3s:v1.24.2-k3s2" -p "8088:80@loadbalancer" --k3s-arg "--disable=traefik@server:0"
 	# run `export KUBECONFIG=$$PWD/dev/k3d_kubeconfig.yaml` to target the created k3d cluster.
-	$(KUBECTL) apply --server-side -k config/kyverno
 	$(MAKE) deploy-ingress-nginx
-	$(KUBECTL) wait crd -l app.kubernetes.io/name=kyverno --for=condition=NamesAccepted --for=condition=Established
-	$(KUBECTL) apply --server-side --force-conflicts -k config/policy
 
 .PHONY: k3d-down
 k3d-down: $(K3D) ## Tear down the k3d testing cluster.

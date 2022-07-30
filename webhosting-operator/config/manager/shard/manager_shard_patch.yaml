@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: system
+spec:
+  template:
+    spec:
+      containers:
+      - name: manager
+        env:
+        # disable leader election and run as shard-only (sharder controller disabled)
+        - name: LEADER_ELECT
+          value: "false"
+        - name: SHARD_MODE
+          value: "shard"

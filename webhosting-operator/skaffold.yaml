@@ -33,6 +33,11 @@ profiles:
   - op: replace
     path: /deploy/kustomize/paths/0
     value: config/manager/debug
+- name: shard
+  patches:
+  - op: replace
+    path: /deploy/kustomize/paths/0
+    value: config/manager/shard
 portForward:
 - resourceType: deployment
   namespace: webhosting-operator-system
