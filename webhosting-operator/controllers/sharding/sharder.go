@@ -59,8 +59,6 @@ type shardingReconciler struct {
 	groupKind  schema.GroupKind
 	metaObject *metav1.PartialObjectMetadata
 	metaList   *metav1.PartialObjectMetadataList
-
-	Ring *consistenthash.Ring
 }
 
 //+kubebuilder:rbac:groups=webhosting.timebertt.dev,resources=websites,verbs=get;list;watch;update;patch
@@ -79,29 +77,40 @@ func (r *shardingReconciler) Reconcile(ctx context.Context, req reconcile.Reques
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
 	}
 
+	leaseList := &coordinationv1.LeaseList{}
+	// TODO: add labels to shard leases
+	if err := r.Client.List(ctx, leaseList, client.InNamespace(r.LeaseNamespace)); err != nil {
+		return reconcile.Result{}, fmt.Errorf("error listing shard leases: %w", err)
+	}
+
 	var (
-		key               = r.KeyForObject(r.groupKind, obj)
-		desiredShard      = r.Ring.Hash(key) // might be empty if there is no ready shard
-		currentShard      = obj.Labels[sharding.ShardLabel]
-		currentShardState = leases.Unknown
+		// determine ready shards and prepare hash ring
+		// TODO: double-check performance impact of calculating ring on every reconciliation
+		shards      = leases.ToShards(leaseList.Items, r.Clock)
+		readyShards = shards.ByState(leases.Uncertain).IDs()
+		ring        = consistenthash.New(consistenthash.DefaultHash, consistenthash.DefaultTokensPerNode, readyShards...)
+
+		// determine desired shard, might be empty if there is no ready shard
+		desiredShard = ring.Hash(r.KeyForObject(r.groupKind, obj))
+		currentShard = obj.Labels[sharding.ShardLabel]
+
+		// requeue after some time to check if we need to rebalance
+		requeueAfter = shards.ById(desiredShard).Times.ToExpired
 	)
 
 	log = log.WithValues("shard", desiredShard)
 
-	if currentShard != "" {
-		lease := &coordinationv1.Lease{}
-		if err := r.Client.Get(ctx, client.ObjectKey{Namespace: r.LeaseNamespace, Name: currentShard}, lease); err != nil {
-			return reconcile.Result{}, err
-		}
-		currentShardState = leases.ToShardState(lease, r.Clock)
+	if currentShard != "" && currentShard != desiredShard && stateNeedsDrain(shards.ById(currentShard).State) {
+		log.Info("Draining object from shard", "currentShard", currentShard)
 
-		if desiredShard != currentShard && stateNeedsDrain(currentShardState) {
-			log.Info("Draining object from shard", "currentShard", currentShard)
-
-			patch := client.MergeFromWithOptions(obj.DeepCopy(), client.MergeFromWithOptimisticLock{})
-			metav1.SetMetaDataLabel(&obj.ObjectMeta, sharding.DrainLabel, "true")
-			return reconcile.Result{}, r.Client.Patch(ctx, obj, patch)
+		patch := client.MergeFromWithOptions(obj.DeepCopy(), client.MergeFromWithOptimisticLock{})
+		metav1.SetMetaDataLabel(&obj.ObjectMeta, sharding.DrainLabel, "true")
+		if err := r.Client.Patch(ctx, obj, patch); err != nil {
+			return reconcile.Result{}, fmt.Errorf("error draining object: %w", err)
 		}
+
+		// object will be requeued when drain was successful, shard released its lease or sharder acquired shard lease
+		return reconcile.Result{}, nil
 	}
 
 	if desiredShard != currentShard {
@@ -110,22 +119,21 @@ func (r *shardingReconciler) Reconcile(ctx context.Context, req reconcile.Reques
 
 		patch := client.MergeFromWithOptions(obj.DeepCopy(), client.MergeFromWithOptimisticLock{})
 		metav1.SetMetaDataLabel(&obj.ObjectMeta, sharding.ShardLabel, desiredShard)
-		return reconcile.Result{}, r.Client.Patch(ctx, obj, patch)
+		if err := r.Client.Patch(ctx, obj, patch); err != nil {
+			return reconcile.Result{}, fmt.Errorf("error assigning object: %w", err)
+		}
 	}
 
 	// requeue if we left object unassigned
-	return reconcile.Result{Requeue: desiredShard == ""}, nil
+	return reconcile.Result{Requeue: desiredShard == "", RequeueAfter: requeueAfter}, nil
 }
 
 func stateNeedsDrain(state leases.ShardState) bool {
-	switch state {
-	case leases.Ready, leases.Unknown:
-		return true
-	}
-	return false
+	// drain as long as lease is not released or acquired by sharder
+	return state > leases.Dead
 }
 
-const objectShardField = "metdata.labels.shard"
+const objectShardField = "metadata.labels.shard"
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *shardingReconciler) SetupWithManager(mgr manager.Manager) error {
@@ -181,7 +189,8 @@ func (r *shardingReconciler) SetupWithManager(mgr manager.Manager) error {
 // objectPredicate filters events to only enqueue sharded objects if they are unassigned
 var objectPredicate = predicate.Funcs{
 	CreateFunc: func(e event.CreateEvent) bool {
-		return e.Object.GetLabels()[sharding.ShardLabel] == ""
+		// always act on ADD events to reconcile assignments on startup
+		return true
 	},
 	UpdateFunc: func(e event.UpdateEvent) bool {
 		return e.ObjectNew.GetLabels()[sharding.ShardLabel] == ""
@@ -191,22 +200,25 @@ var objectPredicate = predicate.Funcs{
 
 // leasePredicate filters lease events to react on events that might need rebalancing.
 func (r *shardingReconciler) leasePredicate() predicate.Predicate {
-	return predicate.Funcs{
-		CreateFunc: func(e event.CreateEvent) bool { return true },
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			oldLease, ok := e.ObjectOld.(*coordinationv1.Lease)
-			if !ok {
-				return false
-			}
-			newLease, ok := e.ObjectNew.(*coordinationv1.Lease)
-			if !ok {
-				return false
-			}
+	return predicate.And(
+		isShardLease(r.LeaseNamespace),
+		predicate.Funcs{
+			CreateFunc: func(e event.CreateEvent) bool { return true },
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				oldLease, ok := e.ObjectOld.(*coordinationv1.Lease)
+				if !ok {
+					return false
+				}
+				newLease, ok := e.ObjectNew.(*coordinationv1.Lease)
+				if !ok {
+					return false
+				}
 
-			return leases.ToShardState(oldLease, r.Clock) != leases.ToShardState(newLease, r.Clock)
+				return leases.ToState(oldLease, r.Clock) != leases.ToState(newLease, r.Clock)
+			},
+			DeleteFunc: func(_ event.DeleteEvent) bool { return true },
 		},
-		DeleteFunc: func(_ event.DeleteEvent) bool { return true },
-	}
+	)
 }
 
 // MapLeaseToObjects maps a lease to all sharded objects that are assigned to the corresponding shard

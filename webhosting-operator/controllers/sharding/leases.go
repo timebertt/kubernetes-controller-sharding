@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	coordinationv1 "k8s.io/api/coordination/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,13 +30,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/sharding/leases"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/consistenthash"
 )
 
 const (
@@ -49,8 +50,6 @@ type leaseReconciler struct {
 	Clock  clock.Clock
 
 	LeaseNamespace string
-
-	Ring *consistenthash.Ring
 }
 
 //+kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;watch;update;patch;delete
@@ -68,76 +67,72 @@ func (r *leaseReconciler) Reconcile(ctx context.Context, req reconcile.Request) 
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
 	}
 
-	state := leases.ToShardState(lease, r.Clock)
-	log = log.WithValues("state", state)
+	var (
+		previousState = leases.StateFromString(lease.Labels[stateLabel])
+		shard         = leases.ToShard(lease, r.Clock)
+	)
+	log = log.WithValues("state", shard.State, "expirationTime", shard.Times.Expiration, "leaseDuration", shard.Times.LeaseDuration)
 
-	// update state label if required
-	if currentState := leases.ShardStateFromString(lease.Labels[stateLabel]); currentState != state {
+	// maintain state label
+	if previousState != shard.State {
 		patch := client.MergeFromWithOptions(lease.DeepCopy(), client.MergeFromWithOptimisticLock{})
-		metav1.SetMetaDataLabel(&lease.ObjectMeta, stateLabel, string(state))
+		metav1.SetMetaDataLabel(&lease.ObjectMeta, stateLabel, shard.State.String())
 		if err := r.Client.Patch(ctx, lease, patch); err != nil {
 			return reconcile.Result{}, fmt.Errorf("failed to update state label on lease: %w", err)
 		}
 	}
 
-	// prepare requeue after durations
-	expirationTime, leaseDuration, ok := leases.ExpirationTime(lease)
-	if !ok {
-		expirationTime = r.Clock.Now()
-		leaseDuration = defaultLeaseDuration
-	}
-
-	durationToExpiration := expirationTime.Sub(r.Clock.Now())
-	durationToOrphaned := expirationTime.Add(leaseTTL).Sub(r.Clock.Now())
-
-	// act on changes to actual state of world if any
-	switch state {
+	// act on state and determine when to check again
+	var requeueAfter time.Duration
+	switch shard.State {
 	case leases.Ready:
-		if r.Ring.AddNode(lease.Name) {
-			log.Info("Added ready shard to ring")
+		if previousState != leases.Ready {
+			log.Info("Shard got ready")
 		}
-		return reconcile.Result{RequeueAfter: durationToExpiration}, nil
-	case leases.Uncertain:
-		log = log.WithValues("expirationTime", expirationTime, "leaseDuration", leaseDuration)
-
-		// shard is considered dead once renewTime + 2*leaseDuration has passed
-		durationToDead := durationToExpiration + leaseDuration
-		if durationToDead <= 0 {
-			log.Info("Shard is dead, trying to acquire shard lease")
-
-			patch := client.MergeFromWithOptions(lease.DeepCopy(), client.MergeFromWithOptimisticLock{})
-			lease.Spec.HolderIdentity = pointer.String(sharderIdentity)
-			return reconcile.Result{RequeueAfter: durationToOrphaned}, r.Client.Patch(ctx, lease, patch)
-		}
-
+		requeueAfter = shard.Times.ToExpired
+	case leases.Expired:
 		log.Info("Shard lease has expired")
-		return reconcile.Result{RequeueAfter: durationToDead}, nil
+		requeueAfter = shard.Times.ToUncertain
+	case leases.Uncertain:
+		log.Info("Shard lease has expired more than leaseDuration ago, trying to acquire shard lease")
+
+		now := metav1.NewMicroTime(r.Clock.Now())
+		transitions := int32(0)
+		if lease.Spec.LeaseTransitions != nil {
+			transitions = *lease.Spec.LeaseTransitions
+		}
+
+		lease.Spec.HolderIdentity = pointer.String(sharderIdentity)
+		lease.Spec.LeaseDurationSeconds = pointer.Int32(2 * int32(shard.Times.LeaseDuration.Round(time.Second).Seconds()))
+		lease.Spec.AcquireTime = &now
+		lease.Spec.RenewTime = &now
+		lease.Spec.LeaseTransitions = pointer.Int32(transitions + 1)
+		if err := r.Client.Update(ctx, lease); err != nil {
+			return reconcile.Result{}, fmt.Errorf("error acquiring shard lease: %w", err)
+		}
+
+		// lease will be enqueued once we observe our previous update via watch
+		// requeue with leaseDuration just to be sure
+		requeueAfter = shard.Times.LeaseDuration
 	case leases.Dead:
-		if r.Ring.RemoveNode(lease.Name) {
-			log.Info("Removed dead shard from ring")
-		}
-
-		if durationToOrphaned <= 0 {
-			// garbage collect orphaned leases
-			return reconcile.Result{}, r.Client.Delete(ctx, lease)
-		}
-
 		// garbage collect later
-		return reconcile.Result{RequeueAfter: durationToOrphaned}, nil
-	default: // Unknown
-		if r.Ring.RemoveNode(lease.Name) {
-			log.Info("Removed node from ring")
-		}
-
+		requeueAfter = shard.Times.ToOrphaned
+	case leases.Orphaned:
+		// garbage collect and forget orphaned leases
+		return reconcile.Result{}, r.Client.Delete(ctx, lease)
+	default:
+		// Unknown, forget lease
 		return reconcile.Result{}, nil
 	}
+
+	return reconcile.Result{RequeueAfter: requeueAfter}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *leaseReconciler) SetupWithManager(mgr manager.Manager) error {
 	return builder.ControllerManagedBy(mgr).
 		Named("sharder").
-		For(&coordinationv1.Lease{}, builder.WithPredicates(leasePredicate(r.LeaseNamespace))).
+		For(&coordinationv1.Lease{}, builder.WithPredicates(r.leasePredicate())).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 1,
 			RecoverPanic:            true,
@@ -145,9 +140,21 @@ func (r *leaseReconciler) SetupWithManager(mgr manager.Manager) error {
 		Complete(r)
 }
 
-func leasePredicate(namespace string) predicate.Predicate {
-	return predicate.NewPredicateFuncs(func(object client.Object) bool {
-		// TODO: fix this
-		return object.GetNamespace() == namespace && strings.HasPrefix(object.GetName(), "webhosting-operator-")
+func (r *leaseReconciler) leasePredicate() predicate.Predicate {
+	// ignore deletion of shard leases
+	return predicate.And(
+		isShardLease(r.LeaseNamespace),
+		predicate.Funcs{
+			CreateFunc: func(_ event.CreateEvent) bool { return true },
+			UpdateFunc: func(_ event.UpdateEvent) bool { return true },
+			DeleteFunc: func(_ event.DeleteEvent) bool { return false },
+		},
+	)
+}
+
+func isShardLease(namespace string) predicate.Predicate {
+	return predicate.NewPredicateFuncs(func(obj client.Object) bool {
+		// TODO: drop prefix handling
+		return obj.GetNamespace() == namespace && strings.HasPrefix(obj.GetName(), "webhosting-operator-")
 	})
 }

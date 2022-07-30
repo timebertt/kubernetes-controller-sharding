@@ -19,7 +19,6 @@ package consistenthash
 import (
 	"fmt"
 	"sort"
-	"sync"
 
 	"github.com/cespare/xxhash/v2"
 )
@@ -34,7 +33,7 @@ var DefaultHash Hash = xxhash.Sum64
 const DefaultTokensPerNode = 100
 
 // New creates a new hash ring.
-func New(fn Hash, tokensPerNode int) *Ring {
+func New(fn Hash, tokensPerNode int, initialNodes ...string) *Ring {
 	if fn == nil {
 		fn = DefaultHash
 	}
@@ -42,42 +41,40 @@ func New(fn Hash, tokensPerNode int) *Ring {
 		tokensPerNode = DefaultTokensPerNode
 	}
 
-	return &Ring{
+	r := &Ring{
 		hash:          fn,
-		nodes:         make(map[string]struct{}),
 		tokensPerNode: tokensPerNode,
-		tokens:        make([]uint64, 0),
-		tokenToNode:   make(map[uint64]string),
+
+		tokens:      make([]uint64, 0, len(initialNodes)*tokensPerNode),
+		nodes:       make(map[string]struct{}, len(initialNodes)),
+		tokenToNode: make(map[uint64]string, len(initialNodes)),
 	}
+	r.AddNodes(initialNodes...)
+	return r
 }
 
-// Ring implements consistent hashing, aka ring hash (thread-safe).
+// Ring implements consistent hashing, aka ring hash (not thread-safe).
 // It hashes nodes and keys onto a ring of tokens. Keys are mapped to the next node on the ring.
 type Ring struct {
-	lock sync.RWMutex
-
 	hash          Hash
-	nodes         map[string]struct{}
 	tokensPerNode int
-	tokens        []uint64
-	tokenToNode   map[uint64]string
+
+	tokens      []uint64
+	nodes       map[string]struct{}
+	tokenToNode map[uint64]string
 }
 
 func (r *Ring) IsEmpty() bool {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-
-	return r.isEmptyLocked()
-}
-
-func (r *Ring) isEmptyLocked() bool {
 	return len(r.tokens) == 0
 }
 
-func (r *Ring) AddNode(hostname string) bool {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+func (r *Ring) AddNodes(hostnames ...string) {
+	for _, hostname := range hostnames {
+		r.AddNode(hostname)
+	}
+}
 
+func (r *Ring) AddNode(hostname string) bool {
 	if _, found := r.nodes[hostname]; found {
 		return false
 	}
@@ -93,9 +90,6 @@ func (r *Ring) AddNode(hostname string) bool {
 }
 
 func (r *Ring) RemoveNode(hostname string) bool {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
 	if _, found := r.nodes[hostname]; found {
 		return false
 	}
@@ -123,10 +117,7 @@ func (r *Ring) RemoveNode(hostname string) bool {
 }
 
 func (r *Ring) Hash(key string) string {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-
-	if r.isEmptyLocked() {
+	if r.IsEmpty() {
 		return ""
 	}
 

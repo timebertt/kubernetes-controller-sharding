@@ -17,52 +17,23 @@ limitations under the License.
 package sharding
 
 import (
-	"context"
 	"fmt"
-	"time"
 
-	"github.com/go-logr/logr"
-	coordinationv1 "k8s.io/api/coordination/v1"
 	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/sharding/cache"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/consistenthash"
-)
-
-const (
-	defaultLeaseDuration = 15 * time.Second
-	leaseTTL             = time.Minute
 )
 
 type Sharder struct {
-	Reader         client.Reader
+	Clock clock.Clock
+
 	Object         client.Object
 	LeaseNamespace string
-	Clock          clock.Clock
-
-	ring               *consistenthash.Ring
-	actualStateOfWorld *cache.ActualStateOfWorld
 }
 
-func (s *Sharder) SetupWithManager(ctx context.Context, mgr manager.Manager) error {
-	if s.Reader == nil {
-		// use API reader for populating actual state of world, cache is not started yet
-		s.Reader = mgr.GetAPIReader()
-	}
+func (s *Sharder) SetupWithManager(mgr manager.Manager) error {
 	if s.Clock == nil {
 		s.Clock = clock.RealClock{}
-	}
-
-	s.ring = consistenthash.New(consistenthash.DefaultHash, consistenthash.DefaultTokensPerNode)
-	s.actualStateOfWorld = &cache.ActualStateOfWorld{
-		Clock: s.Clock,
-	}
-
-	// need to populate state of world before controllers start reconciling
-	if err := s.populateActualStateOfWorld(ctx, mgr.GetLogger().WithName("sharder")); err != nil {
-		return fmt.Errorf("error populating actual state of world: %w", err)
 	}
 
 	if err := (&leaseReconciler{
@@ -70,8 +41,6 @@ func (s *Sharder) SetupWithManager(ctx context.Context, mgr manager.Manager) err
 		Clock:  s.Clock,
 
 		LeaseNamespace: s.LeaseNamespace,
-
-		Ring: s.ring,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("error adding lease controller to manager: %w", err)
 	}
@@ -83,29 +52,9 @@ func (s *Sharder) SetupWithManager(ctx context.Context, mgr manager.Manager) err
 
 		Object:         s.Object,
 		LeaseNamespace: s.LeaseNamespace,
-
-		Ring: s.ring,
 	}).SetupWithManager(mgr); err != nil {
 		return fmt.Errorf("error adding sharder to manager: %w", err)
 	}
 
-	return nil
-}
-
-func (s *Sharder) populateActualStateOfWorld(ctx context.Context, log logr.Logger) error {
-	leaseList := &coordinationv1.LeaseList{}
-	// TODO: add labels to shard leases
-	if err := s.Reader.List(ctx, leaseList, client.InNamespace(s.LeaseNamespace)); err != nil {
-		return fmt.Errorf("error listing shard leasees: %w", err)
-	}
-
-	s.actualStateOfWorld.SetLeases(leaseList.Items)
-
-	for _, shard := range s.actualStateOfWorld.GetReadyShards() {
-		log.V(1).Info("Adding ready shard to ring", "shardID", shard.ID)
-		s.ring.AddNode(shard.ID)
-	}
-
-	log.Info("Successfully populated ActualStateOfWorld")
 	return nil
 }
