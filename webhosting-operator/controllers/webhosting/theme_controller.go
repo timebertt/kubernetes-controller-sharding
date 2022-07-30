@@ -29,7 +29,7 @@ import (
 
 // ThemeReconciler reconciles a Theme object.
 type ThemeReconciler struct {
-	client.Client
+	Client client.Client
 	Scheme *runtime.Scheme
 }
 

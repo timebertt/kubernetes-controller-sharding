@@ -53,7 +53,7 @@ import (
 
 // WebsiteReconciler reconciles a Website object.
 type WebsiteReconciler struct {
-	client.Client
+	Client   client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 	logger   logr.Logger
@@ -82,7 +82,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	log.V(1).Info("reconciling website")
 
 	website := &webhostingv1alpha1.Website{}
-	if err := r.Get(ctx, req.NamespacedName, website); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, website); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("Object is gone, stop reconciling")
 			return ctrl.Result{}, nil
@@ -99,12 +99,12 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		website.Status.Phase = webhostingv1alpha1.PhaseError
 		// Only requeue with backoff if we fail to update the status. We can't do much till the spec changes, so rather wait
 		// for the next update event.
-		return ctrl.Result{}, r.Status().Update(ctx, website)
+		return ctrl.Result{}, r.Client.Status().Update(ctx, website)
 	}
 
 	// retrieve theme
 	theme := &webhostingv1alpha1.Theme{}
-	if err := r.Get(ctx, client.ObjectKey{Name: website.Spec.Theme}, theme); err != nil {
+	if err := r.Client.Get(ctx, client.ObjectKey{Name: website.Spec.Theme}, theme); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ThemeNotFound", "Theme %s not found", website.Spec.Theme)
 		}
@@ -116,7 +116,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// get current deployment status
 	currentDeployment := &appsv1.Deployment{}
-	if err := r.Get(ctx, client.ObjectKey{Namespace: website.Namespace, Name: serverName}, currentDeployment); client.IgnoreNotFound(err) != nil {
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: website.Namespace, Name: serverName}, currentDeployment); client.IgnoreNotFound(err) != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error getting Deployment: %v", err)
 	}
 
@@ -125,7 +125,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing ConfigMap: %v", err)
 	}
-	if err := r.Patch(ctx, configMap, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, configMap, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying ConfigMap: %v", err)
 	}
 
@@ -133,7 +133,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing Service: %v", err)
 	}
-	if err := r.Patch(ctx, service, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, service, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying Service: %v", err)
 	}
 
@@ -141,7 +141,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing Ingress: %v", err)
 	}
-	if err := r.Patch(ctx, ingress, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, ingress, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying Ingress: %v", err)
 	}
 
@@ -149,7 +149,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing Deployment: %v", err)
 	}
-	if err := r.Patch(ctx, deployment, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, deployment, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying Deployment: %v", err)
 	}
 
@@ -160,14 +160,14 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	website.Status.Phase = newPhase
 
-	return ctrl.Result{}, r.Status().Update(ctx, website)
+	return ctrl.Result{}, r.Client.Status().Update(ctx, website)
 }
 
 func (r *WebsiteReconciler) recordErrorAndUpdateStatus(ctx context.Context, website *webhostingv1alpha1.Website, reason, messageFmt string, args ...interface{}) error {
 	r.Recorder.Eventf(website, corev1.EventTypeWarning, reason, messageFmt, args...)
 
 	website.Status.Phase = webhostingv1alpha1.PhaseError
-	if err := r.Status().Update(ctx, website); err != nil {
+	if err := r.Client.Status().Update(ctx, website); err != nil {
 		// unable to update status, requeue with backoff
 		return err
 	}
@@ -440,7 +440,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		r.Recorder = mgr.GetEventRecorderFor("website-controller")
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &webhostingv1alpha1.Website{}, websiteThemeField, func(obj client.Object) []string {
+	if err := mgr.GetShardedCache().IndexField(context.TODO(), &webhostingv1alpha1.Website{}, websiteThemeField, func(obj client.Object) []string {
 		return []string{obj.(*webhostingv1alpha1.Website).Spec.Theme}
 	}); err != nil {
 		return err
@@ -478,7 +478,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // MapThemeToWebsites maps a theme to all websites that use it.
 func (r *WebsiteReconciler) MapThemeToWebsites(theme client.Object) []reconcile.Request {
 	websiteList := &webhostingv1alpha1.WebsiteList{}
-	if err := r.List(context.TODO(), websiteList, client.MatchingFields{websiteThemeField: theme.GetName()}); err != nil {
+	if err := r.Client.List(context.TODO(), websiteList, client.MatchingFields{websiteThemeField: theme.GetName()}); err != nil {
 		r.logger.Error(err, "failed to list websites belonging to theme", "theme", client.ObjectKeyFromObject(theme))
 		return []reconcile.Request{}
 	}
