@@ -70,6 +70,9 @@ type WebsiteReconciler struct {
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=list;watch;create;patch
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
+// RBAC required for sharding
+//+kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;watch;update;patch;delete
+
 // InjectClient injects a client that has access to both the sharded cache and un-sharded cache.
 func (r *WebsiteReconciler) InjectClient(c client.Client) error {
 	r.Client = c

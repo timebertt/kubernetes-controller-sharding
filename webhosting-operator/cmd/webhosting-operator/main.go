@@ -23,12 +23,7 @@ import (
 	"strconv"
 
 	"go.uber.org/zap/zapcore"
-	coordinationv1 "k8s.io/api/coordination/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/controller/sharding"
-
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -42,7 +37,6 @@ import (
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
-	shardingcontroller "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/sharding"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting"
 	//+kubebuilder:scaffold:imports
 )
@@ -61,8 +55,6 @@ func init() {
 }
 
 const (
-	WebhostingOperator = "webhosting-operator"
-
 	ShardModeBoth    = "both"
 	ShardModeSharder = "sharder"
 	ShardModeShard   = "shard"
@@ -94,30 +86,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	if opts.shardMode != ShardModeSharder {
-		if err = (&webhosting.WebsiteReconciler{
-			Config: opts.controllerManagerConfig,
-		}).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "Website")
-			os.Exit(1)
-		}
-		if err = (&webhosting.ThemeReconciler{}).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "Theme")
-			os.Exit(1)
-		}
+	if err = (&webhosting.WebsiteReconciler{
+		Config: opts.controllerManagerConfig,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Website")
+		os.Exit(1)
+	}
+	if err = (&webhosting.ThemeReconciler{}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Theme")
+		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
-
-	if opts.shardMode != ShardModeShard {
-		if err := (&shardingcontroller.Sharder{
-			Object:         &webhostingv1alpha1.Website{},
-			LeaseNamespace: "webhosting-operator-system",
-			TokensPerNode:  1000,
-		}).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to set up sharding with manager")
-			os.Exit(1)
-		}
-	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -170,7 +149,7 @@ func (o *options) Complete() error {
 		}
 	}
 
-	opts, err = applyOptionsOverrides(o, opts)
+	opts, err = applyOptionsOverrides(opts)
 	if err != nil {
 		return err
 	}
@@ -180,7 +159,7 @@ func (o *options) Complete() error {
 	return nil
 }
 
-func applyOptionsOverrides(o *options, opts ctrl.Options) (ctrl.Options, error) {
+func applyOptionsOverrides(opts ctrl.Options) (ctrl.Options, error) {
 	// allow overriding leader election via env var for debugging purposes
 	if leaderElectEnv, ok := os.LookupEnv("LEADER_ELECT"); ok {
 		leaderElect, err := strconv.ParseBool(leaderElectEnv)
@@ -190,22 +169,9 @@ func applyOptionsOverrides(o *options, opts ctrl.Options) (ctrl.Options, error) 
 		opts.LeaderElection = leaderElect
 	}
 
-	if o.shardMode != ShardModeSharder {
-		opts.Sharded = true
-		// allow overriding shard ID via env var
-		opts.ShardID = os.Getenv("SHARD_ID")
-	}
-
-	if o.shardMode != ShardModeShard {
-		// restrict lease cache to shard leases
-		opts.NewCache = cache.BuilderWithOptions(cache.Options{
-			SelectorsByObject: cache.SelectorsByObject{
-				&coordinationv1.Lease{}: cache.ObjectSelector{
-					Label: labels.SelectorFromSet(labels.Set{sharding.ShardLabel: WebhostingOperator}),
-				},
-			},
-		})
-	}
+	opts.Sharded = true
+	// allow overriding shard ID via env var
+	opts.ShardID = os.Getenv("SHARD_ID")
 
 	return opts, nil
 }
