@@ -92,9 +92,6 @@ func (r *shardingReconciler) Reconcile(ctx context.Context, req reconcile.Reques
 		// determine desired shard, might be empty if there is no ready shard
 		desiredShard = ring.Hash(r.KeyForObject(r.groupKind, obj))
 		currentShard = obj.Labels[sharding.ShardLabel]
-
-		// requeue after some time to check if we need to rebalance
-		requeueAfter = shards.ById(desiredShard).Times.ToExpired
 	)
 
 	log = log.WithValues("shard", desiredShard)
@@ -123,8 +120,13 @@ func (r *shardingReconciler) Reconcile(ctx context.Context, req reconcile.Reques
 		}
 	}
 
-	// requeue if we left object unassigned
-	return reconcile.Result{Requeue: desiredShard == "", RequeueAfter: requeueAfter}, nil
+	// requeue with exponential backoff if we left object unassigned
+	if desiredShard == "" {
+		return reconcile.Result{Requeue: true}, nil
+	}
+
+	// requeue after some time to check if object should be reassigned for rebalancing
+	return reconcile.Result{RequeueAfter: shards.ById(desiredShard).Times.LeaseDuration}, nil
 }
 
 func stateNeedsDrain(state leases.ShardState) bool {
