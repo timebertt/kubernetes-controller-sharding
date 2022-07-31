@@ -18,22 +18,22 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"strconv"
 
 	"go.uber.org/zap/zapcore"
-	"k8s.io/klog/v2"
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller/sharding"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
@@ -53,12 +53,6 @@ func init() {
 	utilruntime.Must(configv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
-
-const (
-	ShardModeBoth    = "both"
-	ShardModeSharder = "sharder"
-	ShardModeShard   = "shard"
-)
 
 func main() {
 	ctx := ctrl.SetupSignalHandler()
@@ -119,7 +113,6 @@ type options struct {
 
 	managerOptions          ctrl.Options
 	controllerManagerConfig *configv1alpha1.ControllerManagerConfig
-	shardMode               string
 }
 
 func (o *options) AddFlags(fs *flag.FlagSet) {
@@ -131,14 +124,6 @@ func (o *options) AddFlags(fs *flag.FlagSet) {
 
 func (o *options) Complete() error {
 	o.controllerManagerConfig = &configv1alpha1.ControllerManagerConfig{}
-	o.shardMode = os.Getenv("SHARD_MODE")
-	switch o.shardMode {
-	case "":
-		o.shardMode = ShardModeBoth
-	case ShardModeBoth, ShardModeSharder, ShardModeShard:
-	default:
-		return fmt.Errorf("invalid shard mode: %s", o.shardMode)
-	}
 
 	var err error
 	opts := ctrl.Options{Scheme: scheme}
@@ -172,6 +157,7 @@ func applyOptionsOverrides(opts ctrl.Options) (ctrl.Options, error) {
 	opts.Sharded = true
 	// allow overriding shard ID via env var
 	opts.ShardID = os.Getenv("SHARD_ID")
+	opts.ShardMode = sharding.Mode(os.Getenv("SHARD_MODE"))
 
 	return opts, nil
 }
