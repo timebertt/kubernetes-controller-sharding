@@ -449,14 +449,14 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	// TODO: add builder.Sharded{} for Owns as well
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		For(&webhostingv1alpha1.Website{}, builder.Sharded{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		// watch deployments in order to update phase on relevant changes
-		Owns(&appsv1.Deployment{}, builder.WithPredicates(DeploymentReadinessChanged)).
+		Owns(&appsv1.Deployment{}, builder.Sharded{}, builder.WithPredicates(DeploymentReadinessChanged)).
 		// watch owned objects for relevant changes to reconcile them back if changed
-		Owns(&corev1.ConfigMap{}, builder.WithPredicates(ConfigMapDataChanged)).
-		Owns(&corev1.Service{}, builder.WithPredicates(ServiceSpecChanged)).
+		Owns(&corev1.ConfigMap{}, builder.Sharded{}, builder.WithPredicates(ConfigMapDataChanged)).
+		Owns(&corev1.Service{}, builder.Sharded{}, builder.WithPredicates(ServiceSpecChanged)).
+		Owns(&networkingv1.Ingress{}, builder.Sharded{}, builder.WithPredicates(IngressSpecChanged)).
 		// watch themes to roll out theme changes to all referencing websites
 		Watches(
 			&source.Kind{Type: &webhostingv1alpha1.Theme{}},
@@ -499,9 +499,6 @@ func (r *WebsiteReconciler) MapThemeToWebsites(theme client.Object) []reconcile.
 
 // DeploymentReadinessChanged is a predicate for filtering relevant Deployment events.
 var DeploymentReadinessChanged = predicate.Funcs{
-	CreateFunc: func(e event.CreateEvent) bool {
-		return false
-	},
 	UpdateFunc: func(e event.UpdateEvent) bool {
 		if e.ObjectOld == nil || e.ObjectNew == nil {
 			return false
@@ -528,9 +525,6 @@ var DeploymentReadinessChanged = predicate.Funcs{
 
 // ConfigMapDataChanged is a predicate for filtering relevant ConfigMap events.
 var ConfigMapDataChanged = predicate.Funcs{
-	CreateFunc: func(e event.CreateEvent) bool {
-		return false
-	},
 	UpdateFunc: func(e event.UpdateEvent) bool {
 		if e.ObjectOld == nil || e.ObjectNew == nil {
 			return false
@@ -550,9 +544,6 @@ var ConfigMapDataChanged = predicate.Funcs{
 
 // ServiceSpecChanged is a predicate for filtering relevant Service events.
 var ServiceSpecChanged = predicate.Funcs{
-	CreateFunc: func(e event.CreateEvent) bool {
-		return false
-	},
 	UpdateFunc: func(e event.UpdateEvent) bool {
 		if e.ObjectOld == nil || e.ObjectNew == nil {
 			return false
@@ -567,6 +558,25 @@ var ServiceSpecChanged = predicate.Funcs{
 			return false
 		}
 		return !apiequality.Semantic.DeepEqual(oldService.Spec, newService.Spec)
+	},
+}
+
+// IngressSpecChanged is a predicate for filtering relevant Ingress events.
+var IngressSpecChanged = predicate.Funcs{
+	UpdateFunc: func(e event.UpdateEvent) bool {
+		if e.ObjectOld == nil || e.ObjectNew == nil {
+			return false
+		}
+
+		oldIngress, ok := e.ObjectOld.(*networkingv1.Ingress)
+		if !ok {
+			return false
+		}
+		newIngress, ok := e.ObjectNew.(*networkingv1.Ingress)
+		if !ok {
+			return false
+		}
+		return !apiequality.Semantic.DeepEqual(oldIngress.Spec, newIngress.Spec)
 	},
 }
 
