@@ -20,7 +20,6 @@ COPY go.sum go.sum
 RUN go mod download
 
 # Copy the go source
-COPY main.go main.go
 COPY cmd/ cmd/
 COPY apis/ apis/
 COPY controllers/ controllers/
@@ -28,7 +27,7 @@ COPY controllers/ controllers/
 # Build
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o manager main.go && \
+    go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o manager ./cmd/webhosting-operator && \
     go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o webhosting-exporter ./cmd/webhosting-exporter
 
 # Use distroless as minimal base image to package the manager binary

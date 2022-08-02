@@ -1,8 +1,6 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  labels:
-    control-plane: controller-manager
   name: webhosting-operator
   namespace: webhosting-operator-system
 spec:
@@ -18,4 +16,4 @@ spec:
       replacement: webhosting-operator
   selector:
     matchLabels:
-      control-plane: controller-manager
+      app.kubernetes.io/name: webhosting-operator

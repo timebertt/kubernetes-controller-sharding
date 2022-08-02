@@ -1,3 +1,6 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
 # Adds namespace to all resources.
 namespace: webhosting-operator-system
 
@@ -9,13 +12,26 @@ namespace: webhosting-operator-system
 namePrefix: webhosting-operator-
 
 # Labels to add to all resources and selectors.
-#commonLabels:
-#  someName: someValue
+commonLabels:
+  app.kubernetes.io/name: webhosting-operator
+
+images:
+- name: controller
+  newName: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator
+  newTag: latest
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- files:
+  - controller_manager_config.yaml
+  name: manager-config
 
 resources:
-- ../crd
-- ../rbac
-- ../manager
+- manager.yaml
+- ../../crd
+- ../../rbac
 # Comment the following 4 lines if you want to disable
 # the auth proxy (https://github.com/brancz/kube-rbac-proxy)
 # which protects your /metrics endpoint.
@@ -34,9 +50,6 @@ patchesStrategicMerge:
 # If you want your controller-manager to expose the /metrics
 # endpoint w/o any authn/z, please comment the following line.
 - manager_auth_proxy_patch.yaml
-# Mount the controller config file for loading manager configurations
-# through a ComponentConfig type
-- manager_config_patch.yaml
 
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml

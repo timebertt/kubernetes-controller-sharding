@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
@@ -29,7 +30,7 @@ import (
 
 // ThemeReconciler reconciles a Theme object.
 type ThemeReconciler struct {
-	client.Client
+	Client client.Client
 	Scheme *runtime.Scheme
 }
 
@@ -48,7 +49,18 @@ func (r *ThemeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ThemeReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.Client == nil {
+		r.Client = mgr.GetClient()
+	}
+	if r.Scheme == nil {
+		r.Scheme = mgr.GetScheme()
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&webhostingv1alpha1.Theme{}).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: 5,
+			RecoverPanic:            true,
+		}).
 		Complete(r)
 }

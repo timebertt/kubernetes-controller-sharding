@@ -5,28 +5,45 @@ metadata:
   name: webhosting-operator
 build:
   local:
-    useBuildkit: true
+    concurrency: 0
   artifacts:
   - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator
-    docker:
-      dockerfile: Dockerfile
-      target: webhosting-operator
+    ko:
+      main: ./cmd/webhosting-operator
+      dependencies:
+        paths:
+        - "**/*.go"
+        - "../../../../sigs.k8s.io/controller-runtime/**/*.go"
 deploy:
   kustomize:
     flags:
       apply:
       - "--server-side"
+      - "--force-conflicts"
     paths:
-    - config/debug
+    - config/manager/default
   kubectl:
     manifests:
     - config/samples/project_namespace.yaml
+profiles:
+- name: debug
+  activation:
+  - command: debug
+  patches:
+  - op: replace
+    path: /deploy/kustomize/paths/0
+    value: config/manager/debug
+- name: shard
+  patches:
+  - op: replace
+    path: /deploy/kustomize/paths/0
+    value: config/manager/shard
 portForward:
 - resourceType: deployment
   namespace: webhosting-operator-system
   resourceName: webhosting-operator-controller-manager
   port: metrics
-  localPort: 8080
+  localPort: 8081
 ---
 apiVersion: skaffold/v2beta29
 kind: Config
@@ -37,10 +54,11 @@ deploy:
     flags:
       apply:
       - "--server-side"
+      - "--force-conflicts"
     paths:
     - config/monitoring/crds
 ---
-apiVersion: skaffold/v2beta25
+apiVersion: skaffold/v2beta29
 kind: Config
 metadata:
   name: monitoring
@@ -49,17 +67,17 @@ requires:
   - monitoring-crds
 build:
   local:
-    useBuildkit: true
+    concurrency: 0
   artifacts:
   - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter
-    docker:
-      dockerfile: Dockerfile
-      target: webhosting-exporter
+    ko:
+      main: ./cmd/webhosting-exporter
 deploy:
   kustomize:
     flags:
       apply:
       - "--server-side"
+      - "--force-conflicts"
     hooks:
       before:
       - host:

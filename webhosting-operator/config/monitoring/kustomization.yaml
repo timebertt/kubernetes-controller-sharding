@@ -10,10 +10,7 @@ resources:
 - kube-prometheus
 - grafana_ingress.yaml
 - webhosting-exporter
-- webhosting-operator_servicemonitor.yaml
-# provide prometheus running in namespace "monitoring" with the permissions required for service discovery in namespace
-# "webhosting-operator-system"
-- webhosting-operator_prometheus_rbac.yaml
+- webhosting-operator
 
 generatorOptions:
   disableNameSuffixHash: true

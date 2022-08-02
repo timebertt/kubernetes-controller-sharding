@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -37,6 +38,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -51,9 +53,10 @@ import (
 
 // WebsiteReconciler reconciles a Website object.
 type WebsiteReconciler struct {
-	client.Client
+	Client   client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+	logger   logr.Logger
 
 	Config *configv1alpha1.ControllerManagerConfig
 }
@@ -67,13 +70,22 @@ type WebsiteReconciler struct {
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=list;watch;create;patch
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
+// RBAC required for sharding
+//+kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;watch;update;patch;delete
+
+// InjectClient injects a client that has access to both the sharded cache and un-sharded cache.
+func (r *WebsiteReconciler) InjectClient(c client.Client) error {
+	r.Client = c
+	return nil
+}
+
 // Reconcile reconciles a Website object.
 func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 	log.V(1).Info("reconciling website")
 
 	website := &webhostingv1alpha1.Website{}
-	if err := r.Get(ctx, req.NamespacedName, website); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, website); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("Object is gone, stop reconciling")
 			return ctrl.Result{}, nil
@@ -90,12 +102,12 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		website.Status.Phase = webhostingv1alpha1.PhaseError
 		// Only requeue with backoff if we fail to update the status. We can't do much till the spec changes, so rather wait
 		// for the next update event.
-		return ctrl.Result{}, r.Status().Update(ctx, website)
+		return ctrl.Result{}, r.Client.Status().Update(ctx, website)
 	}
 
 	// retrieve theme
 	theme := &webhostingv1alpha1.Theme{}
-	if err := r.Get(ctx, client.ObjectKey{Name: website.Spec.Theme}, theme); err != nil {
+	if err := r.Client.Get(ctx, client.ObjectKey{Name: website.Spec.Theme}, theme); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ThemeNotFound", "Theme %s not found", website.Spec.Theme)
 		}
@@ -107,7 +119,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// get current deployment status
 	currentDeployment := &appsv1.Deployment{}
-	if err := r.Get(ctx, client.ObjectKey{Namespace: website.Namespace, Name: serverName}, currentDeployment); client.IgnoreNotFound(err) != nil {
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: website.Namespace, Name: serverName}, currentDeployment); client.IgnoreNotFound(err) != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error getting Deployment: %v", err)
 	}
 
@@ -116,7 +128,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing ConfigMap: %v", err)
 	}
-	if err := r.Patch(ctx, configMap, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, configMap, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying ConfigMap: %v", err)
 	}
 
@@ -124,7 +136,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing Service: %v", err)
 	}
-	if err := r.Patch(ctx, service, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, service, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying Service: %v", err)
 	}
 
@@ -132,7 +144,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing Ingress: %v", err)
 	}
-	if err := r.Patch(ctx, ingress, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, ingress, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying Ingress: %v", err)
 	}
 
@@ -140,7 +152,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing Deployment: %v", err)
 	}
-	if err := r.Patch(ctx, deployment, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, deployment, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying Deployment: %v", err)
 	}
 
@@ -151,14 +163,14 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	website.Status.Phase = newPhase
 
-	return ctrl.Result{}, r.Status().Update(ctx, website)
+	return ctrl.Result{}, r.Client.Status().Update(ctx, website)
 }
 
 func (r *WebsiteReconciler) recordErrorAndUpdateStatus(ctx context.Context, website *webhostingv1alpha1.Website, reason, messageFmt string, args ...interface{}) error {
 	r.Recorder.Eventf(website, corev1.EventTypeWarning, reason, messageFmt, args...)
 
 	website.Status.Phase = webhostingv1alpha1.PhaseError
-	if err := r.Status().Update(ctx, website); err != nil {
+	if err := r.Client.Status().Update(ctx, website); err != nil {
 		// unable to update status, requeue with backoff
 		return err
 	}
@@ -420,38 +432,56 @@ func calculateConfigMapChecksum(configMap *corev1.ConfigMap) (string, error) {
 	return hex.EncodeToString(checksum[:]), nil
 }
 
-const websiteThemeField = ".spec.theme"
+const websiteThemeField = "spec.theme"
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &webhostingv1alpha1.Website{}, websiteThemeField, func(obj client.Object) []string {
-		website := obj.(*webhostingv1alpha1.Website)
-		return []string{website.Spec.Theme}
+	if r.Scheme == nil {
+		r.Scheme = mgr.GetScheme()
+	}
+	if r.Recorder == nil {
+		r.Recorder = mgr.GetEventRecorderFor("website-controller")
+	}
+
+	if err := mgr.GetShardedCache().IndexField(context.TODO(), &webhostingv1alpha1.Website{}, websiteThemeField, func(obj client.Object) []string {
+		return []string{obj.(*webhostingv1alpha1.Website).Spec.Theme}
 	}); err != nil {
 		return err
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&webhostingv1alpha1.Website{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+	c, err := ctrl.NewControllerManagedBy(mgr).
+		For(&webhostingv1alpha1.Website{}, builder.Sharded{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		// watch deployments in order to update phase on relevant changes
-		Owns(&appsv1.Deployment{}, builder.WithPredicates(DeploymentReadinessChanged)).
+		Owns(&appsv1.Deployment{}, builder.Sharded{}, builder.WithPredicates(DeploymentReadinessChanged)).
 		// watch owned objects for relevant changes to reconcile them back if changed
-		Owns(&corev1.ConfigMap{}, builder.WithPredicates(ConfigMapDataChanged)).
-		Owns(&corev1.Service{}, builder.WithPredicates(ServiceSpecChanged)).
-		// watch themes to rollout theme changes to all referencing websites
+		Owns(&corev1.ConfigMap{}, builder.Sharded{}, builder.WithPredicates(ConfigMapDataChanged)).
+		Owns(&corev1.Service{}, builder.Sharded{}, builder.WithPredicates(ServiceSpecChanged)).
+		Owns(&networkingv1.Ingress{}, builder.Sharded{}, builder.WithPredicates(IngressSpecChanged)).
+		// watch themes to roll out theme changes to all referencing websites
 		Watches(
 			&source.Kind{Type: &webhostingv1alpha1.Theme{}},
 			handler.EnqueueRequestsFromMapFunc(r.MapThemeToWebsites),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
-		Complete(r)
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: 5,
+			RecoverPanic:            true,
+		}).
+		Build(r)
+	if err != nil {
+		return err
+	}
+
+	r.logger = c.GetLogger()
+
+	return nil
 }
 
 // MapThemeToWebsites maps a theme to all websites that use it.
 func (r *WebsiteReconciler) MapThemeToWebsites(theme client.Object) []reconcile.Request {
 	websiteList := &webhostingv1alpha1.WebsiteList{}
-	err := r.List(context.TODO(), websiteList, client.MatchingFields{websiteThemeField: theme.GetName()})
-	if err != nil {
+	if err := r.Client.List(context.TODO(), websiteList, client.MatchingFields{websiteThemeField: theme.GetName()}); err != nil {
+		r.logger.Error(err, "failed to list websites belonging to theme", "theme", client.ObjectKeyFromObject(theme))
 		return []reconcile.Request{}
 	}
 
@@ -469,9 +499,6 @@ func (r *WebsiteReconciler) MapThemeToWebsites(theme client.Object) []reconcile.
 
 // DeploymentReadinessChanged is a predicate for filtering relevant Deployment events.
 var DeploymentReadinessChanged = predicate.Funcs{
-	CreateFunc: func(e event.CreateEvent) bool {
-		return false
-	},
 	UpdateFunc: func(e event.UpdateEvent) bool {
 		if e.ObjectOld == nil || e.ObjectNew == nil {
 			return false
@@ -498,9 +525,6 @@ var DeploymentReadinessChanged = predicate.Funcs{
 
 // ConfigMapDataChanged is a predicate for filtering relevant ConfigMap events.
 var ConfigMapDataChanged = predicate.Funcs{
-	CreateFunc: func(e event.CreateEvent) bool {
-		return false
-	},
 	UpdateFunc: func(e event.UpdateEvent) bool {
 		if e.ObjectOld == nil || e.ObjectNew == nil {
 			return false
@@ -520,9 +544,6 @@ var ConfigMapDataChanged = predicate.Funcs{
 
 // ServiceSpecChanged is a predicate for filtering relevant Service events.
 var ServiceSpecChanged = predicate.Funcs{
-	CreateFunc: func(e event.CreateEvent) bool {
-		return false
-	},
 	UpdateFunc: func(e event.UpdateEvent) bool {
 		if e.ObjectOld == nil || e.ObjectNew == nil {
 			return false
@@ -537,6 +558,25 @@ var ServiceSpecChanged = predicate.Funcs{
 			return false
 		}
 		return !apiequality.Semantic.DeepEqual(oldService.Spec, newService.Spec)
+	},
+}
+
+// IngressSpecChanged is a predicate for filtering relevant Ingress events.
+var IngressSpecChanged = predicate.Funcs{
+	UpdateFunc: func(e event.UpdateEvent) bool {
+		if e.ObjectOld == nil || e.ObjectNew == nil {
+			return false
+		}
+
+		oldIngress, ok := e.ObjectOld.(*networkingv1.Ingress)
+		if !ok {
+			return false
+		}
+		newIngress, ok := e.ObjectNew.(*networkingv1.Ingress)
+		if !ok {
+			return false
+		}
+		return !apiequality.Semantic.DeepEqual(oldIngress.Spec, newIngress.Spec)
 	},
 }
 

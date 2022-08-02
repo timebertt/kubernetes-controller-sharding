@@ -22,16 +22,18 @@ import (
 	"strconv"
 
 	"go.uber.org/zap/zapcore"
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller/sharding"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
@@ -53,6 +55,7 @@ func init() {
 }
 
 func main() {
+	ctx := ctrl.SetupSignalHandler()
 	opts := options{}
 	opts.AddFlags(flag.CommandLine)
 
@@ -64,6 +67,7 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zapOpts)))
+	klog.SetLogger(ctrl.Log)
 
 	if err := opts.Complete(); err != nil {
 		setupLog.Error(err, "unable to load config")
@@ -77,18 +81,12 @@ func main() {
 	}
 
 	if err = (&webhosting.WebsiteReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("website-controller"),
-		Config:   opts.controllerManagerConfig,
+		Config: opts.controllerManagerConfig,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Website")
 		os.Exit(1)
 	}
-	if err = (&webhosting.ThemeReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err = (&webhosting.ThemeReconciler{}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Theme")
 		os.Exit(1)
 	}
@@ -104,7 +102,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
@@ -155,6 +153,11 @@ func applyOptionsOverrides(opts ctrl.Options) (ctrl.Options, error) {
 		}
 		opts.LeaderElection = leaderElect
 	}
+
+	opts.Sharded = true
+	// allow overriding shard ID via env var
+	opts.ShardID = os.Getenv("SHARD_ID")
+	opts.ShardMode = sharding.Mode(os.Getenv("SHARD_MODE"))
 
 	return opts, nil
 }

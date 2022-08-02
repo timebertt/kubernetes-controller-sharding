@@ -5,8 +5,8 @@ IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator:late
 EXPORTER_IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.24
-# if WITH_DNS is set to true, we configure the operator to make ingresses available via public dns
-WITH_DNS = false
+# set OVERLAY to with-dns to configure the operator to make ingresses available via public dns
+OVERLAY = default
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -102,12 +102,12 @@ verify: verify-fmt verify-generate verify-modules test ## Verify everything (all
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	go build -o bin/webhosting-operator main.go
+	go build -o bin/webhosting-operator ./cmd/webhosting-operator
 	go build -o bin/webhosting-exporter ./cmd/webhosting-exporter
 
 .PHONY: run
 run: manifests generate fmt vet ## Run the webhosting-operator from your host.
-	go run ./main.go --config=config/manager/controller_manager_config.yaml
+	go run ./cmd/webhosting-operator --config=config/manager/base/controller_manager_config.yaml
 
 .PHONY: run-exporter
 run-exporter: ## Run the webhosting-exporter from your host.
@@ -139,16 +139,12 @@ uninstall: $(KUSTOMIZE) $(KUBECTL) manifests ## Uninstall CRDs from K8s cluster 
 
 .PHONY: deploy
 deploy: $(KUSTOMIZE) $(KUBECTL) manifests ## Deploy controller to K8s cluster specified in $KUBECONFIG.
-	cd config/manager && $(abspath $(KUSTOMIZE)) edit set image controller=${IMG}
-ifneq ($(WITH_DNS), true)
-	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
-else
-	$(KUSTOMIZE) build config/default-with-dns | $(KUBECTL) apply -f -
-endif
+	cd config/manager/base && $(abspath $(KUSTOMIZE)) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/manager/$(OVERLAY) | $(KUBECTL) apply -f -
 
 .PHONY: undeploy
 undeploy: $(KUSTOMIZE) $(KUBECTL) ## Undeploy controller from K8s cluster specified in $KUBECONFIG. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
+	$(KUSTOMIZE) build config/manager/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
 k3d-up k3d-down up dev down: export KUBECONFIG = $(PROJECT_DIR)/dev/k3d_kubeconfig.yaml
 
@@ -156,7 +152,7 @@ k3d-up k3d-down up dev down: export KUBECONFIG = $(PROJECT_DIR)/dev/k3d_kubeconf
 k3d-up: $(K3D) ## Launch a k3d cluster for testing the operator.
 	$(K3D) cluster create webhosting -i "docker.io/rancher/k3s:v1.24.2-k3s2" -p "8088:80@loadbalancer" --k3s-arg "--disable=traefik@server:0"
 	# run `export KUBECONFIG=$$PWD/dev/k3d_kubeconfig.yaml` to target the created k3d cluster.
-	$(MAKE) deploy-ingress-nginx
+	KUBECONFIG=$(PROJECT_DIR)/dev/k3d_kubeconfig.yaml $(MAKE) deploy-ingress-nginx
 
 .PHONY: k3d-down
 k3d-down: $(K3D) ## Tear down the k3d testing cluster.
@@ -166,11 +162,7 @@ k3d-down: $(K3D) ## Tear down the k3d testing cluster.
 deploy-ingress-nginx: $(KUSTOMIZE) $(KUBECTL) ## Deploy ingress-nginx to K8s cluster specified in $KUBECONFIG.
 	@# job template is immutable, delete old jobs to prepare for upgrade
 	$(KUBECTL) -n ingress-nginx delete job --ignore-not-found ingress-nginx-admission-create ingress-nginx-admission-patch
-ifneq ($(WITH_DNS), true)
-	$(KUSTOMIZE) build config/ingress-nginx/default | $(KUBECTL) apply --server-side -f -
-else
-	$(KUSTOMIZE) build config/ingress-nginx/with-dns | $(KUBECTL) apply --server-side -f -
-endif
+	$(KUSTOMIZE) build config/ingress-nginx/$(OVERLAY) | $(KUBECTL) apply --server-side -f -
 	$(KUBECTL) -n ingress-nginx wait deploy ingress-nginx-controller --for=condition=Available --timeout=2m
 
 .PHONY: deploy-monitoring
@@ -187,7 +179,7 @@ up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
 
 .PHONY: up
 up: $(SKAFFOLD) ## Build all images and deploy everything to k3d.
-	$(SKAFFOLD) run --port-forward=user
+	$(SKAFFOLD) run --port-forward=user --tail
 
 .PHONY: dev
 dev: $(SKAFFOLD) ## Start continuous dev loop with skaffold.
