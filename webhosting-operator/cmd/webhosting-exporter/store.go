@@ -19,7 +19,9 @@ package main
 import (
 	"context"
 
+	coordinationv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -41,11 +43,13 @@ var (
 	customFactories   = []customresource.RegistryFactory{
 		newWebsiteFactory(),
 		newThemeFactory(),
+		newShardFactory(),
 	}
 )
 
 func init() {
 	utilruntime.Must(webhostingv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(coordinationv1.AddToScheme(scheme))
 
 	registerResources()
 }
@@ -58,7 +62,8 @@ func registerResources() {
 
 // runtimeClientFactory implements parts of customresource.RegistryFactory for reuse.
 type runtimeClientFactory struct {
-	listType client.ObjectList
+	listType      client.ObjectList
+	labelSelector labels.Selector
 }
 
 func (r runtimeClientFactory) CreateClient(cfg *rest.Config) (interface{}, error) {
@@ -73,12 +78,18 @@ func (r runtimeClientFactory) ListWatch(customResourceClient interface{}, ns str
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 			list := r.listType.DeepCopyObject().(client.ObjectList)
 			opts.FieldSelector = fieldSelector
+			if r.labelSelector != nil {
+				opts.LabelSelector = r.labelSelector.String()
+			}
 			err := c.List(context.TODO(), list, &client.ListOptions{Raw: &opts, Namespace: ns})
 			return list, err
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 			list := r.listType.DeepCopyObject().(client.ObjectList)
 			opts.FieldSelector = fieldSelector
+			if r.labelSelector != nil {
+				opts.LabelSelector = r.labelSelector.String()
+			}
 			return c.Watch(context.TODO(), list, &client.ListOptions{Raw: &opts, Namespace: ns})
 		},
 	}
@@ -89,4 +100,11 @@ func boolValue(b bool) float64 {
 		return 1
 	}
 	return 0
+}
+
+func boolLabel(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
 }
