@@ -20,6 +20,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	"k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	"sigs.k8s.io/controller-runtime/pkg/controller/sharding"
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
 )
@@ -69,8 +70,8 @@ func websiteInfo() generator.FamilyGenerator {
 		wrapWebsiteFunc(func(w *webhostingv1alpha1.Website) *metric.Family {
 			return &metric.Family{
 				Metrics: []*metric.Metric{{
-					LabelKeys:   []string{"theme"},
-					LabelValues: []string{w.Spec.Theme},
+					LabelKeys:   []string{"theme", "shard"},
+					LabelValues: []string{w.Spec.Theme, w.Labels[sharding.ShardLabel]},
 					Value:       1,
 				}},
 			}
