@@ -3,7 +3,7 @@ module github.com/timebertt/kubernetes-controller-sharding/webhosting-operator
 go 1.18
 
 require (
-	github.com/cespare/xxhash/v2 v2.1.2
+	github.com/go-logr/logr v1.2.0
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/onsi/gomega v1.19.0
 	github.com/prometheus/common v0.34.0
@@ -18,6 +18,9 @@ require (
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20220706173534-cd0058ad295c // v0.12.3
 )
 
+// https://github.com/timebertt/controller-runtime/tree/sharding based on v0.12.3
+replace sigs.k8s.io/controller-runtime => github.com/timebertt/controller-runtime v0.6.1-0.20220802120014-c54af00dcbee
+
 require (
 	cloud.google.com/go v0.81.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -29,6 +32,7 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-jump v0.0.0-20211018200510-ba001c3ffce0 // indirect
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
@@ -37,7 +41,6 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
-	github.com/go-logr/logr v1.2.0 // indirect
 	github.com/go-logr/zapr v1.2.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
@@ -94,5 +97,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
-
-replace sigs.k8s.io/controller-runtime => ../../../../sigs.k8s.io/controller-runtime
