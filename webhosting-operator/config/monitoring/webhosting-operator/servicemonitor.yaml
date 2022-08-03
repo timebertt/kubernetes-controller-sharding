@@ -9,6 +9,8 @@ spec:
     port: https
     scheme: https
     bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    interval: 10s
+    scrapeTimeout: 10s
     tlsConfig:
       insecureSkipVerify: true
     relabelings:

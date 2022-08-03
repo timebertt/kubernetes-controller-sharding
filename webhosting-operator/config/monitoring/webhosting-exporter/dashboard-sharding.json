@@ -4,8 +4,8 @@
       {
         "builtIn": 1,
         "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
+          "type": "grafana",
+          "uid": "-- Grafana --"
         },
         "enable": true,
         "hide": true,
@@ -21,21 +21,15 @@
       }
     ]
   },
-  "description": "Overview over Webhosting objects",
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "id": 27,
-  "iteration": 1659520172430,
+  "graphTooltip": 1,
+  "iteration": 1659622501536,
   "links": [],
-  "liveNow": true,
+  "liveNow": false,
   "panels": [
     {
       "collapsed": false,
-      "datasource": {
-        "type": "datasource",
-        "uid": "grafana"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -64,6 +58,10 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
           }
@@ -71,12 +69,12 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 5,
-        "w": 8,
+        "h": 6,
+        "w": 3,
         "x": 0,
         "y": 1
       },
-      "id": 2,
+      "id": 9,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -98,14 +96,11 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "exemplar": true,
-          "expr": "sum(kube_website_info{namespace=~\"$project\"})",
-          "interval": "",
-          "legendFormat": "",
+          "expr": "sum(kube_shard_info{app=\"$app\"})",
           "refId": "A"
         }
       ],
-      "title": "Websites",
+      "title": "Total Shards",
       "type": "stat"
     },
     {
@@ -113,7 +108,259 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 3,
+        "x": 3,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "8.5.5",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum(kube_shard_state{app=\"$app\",state=\"ready\"})",
+          "refId": "A"
+        }
+      ],
+      "title": "Ready Shards",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 100,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "dead"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "orphaned"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#9f9f9f",
+                  "mode": "fixed",
+                  "seriesBy": "last"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "uncertain"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#ffffff",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "unknown"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "purple",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "expired"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ready"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 11,
+        "x": 6,
+        "y": 1
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(kube_shard_state{app=\"$app\"}) by (state)",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "legendFormat": "{{shard}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Shards per State",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -123,7 +370,7 @@
           "max": 100,
           "min": 0,
           "thresholds": {
-            "mode": "percentage",
+            "mode": "absolute",
             "steps": [
               {
                 "color": "red",
@@ -131,15 +378,15 @@
               },
               {
                 "color": "orange",
-                "value": 80
+                "value": 70
               },
               {
                 "color": "yellow",
-                "value": 90
+                "value": 80
               },
               {
                 "color": "green",
-                "value": 98
+                "value": 95
               }
             ]
           },
@@ -148,12 +395,12 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 5,
-        "w": 6,
-        "x": 8,
+        "h": 6,
+        "w": 7,
+        "x": 17,
         "y": 1
       },
-      "id": 12,
+      "id": 10,
       "options": {
         "orientation": "auto",
         "reduceOptions": {
@@ -173,161 +420,22 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "exemplar": true,
-          "expr": "sum(kube_website_status_phase{namespace=~\"$project\",phase=\"Ready\"}) / sum(kube_website_status_phase{namespace=~\"$project\"}) * 100",
-          "interval": "",
-          "legendFormat": "",
+          "expr": "sum(kube_shard_state{app=\"$app\",state=\"ready\"}) / sum(kube_shard_info{app=\"$app\"}) * 100",
           "refId": "A"
         }
       ],
-      "title": "Website Readiness",
+      "title": "Shard Readiness",
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 5,
-        "x": 14,
-        "y": 1
-      },
-      "id": 8,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "8.5.5",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "exemplar": true,
-          "expr": "sum(kube_theme_info)",
-          "interval": "",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "title": "Themes",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 5,
-        "x": 19,
-        "y": 1
-      },
-      "id": 7,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "8.5.5",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "exemplar": true,
-          "expr": "sum(kube_namespace_status_phase{namespace=~\"project-.+\"})",
-          "interval": "",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "title": "Projects",
-      "type": "stat"
-    },
-    {
-      "collapsed": false,
-      "datasource": {
-        "type": "datasource",
-        "uid": "grafana"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 6
+        "y": 7
       },
-      "id": 4,
-      "panels": [],
-      "title": "Details",
+      "id": 2,
+      "title": "Object Distribution",
       "type": "row"
     },
     {
@@ -357,12 +465,12 @@
               "fill": "solid"
             },
             "lineWidth": 1,
-            "pointSize": 5,
+            "pointSize": 4,
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "auto",
-            "spanNulls": false,
+            "showPoints": "never",
+            "spanNulls": true,
             "stacking": {
               "group": "A",
               "mode": "normal"
@@ -390,23 +498,24 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 11,
         "w": 12,
         "x": 0,
-        "y": 7
+        "y": 8
       },
-      "id": 10,
+      "id": 8,
       "options": {
         "legend": {
           "calcs": [
-            "max"
+            "max",
+            "last"
           ],
           "displayMode": "table",
-          "placement": "right"
+          "placement": "bottom"
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
@@ -415,14 +524,117 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "exemplar": true,
-          "expr": "count(kube_website_info{namespace=~\"$project\"}) by (namespace)",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(kube_website_shard{namespace=~\"$project\"} * on(shard) group_left kube_shard_info{app=\"$app\"}) by (shard)",
+          "instant": false,
           "interval": "",
-          "legendFormat": "{{namespace}}",
+          "legendFormat": "{{shard}}",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Websites per Project",
+      "title": "Websites Count per Shard",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 100,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 0,
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(kube_website_shard{namespace=~\"$project\"} or 0*kube_shard_info{app=\"$app\"}) by (shard) / ignoring(shard) group_left sum(kube_website_shard{namespace=~\"$project\"})",
+          "format": "time_series",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "{{shard}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Websites Percentage per Shard",
       "type": "timeseries"
     },
     {
@@ -452,12 +664,12 @@
               "fill": "solid"
             },
             "lineWidth": 1,
-            "pointSize": 5,
+            "pointSize": 4,
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "auto",
-            "spanNulls": false,
+            "showPoints": "never",
+            "spanNulls": true,
             "stacking": {
               "group": "A",
               "mode": "normal"
@@ -478,97 +690,6 @@
               {
                 "color": "red",
                 "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 7
-      },
-      "id": 13,
-      "options": {
-        "legend": {
-          "calcs": [
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "right"
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "exemplar": true,
-          "expr": "count(kube_website_info{namespace=~\"$project\"}) by (theme)",
-          "interval": "",
-          "legendFormat": "{{namespace}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Websites per Theme",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 100,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineStyle": {
-              "fill": "solid"
-            },
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
               }
             ]
           }
@@ -577,7 +698,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Error"
+              "options": "Unassigned"
             },
             "properties": [
               {
@@ -592,7 +713,22 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Ready"
+              "options": "Draining"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Assigned"
             },
             "properties": [
               {
@@ -607,7 +743,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Pending"
+              "options": "Assigned to unready"
             },
             "properties": [
               {
@@ -625,20 +761,21 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 15
+        "y": 19
       },
-      "id": 14,
+      "id": 15,
       "options": {
         "legend": {
           "calcs": [
-            "max"
+            "max",
+            "last"
           ],
           "displayMode": "table",
           "placement": "right"
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
@@ -647,14 +784,62 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "exemplar": true,
-          "expr": "sum(kube_website_status_phase{namespace=~\"$project\"}) by (phase)",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\",drain=\"false\"} * on(shard) group_left kube_shard_state{app=\"$app\",state=\"ready\"}) or vector(0)",
+          "instant": false,
           "interval": "",
-          "legendFormat": "{{phase}}",
+          "legendFormat": "Assigned",
+          "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\",drain=\"false\"} * on(shard) group_left max(kube_shard_state{app=\"$app\",state!=\"ready\"}) by (shard)) or vector(0)",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Assigned to unready",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",drain=\"true\"}) or vector(0)",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Draining",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard=\"\"}) or vector(0)",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Unassigned",
+          "range": true,
+          "refId": "D"
         }
       ],
-      "title": "Websites per Phase",
+      "title": "Websites Count per Sharding State",
       "type": "timeseries"
     },
     {
@@ -709,65 +894,19 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Error"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Ready"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Pending"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "orange",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 15
+        "y": 19
       },
-      "id": 15,
+      "id": 14,
       "options": {
         "legend": {
           "calcs": [],
-          "displayMode": "table",
+          "displayMode": "list",
           "placement": "right"
         },
         "tooltip": {
@@ -781,11 +920,13 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(kube_website_info{namespace=~\"$project\"} unless kube_website_info{namespace=~\"$project\"} offset $__rate_interval) or vector(0)",
+          "expr": "sum(increase(controller_runtime_sharding_assignments_total{group=\"webhosting.timebertt.dev\",kind=\"Website\"}[$__rate_interval]))",
           "hide": false,
           "interval": "",
-          "legendFormat": "Creation",
+          "legendFormat": "Assignments",
+          "range": true,
           "refId": "A"
         },
         {
@@ -793,137 +934,18 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "-sum(kube_website_info{namespace=~\"$project\"} offset $__rate_interval unless kube_website_info{namespace=~\"$project\"}) or vector(0)",
+          "expr": "sum(increase(controller_runtime_sharding_drains_total{group=\"webhosting.timebertt.dev\",kind=\"Website\"}[$__rate_interval]))",
           "hide": false,
           "interval": "",
-          "legendFormat": "Deletion",
+          "legendFormat": "Drains",
+          "range": true,
           "refId": "B"
         }
       ],
-      "title": "Website Churn Rate",
+      "title": "Sharder Actions",
       "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "datasource": {
-        "type": "datasource",
-        "uid": "grafana"
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 23
-      },
-      "id": 18,
-      "panels": [],
-      "title": "Websites",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "displayMode": "auto"
-          },
-          "links": [],
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "website"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "targetBlank": true,
-                    "title": "Open Website",
-                    "url": "https://webhosting.timebertt.dev/${__data.fields.namespace}/${__data.fields.website}"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 24,
-        "x": 0,
-        "y": 24
-      },
-      "id": 19,
-      "options": {
-        "footer": {
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true
-      },
-      "pluginVersion": "8.3.3",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "sum(kube_website_info{namespace=~\"$project\"} * on(theme) group_left(color, font_family) kube_theme_info) by (namespace, theme, website, color, font_family)",
-          "format": "table",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "title": "Website List",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Value #A": true
-            },
-            "indexByName": {
-              "Time": 0,
-              "Value #A": 6,
-              "color": 4,
-              "font_family": 5,
-              "namespace": 1,
-              "theme": 3,
-              "website": 2
-            },
-            "renameByName": {}
-          }
-        }
-      ],
-      "type": "table"
     }
   ],
   "refresh": "10s",
@@ -946,13 +968,43 @@
         "name": "datasource",
         "options": [],
         "query": "prometheus",
+        "queryValue": "",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "type": "datasource"
       },
       {
-        "allValue": "",
+        "current": {
+          "selected": true,
+          "text": [
+            "webhosting-operator"
+          ],
+          "value": [
+            "webhosting-operator"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(kube_shard_info{job=\"webhosting-exporter\"}, app)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "app",
+        "options": [],
+        "query": {
+          "query": "label_values(kube_shard_info{job=\"webhosting-exporter\"}, app)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
         "current": {
           "selected": true,
           "text": [
@@ -990,8 +1042,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Webhosting",
-  "uid": "NbmNpqEnk",
-  "version": 2,
+  "title": "Sharding",
+  "uid": "7liIybkVk",
+  "version": 5,
   "weekStart": ""
 }
