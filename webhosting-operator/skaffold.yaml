@@ -84,9 +84,17 @@ deploy:
           command:
           - bash
           - -c
-          - '[ -f config/monitoring/grafana_admin_pass.secret.txt ] || cat /dev/urandom | tr -dc "a-zA-Z0-9" | head -c 32 > config/monitoring/grafana_admin_pass.secret.txt'
+          - '[ -f config/monitoring/default/grafana_admin_pass.secret.txt ] || cat /dev/urandom | tr -dc "a-zA-Z0-9" | head -c 32 > config/monitoring/default/grafana_admin_pass.secret.txt'
     paths:
-    - config/monitoring
+    - config/monitoring/default
+profiles:
+- name: k3d
+  activation:
+  - kubeContext: k3d-webhosting
+  deploy:
+    kustomize:
+      paths:
+      - config/monitoring/k3d
 portForward:
 - resourceType: service
   namespace: monitoring
