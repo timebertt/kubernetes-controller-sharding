@@ -29,6 +29,7 @@ images:
 configMapGenerator:
 - files:
   - dashboard-webhosting.json
+  - dashboard-sharding.json
   name: grafana-dashboard-webhosting
   options:
     labels:
