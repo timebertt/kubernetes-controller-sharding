@@ -161,7 +161,7 @@ k port-forward -n monitoring svc/grafana 3000
 k port-forward -n monitoring svc/prometheus-k8s 9090
 
 # get the grafana admin password
-cat config/monitoring/grafana_admin_pass.secret.txt
+cat config/monitoring/default/grafana_admin_pass.secret.txt
 ```
 
 Alternatively, build a fresh image and deploy it using [skaffold](https://skaffold.dev/):
