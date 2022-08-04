@@ -15,6 +15,16 @@ resources:
 generatorOptions:
   disableNameSuffixHash: true
 
+configMapGenerator:
+- files:
+  - dashboards/webhosting.json
+  - dashboards/sharding.json
+  name: grafana-dashboard-webhosting
+  namespace: monitoring
+  options:
+    labels:
+      grafana_dashboard: "true"
+
 secretGenerator:
 - name: grafana-admin
   namespace: monitoring
