@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "iteration": 1659622501536,
+  "iteration": 1659625640282,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -454,7 +454,7 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 100,
-            "gradientMode": "opacity",
+            "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -553,7 +553,7 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 100,
-            "gradientMode": "opacity",
+            "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -653,7 +653,7 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 100,
-            "gradientMode": "opacity",
+            "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -739,21 +739,6 @@
                 }
               }
             ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Assigned to unready"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "orange",
-                  "mode": "fixed"
-                }
-              }
-            ]
           }
         ]
       },
@@ -786,27 +771,12 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\",drain=\"false\"} * on(shard) group_left kube_shard_state{app=\"$app\",state=\"ready\"}) or vector(0)",
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\",drain=\"false\"}) or vector(0)",
           "instant": false,
           "interval": "",
           "legendFormat": "Assigned",
           "range": true,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\",drain=\"false\"} * on(shard) group_left max(kube_shard_state{app=\"$app\",state!=\"ready\"}) by (shard)) or vector(0)",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "Assigned to unready",
-          "range": true,
-          "refId": "B"
         },
         {
           "datasource": {
@@ -821,7 +791,7 @@
           "interval": "",
           "legendFormat": "Draining",
           "range": true,
-          "refId": "C"
+          "refId": "B"
         },
         {
           "datasource": {
@@ -836,7 +806,7 @@
           "interval": "",
           "legendFormat": "Unassigned",
           "range": true,
-          "refId": "D"
+          "refId": "C"
         }
       ],
       "title": "Websites Count per Sharding State",
@@ -976,7 +946,7 @@
       },
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": [
             "webhosting-operator"
           ],
@@ -1006,7 +976,7 @@
       },
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": [
             "All"
           ],

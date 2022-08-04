@@ -25,7 +25,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "iteration": 1659614012867,
+  "iteration": 1659625177938,
   "links": [],
   "liveNow": true,
   "panels": [
@@ -345,7 +345,7 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 100,
-            "gradientMode": "opacity",
+            "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -404,8 +404,8 @@
           "placement": "right"
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
@@ -440,7 +440,7 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 100,
-            "gradientMode": "opacity",
+            "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -499,8 +499,8 @@
           "placement": "right"
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
@@ -535,7 +535,7 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 100,
-            "gradientMode": "opacity",
+            "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -636,8 +636,8 @@
           "placement": "right"
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
@@ -770,7 +770,7 @@
           "placement": "right"
         },
         "tooltip": {
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -993,6 +993,6 @@
   "timezone": "",
   "title": "Webhosting",
   "uid": "NbmNpqEnk",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }
