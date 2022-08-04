@@ -29,7 +29,7 @@ const websiteSubsystem = kubeStateMetricsPrefix + "website_"
 
 var (
 	// websiteCommonLabels are labels added on each website metric
-	websiteCommonLabels = []string{"namespace", "website"}
+	websiteCommonLabels = []string{"namespace", "website", "uid"}
 )
 
 type websiteFactory struct {
@@ -177,7 +177,7 @@ func wrapWebsiteFunc(f func(*webhostingv1alpha1.Website) *metric.Family) func(in
 		// populate common labels with values
 		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(websiteCommonLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{website.Namespace, website.Name}, m.LabelValues...)
+			m.LabelValues = append([]string{website.Namespace, website.Name, string(website.UID)}, m.LabelValues...)
 		}
 
 		return metricFamily
