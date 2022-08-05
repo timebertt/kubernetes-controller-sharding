@@ -7,6 +7,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/onsi/gomega v1.19.0
 	github.com/prometheus/common v0.34.0
+	github.com/spf13/cobra v1.4.0
 	go.uber.org/zap v1.19.1
 	k8s.io/api v0.24.2
 	k8s.io/apimachinery v0.24.2
@@ -17,9 +18,6 @@ require (
 	sigs.k8s.io/controller-runtime v0.12.3
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20220706173534-cd0058ad295c // v0.12.3
 )
-
-// https://github.com/timebertt/controller-runtime/tree/sharding based on v0.12.3
-replace sigs.k8s.io/controller-runtime => github.com/timebertt/controller-runtime v0.6.1-0.20220802120014-c54af00dcbee
 
 require (
 	cloud.google.com/go v0.81.0 // indirect
@@ -55,6 +53,7 @@ require (
 	github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38 // indirect
 	github.com/google/uuid v1.1.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -97,3 +96,6 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+// https://github.com/timebertt/controller-runtime/tree/sharding based on v0.12.3
+replace sigs.k8s.io/controller-runtime => github.com/timebertt/controller-runtime v0.6.1-0.20220804141120-b0d370648115

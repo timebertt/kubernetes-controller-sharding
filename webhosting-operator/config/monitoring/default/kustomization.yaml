@@ -2,18 +2,28 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 components:
-- grafana-sidecar
+- ../grafana-sidecar
 
 resources:
 - namespace.yaml
 - rbac-proxy_clusterrole.yaml
-- kube-prometheus
+- ../kube-prometheus
 - grafana_ingress.yaml
-- webhosting-exporter
-- webhosting-operator
+- ../webhosting-exporter
+- ../webhosting-operator
 
 generatorOptions:
   disableNameSuffixHash: true
+
+configMapGenerator:
+- files:
+  - dashboards/webhosting.json
+  - dashboards/sharding.json
+  name: grafana-dashboard-webhosting
+  namespace: monitoring
+  options:
+    labels:
+      grafana_dashboard: "true"
 
 secretGenerator:
 - name: grafana-admin

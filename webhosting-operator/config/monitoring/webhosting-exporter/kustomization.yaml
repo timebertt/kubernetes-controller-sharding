@@ -25,11 +25,3 @@ images:
 - name: exporter
   newName: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter
   newTag: latest
-
-configMapGenerator:
-- files:
-  - dashboard-webhosting.json
-  name: grafana-dashboard-webhosting
-  options:
-    labels:
-      grafana_dashboard: "true"

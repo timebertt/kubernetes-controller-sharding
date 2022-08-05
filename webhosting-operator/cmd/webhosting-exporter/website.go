@@ -20,6 +20,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/customresource"
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	"k8s.io/kube-state-metrics/v2/pkg/metric_generator"
+	"sigs.k8s.io/controller-runtime/pkg/controller/sharding"
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
 )
@@ -28,7 +29,7 @@ const websiteSubsystem = kubeStateMetricsPrefix + "website_"
 
 var (
 	// websiteCommonLabels are labels added on each website metric
-	websiteCommonLabels = []string{"namespace", "website"}
+	websiteCommonLabels = []string{"namespace", "website", "uid"}
 )
 
 type websiteFactory struct {
@@ -54,6 +55,7 @@ func (w websiteFactory) ExpectedType() interface{} {
 func (w websiteFactory) MetricFamilyGenerators(allowAnnotationsList, allowLabelsList []string) []generator.FamilyGenerator {
 	return []generator.FamilyGenerator{
 		websiteInfo(),
+		websiteShard(),
 		websiteMetadataGeneration(),
 		websiteStatusObservedGeneration(),
 		websiteStatusPhase(),
@@ -71,6 +73,24 @@ func websiteInfo() generator.FamilyGenerator {
 				Metrics: []*metric.Metric{{
 					LabelKeys:   []string{"theme"},
 					LabelValues: []string{w.Spec.Theme},
+					Value:       1,
+				}},
+			}
+		}),
+	)
+}
+
+func websiteShard() generator.FamilyGenerator {
+	return *generator.NewFamilyGenerator(
+		websiteSubsystem+"shard",
+		"Sharding information about a Website.",
+		metric.Gauge,
+		"",
+		wrapWebsiteFunc(func(w *webhostingv1alpha1.Website) *metric.Family {
+			return &metric.Family{
+				Metrics: []*metric.Metric{{
+					LabelKeys:   []string{"shard", "drain"},
+					LabelValues: []string{w.Labels[sharding.ShardLabel], boolLabel(w.Labels[sharding.DrainLabel] != "")},
 					Value:       1,
 				}},
 			}
@@ -157,7 +177,7 @@ func wrapWebsiteFunc(f func(*webhostingv1alpha1.Website) *metric.Family) func(in
 		// populate common labels with values
 		for _, m := range metricFamily.Metrics {
 			m.LabelKeys = append(websiteCommonLabels, m.LabelKeys...)
-			m.LabelValues = append([]string{website.Namespace, website.Name}, m.LabelValues...)
+			m.LabelValues = append([]string{website.Namespace, website.Name, string(website.UID)}, m.LabelValues...)
 		}
 
 		return metricFamily
