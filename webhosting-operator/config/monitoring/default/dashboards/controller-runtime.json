@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "iteration": 1659869155345,
+  "iteration": 1659873432391,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -138,7 +138,7 @@
           "refId": "A"
         }
       ],
-      "title": "Reconciliation Rate",
+      "title": "Reconciliation Rate by controller",
       "type": "timeseries"
     },
     {
@@ -288,7 +288,7 @@
           "refId": "A"
         }
       ],
-      "title": "Reconciliation Rate",
+      "title": "Reconciliation Rate by result",
       "type": "timeseries"
     },
     {
@@ -381,32 +381,15 @@
           "refId": "A"
         }
       ],
-      "title": "Error Rate",
+      "title": "Error Rate by controller",
       "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "datasource": {
-        "type": "datasource",
-        "uid": "grafana"
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 23
-      },
-      "id": 11,
-      "panels": [],
-      "title": "Work Queue Metrics",
-      "type": "row"
     },
     {
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "How long in seconds an item stays in workqueue before being requested",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -417,132 +400,15 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 0,
-        "y": 24
-      },
-      "id": 13,
-      "options": {
-        "legend": {
-          "calcs": [
-            "max",
-            "mean"
-          ],
-          "displayMode": "list",
-          "placement": "right"
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "exemplar": true,
-          "expr": "histogram_quantile(0.50, sum(rate(workqueue_queue_duration_seconds_bucket{job=\"$job\", namespace=\"$namespace\"}[5m])) by (instance, name, le))",
-          "interval": "",
-          "legendFormat": "P50 {{name}} {{instance}} ",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "exemplar": true,
-          "expr": "histogram_quantile(0.90, sum(rate(workqueue_queue_duration_seconds_bucket{job=\"$job\", namespace=\"$namespace\"}[5m])) by (instance, name, le))",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "P90 {{name}} {{instance}} ",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "exemplar": true,
-          "expr": "histogram_quantile(0.99, sum(rate(workqueue_queue_duration_seconds_bucket{job=\"$job\", namespace=\"$namespace\"}[5m])) by (instance, name, le))",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "P99 {{name}} {{instance}} ",
-          "refId": "C"
-        }
-      ],
-      "title": "Seconds For Items Stay In Queue (before being requested) (P50, P90, P99)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "continuous-GrYlRd"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "gradientMode": "scheme",
+            "fillOpacity": 50,
+            "gradientMode": "opacity",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
             "lineInterpolation": "smooth",
-            "lineWidth": 3,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -564,24 +430,20 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
               }
             ]
           },
-          "unit": "ops"
+          "unit": "s"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 11,
         "w": 12,
-        "x": 12,
-        "y": 24
+        "x": 0,
+        "y": 23
       },
-      "id": 15,
+      "id": 23,
       "options": {
         "legend": {
           "calcs": [],
@@ -593,21 +455,314 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "8.4.3",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "exemplar": true,
-          "expr": "sum(rate(workqueue_adds_total{job=\"$job\", namespace=\"$namespace\"}[5m])) by (instance, name)",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "histogram_quantile($percentile/100, sum(rate(controller_runtime_reconcile_time_seconds_bucket{job=\"$job\",controller=~\"$controller\"}[$__rate_interval])) by (controller,le))",
+          "format": "time_series",
+          "instant": false,
           "interval": "",
-          "legendFormat": "{{name}} {{instance}}",
+          "legendFormat": "{{result}}",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Work Queue Add Rate",
+      "title": "Reconciliation Time by controller (P$percentile)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 50,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 23
+      },
+      "id": 22,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(controller_runtime_active_workers{job=\"$job\",controller=~\"$controller\"}) by (controller)",
+          "interval": "",
+          "legendFormat": "{{controller}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Workers by controller",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "datasource",
+        "uid": "grafana"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "id": 11,
+      "panels": [],
+      "title": "Work Queue",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 50,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 35
+      },
+      "id": 25,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(workqueue_depth{job=\"$job\",name=~\"$controller\"}) by (name)",
+          "format": "time_series",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "{{name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Queue Length by controller",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 50,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 35
+      },
+      "id": 24,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "histogram_quantile($percentile/100, sum(rate(workqueue_queue_duration_seconds_bucket{job=\"$job\",name=~\"$controller\"}[$__rate_interval])) by (name,le))",
+          "format": "time_series",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "{{name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Queue Duration by controller (P$percentile)",
       "type": "timeseries"
     },
     {
@@ -671,7 +826,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 31
+        "y": 46
       },
       "id": 19,
       "options": {
@@ -726,6 +881,97 @@
         }
       ],
       "title": "Seconds Processing Items From WorkQueue (P50, P90, P99)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "scheme",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 46
+      },
+      "id": 15,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "8.4.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "exemplar": true,
+          "expr": "sum(rate(workqueue_adds_total{job=\"$job\", namespace=\"$namespace\"}[5m])) by (instance, name)",
+          "interval": "",
+          "legendFormat": "{{name}} {{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Work Queue Add Rate",
       "type": "timeseries"
     },
     {
@@ -789,7 +1035,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 31
+        "y": 53
       },
       "id": 17,
       "options": {
@@ -828,7 +1074,7 @@
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "prometheus",
           "value": "prometheus"
         },
@@ -874,7 +1120,7 @@
       {
         "allFormat": "glob",
         "current": {
-          "selected": true,
+          "selected": false,
           "text": [
             "All"
           ],
@@ -903,43 +1149,47 @@
         "type": "query"
       },
       {
-        "allFormat": "glob",
         "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
+          "selected": true,
+          "text": "90",
+          "value": "90"
         },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${datasource}"
-        },
-        "definition": "label_values(controller_runtime_reconcile_total{job=~\"$job\"}, pod)",
-        "hide": 2,
-        "includeAll": true,
-        "label": "pod",
-        "multi": true,
-        "name": "pod",
-        "options": [],
-        "query": {
-          "query": "label_values(controller_runtime_reconcile_total{job=~\"$job\"}, pod)",
-          "refId": "StandardVariableQuery"
-        },
-        "refresh": 2,
-        "regex": "",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "percentile",
+        "options": [
+          {
+            "selected": false,
+            "text": "50",
+            "value": "50"
+          },
+          {
+            "selected": true,
+            "text": "90",
+            "value": "90"
+          },
+          {
+            "selected": false,
+            "text": "99",
+            "value": "99"
+          }
+        ],
+        "query": "50,90,99",
+        "queryValue": "",
         "skipUrlSync": false,
-        "sort": 0,
-        "type": "query"
+        "type": "custom"
       }
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Controller Runtime",
+  "title": "Controller Runtime / Controllers",
   "uid": "PuCBL3zVz",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
