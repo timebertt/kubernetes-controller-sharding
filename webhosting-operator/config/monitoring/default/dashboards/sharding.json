@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "iteration": 1659856130342,
+  "iteration": 1659866847621,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -359,7 +359,11 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "editorMode": "code",
+          "exemplar": false,
           "expr": "sum(kube_shard_state{app=\"$app\",state=\"ready\"}) / sum(kube_shard_info{app=\"$app\"}) * 100",
+          "instant": true,
+          "range": false,
           "refId": "A"
         }
       ],
@@ -424,9 +428,11 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
+          "exemplar": false,
           "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\"} or 0*kube_shard_info{app=\"$app\"}) by (shard) / ignoring(shard) group_left sum(kube_website_shard{namespace=~\"$project\"})",
+          "instant": true,
           "legendFormat": "__auto",
-          "range": true,
+          "range": false,
           "refId": "A"
         }
       ],
