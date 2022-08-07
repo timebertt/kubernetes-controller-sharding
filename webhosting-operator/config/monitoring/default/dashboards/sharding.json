@@ -739,6 +739,21 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Assigned to unready"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
           }
         ]
       },
@@ -771,12 +786,27 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\",drain=\"false\"}) or vector(0)",
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\",drain=\"false\"} * on(shard) group_left kube_shard_state{app=\"$app\",state=\"ready\"}) or vector(0)",
           "instant": false,
           "interval": "",
           "legendFormat": "Assigned",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\",drain=\"false\"} * on(shard) group_left max(kube_shard_state{app=\"$app\",state!=\"ready\"}) by (shard)) or vector(0)",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Assigned to unready",
+          "range": true,
+          "refId": "B"
         },
         {
           "datasource": {
@@ -791,7 +821,7 @@
           "interval": "",
           "legendFormat": "Draining",
           "range": true,
-          "refId": "B"
+          "refId": "C"
         },
         {
           "datasource": {
@@ -806,7 +836,7 @@
           "interval": "",
           "legendFormat": "Unassigned",
           "range": true,
-          "refId": "C"
+          "refId": "D"
         }
       ],
       "title": "Websites Count per Sharding State",
@@ -946,7 +976,7 @@
       },
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": [
             "webhosting-operator"
           ],
@@ -976,7 +1006,7 @@
       },
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": [
             "All"
           ],

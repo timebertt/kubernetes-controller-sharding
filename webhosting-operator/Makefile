@@ -107,7 +107,7 @@ build: generate fmt vet ## Build manager binary.
 
 .PHONY: run
 run: manifests generate fmt vet ## Run the webhosting-operator from your host.
-	go run ./cmd/webhosting-operator --config=config/manager/base/controller_manager_config.yaml
+	go run ./cmd/webhosting-operator --config=config/manager/default/controller_manager_config.yaml
 
 .PHONY: run-exporter
 run-exporter: ## Run the webhosting-exporter from your host.
@@ -139,7 +139,7 @@ uninstall: $(KUSTOMIZE) $(KUBECTL) manifests ## Uninstall CRDs from K8s cluster 
 
 .PHONY: deploy
 deploy: $(KUSTOMIZE) $(KUBECTL) manifests ## Deploy controller to K8s cluster specified in $KUBECONFIG.
-	cd config/manager/base && $(abspath $(KUSTOMIZE)) edit set image controller=${IMG}
+	cd config/manager/default && $(abspath $(KUSTOMIZE)) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/manager/$(OVERLAY) | $(KUBECTL) apply -f -
 
 .PHONY: undeploy

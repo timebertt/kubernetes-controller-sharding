@@ -60,7 +60,7 @@ k port-forward -n monitoring svc/grafana 3000
 ```
 
 Now, visit the sample websites: http://localhost:8088/project-foo/homepage and http://localhost:8088/project-foo/official.
-Also, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/webhosting?orgId=1&refresh=10s).
+Also, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/webhosting?orgId=1).
 
 ### 1. Create a Kubernetes Cluster
 
@@ -174,6 +174,6 @@ skaffold run -m monitoring --port-forward=user
 skaffold dev -m monitoring --port-forward=user
 ```
 
-Now, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/webhosting?orgId=1&refresh=10s) at http://127.0.0.1:3000.
+Now, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/webhosting?orgId=1) at http://127.0.0.1:3000.
 
-You can also visit the [public Grafana dashboard](https://grafana.webhosting.timebertt.dev/d/NbmNpqEnk/webhosting?orgId=1&refresh=10s) to see what's currently going on in my cluster. 
+You can also visit the [public Grafana dashboard](https://grafana.webhosting.timebertt.dev/d/NbmNpqEnk/webhosting?orgId=1) to see what's currently going on in my cluster. 

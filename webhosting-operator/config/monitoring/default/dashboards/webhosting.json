@@ -25,7 +25,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "iteration": 1659625177938,
+  "iteration": 1659855312040,
   "links": [],
   "liveNow": true,
   "panels": [
@@ -864,6 +864,18 @@
                     "url": "https://webhosting.timebertt.dev/${__data.fields.namespace}/${__data.fields.website}"
                   }
                 ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
               }
             ]
           }
