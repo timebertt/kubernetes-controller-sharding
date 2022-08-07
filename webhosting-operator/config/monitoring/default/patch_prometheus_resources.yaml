@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: k8s
+  namespace: monitoring
+spec:
+  replicas: 1 # don't need HA for our purposes
+  resources:
+    requests:
+      cpu: 100m
+      memory: 800Mi
+    limits:
+      cpu: 250m
+      memory: 1.2Gi

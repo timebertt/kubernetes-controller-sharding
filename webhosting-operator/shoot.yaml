@@ -84,6 +84,9 @@ spec:
         type: pd-ssd
       zones:
       - europe-west1-c
+      kubernetes:
+        kubelet:
+          maxPods: 250
   purpose: development
   region: europe-west1
   secretBindingName: shoot-operator-gcp

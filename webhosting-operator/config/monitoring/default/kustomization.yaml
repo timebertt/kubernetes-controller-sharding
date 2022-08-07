@@ -33,6 +33,7 @@ secretGenerator:
 
 patchesStrategicMerge:
 - patch_grafana_admin.yaml
+- patch_prometheus_resources.yaml
 
 patches:
 - path: patch_grafana_networkpolicy.yaml
