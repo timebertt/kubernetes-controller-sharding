@@ -176,4 +176,4 @@ skaffold dev -m monitoring --port-forward=user
 
 Now, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/webhosting?orgId=1) at http://127.0.0.1:3000.
 
-You can also visit the [public Grafana dashboard](https://grafana.webhosting.timebertt.dev/d/NbmNpqEnk/webhosting?orgId=1) to see what's currently going on in my cluster. 
+You can also visit the public Grafana [webhosting dashboard](https://grafana.webhosting.timebertt.dev/d/NbmNpqEnk/webhosting?orgId=1) or [sharding dashboard](https://grafana.webhosting.timebertt.dev/d/7liIybkVk/sharding?orgId=1) to see what's currently going on in my cluster. 

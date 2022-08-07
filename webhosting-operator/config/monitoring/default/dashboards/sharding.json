@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "iteration": 1659625640282,
+  "iteration": 1659856130342,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -52,6 +52,7 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -101,68 +102,6 @@
         }
       ],
       "title": "Total Shards",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 3,
-        "x": 3,
-        "y": 1
-      },
-      "id": 4,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "8.5.5",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "expr": "sum(kube_shard_state{app=\"$app\",state=\"ready\"})",
-          "refId": "A"
-        }
-      ],
-      "title": "Ready Shards",
       "type": "stat"
     },
     {
@@ -319,7 +258,7 @@
       "gridPos": {
         "h": 6,
         "w": 11,
-        "x": 6,
+        "x": 3,
         "y": 1
       },
       "id": 12,
@@ -396,8 +335,8 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 7,
-        "x": 17,
+        "w": 5,
+        "x": 14,
         "y": 1
       },
       "id": 10,
@@ -426,6 +365,73 @@
       ],
       "title": "Shard Readiness",
       "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "green",
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 5,
+        "x": 19,
+        "y": 1
+      },
+      "id": 16,
+      "options": {
+        "legend": {
+          "displayMode": "hidden",
+          "placement": "bottom"
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "8.5.5",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\"} or 0*kube_shard_info{app=\"$app\"}) by (shard) / ignoring(shard) group_left sum(kube_website_shard{namespace=~\"$project\"})",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Object Distribution",
+      "type": "piechart"
     },
     {
       "gridPos": {
@@ -526,7 +532,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(kube_website_shard{namespace=~\"$project\"} * on(shard) group_left kube_shard_info{app=\"$app\"}) by (shard)",
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\"} * on(shard) group_left kube_shard_info{app=\"$app\"}) by (shard)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{shard}}",
@@ -625,7 +631,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(kube_website_shard{namespace=~\"$project\"} or 0*kube_shard_info{app=\"$app\"}) by (shard) / ignoring(shard) group_left sum(kube_website_shard{namespace=~\"$project\"})",
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\"} or 0*kube_shard_info{app=\"$app\"}) by (shard) / ignoring(shard) group_left sum(kube_website_shard{namespace=~\"$project\"})",
           "format": "time_series",
           "instant": false,
           "interval": "",
