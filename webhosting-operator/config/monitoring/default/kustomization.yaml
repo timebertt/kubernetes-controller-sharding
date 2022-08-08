@@ -18,6 +18,7 @@ generatorOptions:
 configMapGenerator:
 - files:
   - dashboards/controller-runtime.json
+  - dashboards/controller-details.json
   - dashboards/webhosting.json
   - dashboards/sharding.json
   name: grafana-dashboard-webhosting
