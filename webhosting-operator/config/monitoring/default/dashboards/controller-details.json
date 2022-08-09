@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "iteration": 1659963556115,
+  "iteration": 1660054688256,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -790,6 +790,7 @@
             }
           },
           "mappings": [],
+          "max": 2,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1183,8 +1184,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -1307,8 +1307,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -1430,8 +1429,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -1488,7 +1486,7 @@
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "prometheus",
           "value": "prometheus"
         },
@@ -1535,8 +1533,8 @@
         "allFormat": "glob",
         "current": {
           "selected": true,
-          "text": "website",
-          "value": "website"
+          "text": "sharder.ConfigMap",
+          "value": "sharder.ConfigMap"
         },
         "datasource": {
           "type": "prometheus",
@@ -1561,7 +1559,7 @@
       {
         "allFormat": "glob",
         "current": {
-          "selected": true,
+          "selected": false,
           "text": [
             "All"
           ],

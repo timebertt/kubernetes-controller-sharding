@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "iteration": 1659964272855,
+  "iteration": 1660131615387,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -36,7 +36,7 @@
         "y": 0
       },
       "id": 35,
-      "title": "Headlines",
+      "title": "Headlines (over time range)",
       "type": "row"
     },
     {
@@ -95,7 +95,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(controller_runtime_reconcile_total{job=\"$job\",controller=~\"$controller\"}[$__rate_interval])) by (controller)",
+          "expr": "sum(rate(controller_runtime_reconcile_total{job=\"$job\",controller=~\"$controller\"}[$__range])) by (controller)",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -293,7 +293,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(controller_runtime_reconcile_time_seconds_sum{job=\"$job\",controller=~\"$controller\"}[$__rate_interval])) by (controller)",
+          "expr": "sum(rate(controller_runtime_reconcile_time_seconds_sum{job=\"$job\",controller=~\"$controller\"}[$__range])) by (controller)",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -1017,6 +1017,7 @@
             }
           },
           "mappings": [],
+          "max": 2,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1760,6 +1761,6 @@
   "timezone": "",
   "title": "Controller Runtime / Controllers",
   "uid": "PuCBL3zVz",
-  "version": 7,
+  "version": 1,
   "weekStart": ""
 }
