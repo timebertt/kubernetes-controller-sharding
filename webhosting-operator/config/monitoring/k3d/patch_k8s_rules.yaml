@@ -1,0 +1,54 @@
+- op: test
+  path: "/spec/groups/12/name"
+  value: "k8s.rules"
+- op: test
+  path: "/spec/groups/12/rules/0/record"
+  value: node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate
+- op: replace
+  path: "/spec/groups/12/rules/0/expr"
+  value: |
+    sum by (cluster, namespace, pod, container) (
+      irate(container_cpu_usage_seconds_total{job="kubelet", metrics_path="/metrics/cadvisor"}[5m])
+    ) * on (cluster, namespace, pod) group_left(node) topk by (cluster, namespace, pod) (
+      1, max by(cluster, namespace, pod, node) (kube_pod_info{node!=""})
+    )
+- op: test
+  path: "/spec/groups/12/rules/1/record"
+  value: node_namespace_pod_container:container_memory_working_set_bytes
+- op: replace
+  path: "/spec/groups/12/rules/1/expr"
+  value: |
+    container_memory_working_set_bytes{job="kubelet", metrics_path="/metrics/cadvisor"}
+    * on (namespace, pod) group_left(node) topk by(namespace, pod) (1,
+      max by(namespace, pod, node) (kube_pod_info{node!=""})
+    )
+- op: test
+  path: "/spec/groups/12/rules/2/record"
+  value: node_namespace_pod_container:container_memory_rss
+- op: replace
+  path: "/spec/groups/12/rules/2/expr"
+  value: |
+    container_memory_rss{job="kubelet", metrics_path="/metrics/cadvisor"}
+    * on (namespace, pod) group_left(node) topk by(namespace, pod) (1,
+      max by(namespace, pod, node) (kube_pod_info{node!=""})
+    )
+- op: test
+  path: "/spec/groups/12/rules/3/record"
+  value: node_namespace_pod_container:container_memory_cache
+- op: replace
+  path: "/spec/groups/12/rules/3/expr"
+  value: |
+    container_memory_cache{job="kubelet", metrics_path="/metrics/cadvisor"}
+    * on (namespace, pod) group_left(node) topk by(namespace, pod) (1,
+      max by(namespace, pod, node) (kube_pod_info{node!=""})
+    )
+- op: test
+  path: "/spec/groups/12/rules/4/record"
+  value: node_namespace_pod_container:container_memory_swap
+- op: replace
+  path: "/spec/groups/12/rules/4/expr"
+  value: |
+    container_memory_swap{job="kubelet", metrics_path="/metrics/cadvisor"}
+    * on (namespace, pod) group_left(node) topk by(namespace, pod) (1,
+      max by(namespace, pod, node) (kube_pod_info{node!=""})
+    )

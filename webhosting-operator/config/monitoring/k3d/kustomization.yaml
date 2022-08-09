@@ -17,3 +17,10 @@ patches:
       value: "sys"
     - op: remove
       path: "/spec/template/spec/containers/0/volumeMounts/0/mountPropagation"
+- target:
+    group: monitoring.coreos.com
+    version: v1
+    kind: PrometheusRule
+    name: kubernetes-monitoring-rules
+    namespace: monitoring
+  path: patch_k8s_rules.yaml
