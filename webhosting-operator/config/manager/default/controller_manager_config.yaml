@@ -11,4 +11,4 @@ leaderElection:
   leaderElect: true
   resourceLock: leases
   resourceName: webhosting-operator
-  resourceNamespace: webhosting-operator-system
+  resourceNamespace: webhosting-system

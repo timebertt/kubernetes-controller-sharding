@@ -54,8 +54,8 @@ profiles:
       - config/manager/with-dns
 portForward:
 - resourceType: deployment
-  namespace: webhosting-operator-system
-  resourceName: webhosting-operator-controller-manager
+  namespace: webhosting-system
+  resourceName: webhosting-operator
   port: metrics
   localPort: 8081
 ---

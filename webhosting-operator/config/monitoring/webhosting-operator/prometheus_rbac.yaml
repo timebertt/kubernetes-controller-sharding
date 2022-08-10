@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/instance: k8s
     app.kubernetes.io/name: prometheus
   name: prometheus-k8s
-  namespace: webhosting-operator-system
+  namespace: webhosting-system
 rules:
 - apiGroups:
   - ""
@@ -28,7 +28,7 @@ metadata:
     app.kubernetes.io/instance: k8s
     app.kubernetes.io/name: prometheus
   name: prometheus-k8s
-  namespace: webhosting-operator-system
+  namespace: webhosting-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
