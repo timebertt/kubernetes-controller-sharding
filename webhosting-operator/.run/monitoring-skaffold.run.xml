@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="monitoring skaffold" type="google-container-tools-skaffold-run-config" factoryName="google-container-tools-skaffold-run-config-dev" show_console_on_std_err="false" show_console_on_std_out="false" kubeconfigFile="{&quot;displayName&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml&quot;,&quot;path&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml&quot;}">
+  <configuration default="false" name="monitoring skaffold" type="google-container-tools-skaffold-run-config" factoryName="google-container-tools-skaffold-run-config-dev" show_console_on_std_err="false" show_console_on_std_out="false" kubeconfigFile="{&quot;displayName&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/kind_kubeconfig.yaml&quot;,&quot;path&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/kind_kubeconfig.yaml&quot;}">
     <option name="allowRunningInParallel" value="false" />
     <option name="buildEnvironment" value="Local" />
     <option name="cleanupDeployments" value="false" />

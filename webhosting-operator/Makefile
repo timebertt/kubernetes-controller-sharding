@@ -146,18 +146,18 @@ deploy: $(KUSTOMIZE) $(KUBECTL) manifests ## Deploy controller to K8s cluster sp
 undeploy: $(KUSTOMIZE) $(KUBECTL) ## Undeploy controller from K8s cluster specified in $KUBECONFIG. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/manager/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
-K3D_KUBECONFIG := $(PROJECT_DIR)/dev/k3d_kubeconfig.yaml
-k3d-up k3d-down up dev down: export KUBECONFIG = $(K3D_KUBECONFIG)
+KIND_KUBECONFIG := $(PROJECT_DIR)/dev/kind_kubeconfig.yaml
+kind-up kind-down up dev down: export KUBECONFIG = $(KIND_KUBECONFIG)
 
-.PHONY: k3d-up
-k3d-up: $(K3D) ## Launch a k3d cluster for testing the operator.
-	$(K3D) cluster create webhosting -i "docker.io/rancher/k3s:v1.24.2-k3s2" -p "8088:80@loadbalancer" --k3s-arg "--disable=traefik@server:0"
-	# run `export KUBECONFIG=$$PWD/dev/k3d_kubeconfig.yaml` to target the created k3d cluster.
-	$(MAKE) deploy-ingress-nginx
+.PHONY: kind-up
+kind-up: $(KIND) ## Launch a kind cluster for testing the operator.
+	$(KIND) create cluster --name webhosting --config hack/kind-config.yaml
+	# run `export KUBECONFIG=$$PWD/dev/kind_kubeconfig.yaml` to target the created kind cluster.
+	$(MAKE) deploy-ingress-nginx OVERLAY=kind
 
-.PHONY: k3d-down
-k3d-down: $(K3D) ## Tear down the k3d testing cluster.
-	$(K3D) cluster delete webhosting
+.PHONY: kind-down
+kind-down: $(KIND) ## Tear down the kind testing cluster.
+	$(KIND) delete cluster --name webhosting
 
 .PHONY: deploy-ingress-nginx
 deploy-ingress-nginx: $(KUSTOMIZE) $(KUBECTL) ## Deploy ingress-nginx to K8s cluster specified in $KUBECONFIG.
@@ -165,12 +165,6 @@ deploy-ingress-nginx: $(KUSTOMIZE) $(KUBECTL) ## Deploy ingress-nginx to K8s clu
 	$(KUBECTL) -n ingress-nginx delete job --ignore-not-found ingress-nginx-admission-create ingress-nginx-admission-patch
 	$(KUSTOMIZE) build config/ingress-nginx/$(OVERLAY) | $(KUBECTL) apply --server-side -f -
 	$(KUBECTL) -n ingress-nginx wait deploy ingress-nginx-controller --for=condition=Available --timeout=2m
-
-ifneq (,$(findstring deploy-monitoring,$(MAKECMDGOALS)))
-ifeq (${KUBECONFIG},$(K3D_KUBECONFIG))
-OVERLAY = k3d
-endif
-endif
 
 .PHONY: deploy-monitoring
 deploy-monitoring: $(KUSTOMIZE) $(KUBECTL) ## Deploy monitoring stack to K8s cluster specified in $KUBECONFIG.
@@ -185,7 +179,7 @@ deploy-monitoring: $(KUSTOMIZE) $(KUBECTL) ## Deploy monitoring stack to K8s clu
 up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
 
 .PHONY: up
-up: $(SKAFFOLD) ## Build all images and deploy everything to k3d.
+up: $(SKAFFOLD) ## Build all images and deploy everything to kind.
 	$(SKAFFOLD) run --port-forward=user --tail
 
 .PHONY: dev
@@ -193,5 +187,5 @@ dev: $(SKAFFOLD) ## Start continuous dev loop with skaffold.
 	$(SKAFFOLD) dev --port-forward=user --cleanup=false --trigger=manual
 
 .PHONY: down
-down: $(SKAFFOLD) ## Remove everything from k3d.
+down: $(SKAFFOLD) ## Remove everything from kind.
 	$(SKAFFOLD) delete

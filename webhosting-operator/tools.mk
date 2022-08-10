@@ -22,10 +22,11 @@ CONTROLLER_GEN_VERSION ?= v0.9.2
 $(CONTROLLER_GEN): $(call tool_version_file,$(CONTROLLER_GEN),$(CONTROLLER_GEN_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION)
 
-K3D := $(TOOLS_BIN_DIR)/k3d
-K3D_VERSION ?= v5.4.3
-$(K3D): $(call tool_version_file,$(K3D),$(K3D_VERSION))
-	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install github.com/k3d-io/k3d/v5@$(K3D_VERSION)
+KIND := $(TOOLS_BIN_DIR)/kind
+KIND_VERSION ?= v0.14.0
+$(KIND): $(call tool_version_file,$(KIND),$(KIND_VERSION))
+	curl -L -o $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+	chmod +x $(KIND)
 
 KUBECTL := $(TOOLS_BIN_DIR)/kubectl
 KUBECTL_VERSION ?= v1.24.2
