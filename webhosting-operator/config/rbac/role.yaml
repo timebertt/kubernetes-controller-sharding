@@ -11,6 +11,7 @@ rules:
   - configmaps
   verbs:
   - create
+  - get
   - list
   - patch
   - watch
@@ -27,6 +28,7 @@ rules:
   - services
   verbs:
   - create
+  - get
   - list
   - patch
   - watch
@@ -36,6 +38,7 @@ rules:
   - deployments
   verbs:
   - create
+  - get
   - list
   - patch
   - watch
@@ -56,6 +59,7 @@ rules:
   - ingresses
   verbs:
   - create
+  - get
   - list
   - patch
   - watch
@@ -64,27 +68,9 @@ rules:
   resources:
   - themes
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
-- apiGroups:
-  - webhosting.timebertt.dev
-  resources:
-  - themes/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - webhosting.timebertt.dev
-  resources:
-  - themes/status
-  verbs:
-  - get
-  - patch
-  - update
 - apiGroups:
   - webhosting.timebertt.dev
   resources:

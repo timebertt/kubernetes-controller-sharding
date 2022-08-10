@@ -64,10 +64,11 @@ type WebsiteReconciler struct {
 //+kubebuilder:rbac:groups=webhosting.timebertt.dev,resources=websites,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=webhosting.timebertt.dev,resources=websites/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=webhosting.timebertt.dev,resources=websites/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=list;watch;create;patch
-//+kubebuilder:rbac:groups="",resources=services,verbs=list;watch;create;patch
-//+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=list;watch;create;patch
-//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=list;watch;create;patch
+//+kubebuilder:rbac:groups=webhosting.timebertt.dev,resources=themes,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;patch
+//+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;patch
+//+kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;patch
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;patch
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // RBAC required for sharding

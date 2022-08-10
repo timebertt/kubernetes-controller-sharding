@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="webhosting-exporter (k3d)" type="GoApplicationRunConfiguration" factoryName="Go Application">
+  <configuration default="false" name="webhosting-exporter (kind)" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$/webhosting-operator" />
-    <parameters value="--port=8180 --telemetry-port=8181 --kubeconfig=$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml" />
+    <parameters value="--port=8180 --telemetry-port=8181 --kubeconfig=$PROJECT_DIR$/webhosting-operator/dev/kind_kubeconfig.yaml" />
     <kind value="PACKAGE" />
     <package value="github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/cmd/webhosting-exporter" />
     <directory value="$PROJECT_DIR$" />

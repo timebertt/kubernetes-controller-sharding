@@ -1,10 +1,10 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="webhosting-operator process (k3d)" type="GoApplicationRunConfiguration" factoryName="Go Application">
+  <configuration default="false" name="webhosting-operator process (kind)" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$/webhosting-operator" />
     <parameters value="--config=config/manager/default/controller_manager_config.yaml" />
     <envs>
-      <env name="KUBECONFIG" value="$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml" />
+      <env name="KUBECONFIG" value="$PROJECT_DIR$/webhosting-operator/dev/kind_kubeconfig.yaml" />
       <env name="LEADER_ELECT" value="false" />
       <env name="SHARD_ID" value="webhosting-operator-0" />
       <env name="SHARD_MODE" value="sharder" />
@@ -15,7 +15,7 @@
     <filePath value="$PROJECT_DIR$/webhosting-operator/main.go" />
     <method v="2" />
   </configuration>
-  <configuration default="false" name="webhosting-operator skaffold" type="google-container-tools-skaffold-run-config" factoryName="google-container-tools-skaffold-run-config-dev" show_console_on_std_err="false" show_console_on_std_out="false" kubeconfigFile="{&quot;displayName&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml&quot;,&quot;path&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/k3d_kubeconfig.yaml&quot;}">
+  <configuration default="false" name="webhosting-operator skaffold" type="google-container-tools-skaffold-run-config" factoryName="google-container-tools-skaffold-run-config-dev" show_console_on_std_err="false" show_console_on_std_out="false" kubeconfigFile="{&quot;displayName&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/kind_kubeconfig.yaml&quot;,&quot;path&quot;:&quot;$PROJECT_DIR$/webhosting-operator/dev/kind_kubeconfig.yaml&quot;}">
     <option name="allowRunningInParallel" value="false" />
     <option name="buildEnvironment" />
     <option name="cleanupDeployments" value="false" />

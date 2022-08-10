@@ -98,4 +98,4 @@ require (
 )
 
 // https://github.com/timebertt/controller-runtime/tree/sharding based on v0.12.3
-replace sigs.k8s.io/controller-runtime => github.com/timebertt/controller-runtime v0.6.1-0.20220804141120-b0d370648115
+replace sigs.k8s.io/controller-runtime => github.com/timebertt/controller-runtime v0.6.1-0.20220807110118-bd421f7df0f9

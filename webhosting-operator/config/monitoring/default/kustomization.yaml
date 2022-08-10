@@ -17,6 +17,8 @@ generatorOptions:
 
 configMapGenerator:
 - files:
+  - dashboards/controller-runtime.json
+  - dashboards/controller-details.json
   - dashboards/webhosting.json
   - dashboards/sharding.json
   name: grafana-dashboard-webhosting
@@ -33,6 +35,7 @@ secretGenerator:
 
 patchesStrategicMerge:
 - patch_grafana_admin.yaml
+- patch_prometheus_resources.yaml
 
 patches:
 - path: patch_grafana_networkpolicy.yaml

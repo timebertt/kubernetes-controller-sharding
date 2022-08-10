@@ -41,18 +41,18 @@ There are three resources involved:
 All necessary steps for a quick start:
 
 ```bash
-make k3d-up
+make kind-up
 make up
 # in a different terminal
-export KUBECONFIG=$PWD/dev/k3d_kubeconfig.yaml
+export KUBECONFIG=$PWD/dev/kind_kubeconfig.yaml
 k apply -f config/samples
 ```
 
 Alternatively, use pre-built images (`latest`):
 
 ```bash
-make k3d-up
-export KUBECONFIG=$PWD/dev/k3d_kubeconfig.yaml
+make kind-up
+export KUBECONFIG=$PWD/dev/kind_kubeconfig.yaml
 make deploy
 k apply -f config/samples
 make deploy-monitoring
@@ -64,14 +64,14 @@ Also, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/
 
 ### 1. Create a Kubernetes Cluster
 
-#### k3d (local)
+#### kind (local)
 
-Create a local cluster in docker containers via [k3d](https://k3d.io/) using a provided make target.
+Create a local cluster in docker containers via [kind](https://kind.sigs.k8s.io/) using a provided make target.
 It already takes care of deploying the prerequisites and configuring the needed port mappings.
 
 ```bash
-make k3d-up
-export KUBECONFIG=$PWD/dev/k3d_kubeconfig.yaml
+make kind-up
+export KUBECONFIG=$PWD/dev/kind_kubeconfig.yaml
 ```
 
 #### Shoot Cluster (remote)
