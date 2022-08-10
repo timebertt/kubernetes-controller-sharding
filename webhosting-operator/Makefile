@@ -1,8 +1,9 @@
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 
 # Image URL to use all building/pushing image targets
-IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator:latest
-EXPORTER_IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter:latest
+TAG ?= latest
+CONTROLLER_IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator:$(TAG)
+EXPORTER_IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter:$(TAG)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.24
 # set OVERLAY to with-dns to configure the operator to make ingresses available via public dns
@@ -115,39 +116,18 @@ run-exporter: ## Run the webhosting-exporter from your host.
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} --target webhosting-operator .
-	docker build -t ${EXPORTER_IMG} --target webhosting-exporter .
+	docker build -t $(CONTROLLER_IMG) --target webhosting-operator .
+	docker build -t $(EXPORTER_IMG) --target webhosting-exporter .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
-	docker push ${EXPORTER_IMG}
+	docker push $(CONTROLLER_IMG)
+	docker push $(EXPORTER_IMG)
 
 ##@ Deployment
 
-ifndef ignore-not-found
-  ignore-not-found = false
-endif
-
-.PHONY: install
-install: $(KUSTOMIZE) $(KUBECTL) manifests ## Install CRDs into K8s cluster specified in $KUBECONFIG.
-	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply -f -
-
-.PHONY: uninstall
-uninstall: $(KUSTOMIZE) $(KUBECTL) manifests ## Uninstall CRDs from K8s cluster specified in $KUBECONFIG. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/crd | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
-
-.PHONY: deploy
-deploy: $(KUSTOMIZE) $(KUBECTL) manifests ## Deploy controller to K8s cluster specified in $KUBECONFIG.
-	cd config/manager/default && $(abspath $(KUSTOMIZE)) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/manager/$(OVERLAY) | $(KUBECTL) apply -f -
-
-.PHONY: undeploy
-undeploy: $(KUSTOMIZE) $(KUBECTL) ## Undeploy controller from K8s cluster specified in $KUBECONFIG. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/manager/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
-
 KIND_KUBECONFIG := $(PROJECT_DIR)/dev/kind_kubeconfig.yaml
-kind-up kind-down up dev down: export KUBECONFIG = $(KIND_KUBECONFIG)
+kind-up kind-down: export KUBECONFIG = $(KIND_KUBECONFIG)
 
 .PHONY: kind-up
 kind-up: $(KIND) ## Launch a kind cluster for testing the operator.
@@ -166,20 +146,15 @@ deploy-ingress-nginx: $(KUSTOMIZE) $(KUBECTL) ## Deploy ingress-nginx to K8s clu
 	$(KUSTOMIZE) build config/ingress-nginx/$(OVERLAY) | $(KUBECTL) apply --server-side -f -
 	$(KUBECTL) -n ingress-nginx wait deploy ingress-nginx-controller --for=condition=Available --timeout=2m
 
-.PHONY: deploy-monitoring
-deploy-monitoring: $(KUSTOMIZE) $(KUBECTL) ## Deploy monitoring stack to K8s cluster specified in $KUBECONFIG.
-	[ -f config/monitoring/default/grafana_admin_pass.secret.txt ] || cat /dev/urandom | tr -dc "a-zA-Z0-9" | head -c 32 > config/monitoring/default/grafana_admin_pass.secret.txt
-	# generated grafana admin password to config/monitoring/default/grafana_admin_pass.secret.txt
-	$(KUSTOMIZE) build config/monitoring/crds | $(KUBECTL) apply --server-side -f -
-	$(KUBECTL) wait crd -l app.kubernetes.io/name=prometheus-operator --for=condition=NamesAccepted --for=condition=Established
-	cd config/monitoring/webhosting-exporter && $(abspath $(KUSTOMIZE)) edit set image exporter=${EXPORTER_IMG}
-	$(KUSTOMIZE) build config/monitoring/$(OVERLAY) | $(KUBECTL) apply --server-side -f -
-
 # use static label for skaffold to prevent rolling all components on every skaffold invocation
 up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
 
+.PHONY: deploy
+deploy: $(SKAFFOLD) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
+	$(SKAFFOLD) deploy -i $(CONTROLLER_IMG) -i $(EXPORTER_IMG)
+
 .PHONY: up
-up: $(SKAFFOLD) ## Build all images and deploy everything to kind.
+up: $(SKAFFOLD) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.
 	$(SKAFFOLD) run --port-forward=user --tail
 
 .PHONY: dev
@@ -187,5 +162,5 @@ dev: $(SKAFFOLD) ## Start continuous dev loop with skaffold.
 	$(SKAFFOLD) dev --port-forward=user --cleanup=false --trigger=manual
 
 .PHONY: down
-down: $(SKAFFOLD) ## Remove everything from kind.
+down: $(SKAFFOLD) ## Remove everything from K8s cluster specified in $KUBECONFIG.
 	$(SKAFFOLD) delete

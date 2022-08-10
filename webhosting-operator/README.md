@@ -42,20 +42,18 @@ All necessary steps for a quick start:
 
 ```bash
 make kind-up
-make up
-# in a different terminal
 export KUBECONFIG=$PWD/dev/kind_kubeconfig.yaml
+make up
 k apply -f config/samples
 ```
 
-Alternatively, use pre-built images (`latest`):
+Alternatively, use pre-built images:
 
 ```bash
 make kind-up
 export KUBECONFIG=$PWD/dev/kind_kubeconfig.yaml
-make deploy
+make deploy TAG=latest
 k apply -f config/samples
-make deploy-monitoring
 k port-forward -n monitoring svc/grafana 3000
 ```
 
@@ -87,23 +85,20 @@ make deploy-ingress-nginx OVERLAY=with-dns
 
 ### 2. Deploy the Operator
 
-Deploy `webhosting-operator` using the `latest` tag:
+Build a fresh image and deploy it using [skaffold](https://skaffold.dev/):
 
 ```bash
-make deploy
+# one-time build and deploy including port forwarding and log tailing
+make up
 
-# or: configure the operator to make ingresses available via public dns 
-make deploy OVERLAY=with-dns
+# or: dev loop (rebuild on trigger after code changes)
+make dev
 ```
 
-Alternatively, build a fresh image and deploy it using [skaffold](https://skaffold.dev/):
+Alternatively, deploy pre-built images:
 
 ```bash
-# one-time deploy
-skaffold run -m webhosting-operator
-
-# or: dev loop (rebuild on code changes)
-skaffold dev -m webhosting-operator
+make deploy TAG=latest
 ```
 
 ### 3. Create Sample Objects
@@ -142,36 +137,20 @@ You can also check out the publicly hosted `Websites` at https://webhosting.time
 Generate some more samples with:
 ```bash
 $ k create ns project-bar project-baz
-$ go run ./cmd/samples-generator # create a random amount of websites per namespace (up to 50 each)
+# create a random amount of websites per namespace (up to 50 each)
+$ go run ./cmd/samples-generator
 created 32 Websites in project "project-foo"
 created 25 Websites in project "project-bar"
 created 23 Websites in project "project-baz"
 ```
 
-### 4. Deploy Monitoring Components
+### 4. Access Monitoring Components
 
-Deploy a customized installation of [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) including `webhosting-exporter` for observing the operator and its objects:
+You've already deployed a customized installation of [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) including `webhosting-exporter` for observing the operator and its objects in the previous steps.
 
 ```bash
-# use the latest tag for webhosting-exporter
-make deploy-monitoring
-
-# access grafana and prometheus
-k port-forward -n monitoring svc/grafana 3000
-k port-forward -n monitoring svc/prometheus-k8s 9090
-
 # get the grafana admin password
 cat config/monitoring/default/grafana_admin_pass.secret.txt
-```
-
-Alternatively, build a fresh image and deploy it using [skaffold](https://skaffold.dev/):
-
-```bash
-# one-time deploy
-skaffold run -m monitoring --port-forward=user
-
-# or: dev loop (rebuild on code changes)
-skaffold dev -m monitoring --port-forward=user
 ```
 
 Now, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/webhosting?orgId=1) at http://127.0.0.1:3000.

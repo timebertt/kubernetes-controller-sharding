@@ -22,6 +22,13 @@ deploy:
       - "--force-conflicts"
     paths:
     - config/manager/default
+    hooks:
+      before:
+      - host:
+          command:
+          # ensure CRDs and RBAC are up-to-date
+          - make
+          - manifests
   kubectl:
     manifests:
     - config/samples/project_namespace.yaml
@@ -38,6 +45,13 @@ profiles:
   - op: replace
     path: /deploy/kustomize/paths/0
     value: config/manager/shard
+- name: shoot
+  activation:
+  - kubeContext: garden-timebertt--sharding-external
+  deploy:
+    kustomize:
+      paths:
+      - config/manager/with-dns
 portForward:
 - resourceType: deployment
   namespace: webhosting-operator-system

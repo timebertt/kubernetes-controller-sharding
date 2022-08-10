@@ -53,7 +53,7 @@ func init() {
 
 func main() {
 	cmd := &cobra.Command{
-		Use:  "samples-generate",
+		Use:  "samples-generator",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: scheme})
