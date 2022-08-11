@@ -47,7 +47,7 @@ profiles:
     value: config/manager/shard
 - name: shoot
   activation:
-  - kubeContext: garden-timebertt--sharding-external
+  - kubeContext: .*timebertt--sharding.*
   deploy:
     kustomize:
       paths:
@@ -104,7 +104,7 @@ deploy:
 profiles:
 - name: shoot
   activation:
-  - kubeContext: garden-timebertt--sharding-external
+  - kubeContext: .*timebertt--sharding.*
   deploy:
     kustomize:
       paths:
@@ -132,7 +132,15 @@ deploy:
       - "--server-side"
       - "--force-conflicts"
     paths:
-    - config/profiling
+    - config/profiling/default
+profiles:
+- name: shoot
+  activation:
+  - kubeContext: .*timebertt--sharding.*
+  deploy:
+    kustomize:
+      paths:
+      - config/profiling/with-agent
 portForward:
 - resourceType: service
   namespace: parca

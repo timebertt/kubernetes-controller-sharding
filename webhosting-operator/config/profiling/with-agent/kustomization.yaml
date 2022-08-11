@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../default
+# from https://github.com/parca-dev/parca-agent/releases/download/v0.9.1/kubernetes-manifest.yaml but without namespace
+- parca-agent.yaml
+
+patches:
+- target:
+    group: apps
+    version: v1
+    kind: DaemonSet
+    name: parca-agent
+    namespace: parca
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --pod-label-selector=app.kubernetes.io/name=webhosting-operator
