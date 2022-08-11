@@ -22,6 +22,7 @@ import (
 	goruntime "runtime"
 	"strconv"
 
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -32,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/sharding"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -76,6 +78,10 @@ func main() {
 		setupLog.Error(err, "unable to load config")
 		os.Exit(1)
 	}
+
+	// replace deprecated legacy go collector
+	metrics.Registry.Unregister(collectors.NewGoCollector())
+	metrics.Registry.MustRegister(collectors.NewGoCollector(collectors.WithGoCollections(collectors.GoRuntimeMetricsCollection)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), opts.managerOptions)
 	if err != nil {
