@@ -35,6 +35,7 @@ resources:
 - auth_proxy_service.yaml
 - auth_proxy_role.yaml
 - auth_proxy_role_binding.yaml
+- clusterrole_pprof-reader.yaml
 
 # Protect the /metrics endpoint by putting it behind auth.
 patchesStrategicMerge:
