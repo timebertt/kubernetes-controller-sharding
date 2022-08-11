@@ -101,6 +101,14 @@ deploy:
           - '[ -f config/monitoring/default/grafana_admin_pass.secret.txt ] || cat /dev/urandom | tr -dc "a-zA-Z0-9" | head -c 32 > config/monitoring/default/grafana_admin_pass.secret.txt'
     paths:
     - config/monitoring/default
+profiles:
+- name: shoot
+  activation:
+  - kubeContext: garden-timebertt--sharding-external
+  deploy:
+    kustomize:
+      paths:
+      - config/monitoring/with-pvc
 portForward:
 - resourceType: service
   namespace: monitoring

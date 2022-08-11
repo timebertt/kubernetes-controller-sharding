@@ -1,0 +1,10 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gce-ssd
+parameters:
+  type: pd-ssd
+allowVolumeExpansion: true
+provisioner: pd.csi.storage.gke.io
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer

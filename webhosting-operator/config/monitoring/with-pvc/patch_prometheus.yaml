@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: k8s
+  namespace: monitoring
+spec:
+  storage:
+    volumeClaimTemplate:
+      metadata:
+        labels:
+          app.kubernetes.io/component: prometheus
+          app.kubernetes.io/instance: k8s
+          app.kubernetes.io/name: prometheus
+          app.kubernetes.io/part-of: kube-prometheus
+        name: prometheus
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi
+        storageClassName: gce-ssd
