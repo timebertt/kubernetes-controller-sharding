@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
 	runtimeconfigv1alpha1 "sigs.k8s.io/controller-runtime/pkg/config/v1alpha1"
 )
 
@@ -27,10 +28,11 @@ import (
 // ControllerManagerConfig is the Schema for the controllermanagerconfigs API
 type ControllerManagerConfig struct {
 	metav1.TypeMeta `json:",inline"`
-
 	// ControllerManagerConfigurationSpec is the basic configuration of the operator.
 	runtimeconfigv1alpha1.ControllerManagerConfigurationSpec `json:",inline"`
-
+	// Debugging holds configuration for Debugging related features.
+	// +optional
+	Debugging *componentbaseconfigv1alpha1.DebuggingConfiguration `json:"debugging,omitempty"`
 	// Ingress specifies configuration for the Ingress objects created for Websites.
 	// +optional
 	Ingress *IngressConfiguration `json:"ingress,omitempty"`
@@ -40,11 +42,9 @@ type ControllerManagerConfig struct {
 type IngressConfiguration struct {
 	// Annotations is a set of annotations to add to all created Ingress objects.
 	Annotations map[string]string `json:"annotations,omitempty"`
-
 	// Hosts is a list of hosts, under which Websites shall be available.
 	// +optional
 	Hosts []string `json:"hosts,omitempty"`
-
 	// TLS configures TLS settings to be used on Ingress objects. Specify this to make Websites serve TLS connections for
 	// the given hosts. SecretName is optional. If specified, the given Secret is expected to exist already in all project
 	// namespaces. Otherwise, the Website controller will fill the Ingresses secretName field and expects the secret to be

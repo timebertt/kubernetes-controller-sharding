@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	goruntime "runtime"
 	"strconv"
 
 	"go.uber.org/zap/zapcore"
@@ -26,6 +27,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/sharding"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -38,6 +40,7 @@ import (
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/routes"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -78,6 +81,16 @@ func main() {
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
+	}
+
+	if debugging := opts.controllerManagerConfig.Debugging; debugging != nil && pointer.BoolDeref(debugging.EnableProfiling, false) {
+		if err := (routes.Profiling{}).AddToManager(mgr); err != nil {
+			setupLog.Error(err, "failed adding profiling handlers to manager")
+			os.Exit(1)
+		}
+		if pointer.BoolDeref(opts.controllerManagerConfig.Debugging.EnableContentionProfiling, false) {
+			goruntime.SetBlockProfileRate(1)
+		}
 	}
 
 	if err = (&webhosting.WebsiteReconciler{
