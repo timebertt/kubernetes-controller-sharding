@@ -12,6 +12,7 @@ build:
       main: ./cmd/webhosting-operator
       dependencies:
         paths:
+        - "go.mod"
         - "**/*.go"
         - "../../../../sigs.k8s.io/controller-runtime/**/*.go"
 deploy:

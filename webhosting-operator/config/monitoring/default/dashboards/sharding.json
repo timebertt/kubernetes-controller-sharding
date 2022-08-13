@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "iteration": 1659866847621,
+  "iteration": 1660385408565,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -855,6 +855,19 @@
       "type": "timeseries"
     },
     {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
+      "id": 18,
+      "panels": [],
+      "title": "Sharder Actions",
+      "type": "row"
+    },
+    {
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -911,8 +924,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 19
+        "x": 0,
+        "y": 28
       },
       "id": 14,
       "options": {
@@ -934,7 +947,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(increase(controller_runtime_sharding_assignments_total{group=\"webhosting.timebertt.dev\",kind=\"Website\"}[$__rate_interval]))",
+          "expr": "sum(increase(controller_runtime_sharding_assignments_total{controllerGroup=\"webhosting.timebertt.dev\",controllerKind=\"Website\",kind=~\"$kind\"}[$__rate_interval]))",
           "hide": false,
           "interval": "",
           "legendFormat": "Assignments",
@@ -948,7 +961,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(increase(controller_runtime_sharding_drains_total{group=\"webhosting.timebertt.dev\",kind=\"Website\"}[$__rate_interval]))",
+          "expr": "sum(increase(controller_runtime_sharding_drains_total{controllerGroup=\"webhosting.timebertt.dev\",controllerKind=\"Website\",kind=~\"$kind\"}[$__rate_interval]))",
           "hide": false,
           "interval": "",
           "legendFormat": "Drains",
@@ -957,6 +970,191 @@
         }
       ],
       "title": "Sharder Actions",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 100,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "id": 19,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(increase(controller_runtime_sharding_assignments_total{controllerGroup=\"webhosting.timebertt.dev\",controllerKind=\"Website\",kind=~\"$kind\"}[$__rate_interval])) by (kind)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{kind}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Sharder Assignments by kind",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 100,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 36
+      },
+      "id": 20,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(rate(controller_runtime_sharding_ring_calculations_total{controllerGroup=\"webhosting.timebertt.dev\",controllerKind=\"Website\"}[$__rate_interval]))",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Ring Calculations",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Sharder Ring Calculations",
       "type": "timeseries"
     }
   ],
@@ -1030,6 +1228,36 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
+        "definition": "label_values(controller_runtime_sharding_assignments_total{job=\"webhosting-operator\"}, kind)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "kind",
+        "options": [],
+        "query": {
+          "query": "label_values(controller_runtime_sharding_assignments_total{job=\"webhosting-operator\"}, kind)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
         "definition": "label_values(kube_namespace_status_phase{job=\"kube-state-metrics\", namespace=~\"project-.+\"}, namespace)",
         "hide": 0,
         "includeAll": true,
@@ -1056,6 +1284,6 @@
   "timezone": "",
   "title": "Sharding",
   "uid": "7liIybkVk",
-  "version": 5,
+  "version": 2,
   "weekStart": ""
 }
