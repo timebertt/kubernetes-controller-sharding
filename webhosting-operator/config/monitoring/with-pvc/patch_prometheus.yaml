@@ -4,6 +4,8 @@ metadata:
   name: k8s
   namespace: monitoring
 spec:
+  retention: 7d
+  retentionSize: 85GiB
   storage:
     volumeClaimTemplate:
       metadata:
@@ -18,5 +20,5 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 50Gi
+            storage: 100Gi
         storageClassName: gce-ssd
