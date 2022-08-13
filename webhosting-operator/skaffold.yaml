@@ -133,14 +133,6 @@ deploy:
       - "--force-conflicts"
     paths:
     - config/profiling/default
-profiles:
-- name: shoot
-  activation:
-  - kubeContext: .*timebertt--sharding.*
-  deploy:
-    kustomize:
-      paths:
-      - config/profiling/with-agent
 portForward:
 - resourceType: service
   namespace: parca
