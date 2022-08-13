@@ -126,17 +126,20 @@ apiVersion: skaffold/v2beta29
 kind: Config
 metadata:
   name: profiling
-deploy:
-  kustomize:
-    flags:
-      apply:
-      - "--server-side"
-      - "--force-conflicts"
-    paths:
-    - config/profiling/default
-portForward:
-- resourceType: service
-  namespace: parca
-  resourceName: parca
-  port: http
-  localPort: 7070
+# profiling config disabled by default, can be enabled with profile "profiling"
+profiles:
+- name: profiling
+  deploy:
+    kustomize:
+      flags:
+        apply:
+        - "--server-side"
+        - "--force-conflicts"
+      paths:
+      - config/profiling/default
+  portForward:
+  - resourceType: service
+    namespace: parca
+    resourceName: parca
+    port: http
+    localPort: 7070
