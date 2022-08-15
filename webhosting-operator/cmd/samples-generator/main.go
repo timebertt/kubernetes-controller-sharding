@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
+	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 )
 
 const projectPrefix = "project-"
@@ -53,7 +53,7 @@ func init() {
 
 func main() {
 	cmd := &cobra.Command{
-		Use:  "samples-generate",
+		Use:  "samples-generator",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: scheme})

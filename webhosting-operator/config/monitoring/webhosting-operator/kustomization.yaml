@@ -6,6 +6,6 @@ commonLabels:
 
 resources:
 # provide prometheus running in namespace "monitoring" with the permissions required for service discovery in namespace
-# "webhosting-operator-system"
+# "webhosting-system"
 - prometheus_rbac.yaml
 - servicemonitor.yaml

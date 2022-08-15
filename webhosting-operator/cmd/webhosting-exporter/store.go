@@ -31,7 +31,7 @@ import (
 	"k8s.io/kube-state-metrics/v2/pkg/options"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
+	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 )
 
 const kubeStateMetricsPrefix = "kube_"

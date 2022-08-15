@@ -1,0 +1,8 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: ingress-nginx-admission
+webhooks:
+# drop validation for ingress objects, as it results in high latency and CPU waste
+- name: validate.nginx.ingress.kubernetes.io
+  $patch: delete

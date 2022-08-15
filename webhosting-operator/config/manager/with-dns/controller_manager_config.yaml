@@ -11,7 +11,10 @@ leaderElection:
   leaderElect: true
   resourceLock: leases
   resourceName: webhosting-operator
-  resourceNamespace: webhosting-operator-system
+  resourceNamespace: webhosting-system
+debugging:
+  enableProfiling: true
+  enableContentionProfiling: true
 ingress:
   annotations:
     cert.gardener.cloud/issuer: letsencrypt

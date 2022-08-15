@@ -2,14 +2,14 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 # Adds namespace to all resources.
-namespace: webhosting-operator-system
+namespace: webhosting-system
 
 # Value of this field is prepended to the
 # names of all resources, e.g. a deployment named
 # "wordpress" becomes "alices-wordpress".
 # Note that it should also match with the prefix (text before '-') of the namespace
 # field above.
-namePrefix: webhosting-operator-
+namePrefix: webhosting-
 
 # Labels to add to all resources and selectors.
 commonLabels:
@@ -31,11 +31,11 @@ configMapGenerator:
 resources:
 - manager.yaml
 - ../../crd
-- ../../rbac
+- ../rbac
 - auth_proxy_service.yaml
 - auth_proxy_role.yaml
 - auth_proxy_role_binding.yaml
-- auth_proxy_client_clusterrole.yaml
+- clusterrole_pprof-reader.yaml
 
 # Protect the /metrics endpoint by putting it behind auth.
 patchesStrategicMerge:

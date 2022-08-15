@@ -8,3 +8,4 @@ resources:
 patchesStrategicMerge:
 - patch_default_ingress_class.yaml
 - patch_controller_resources.yaml
+- delete_webhook.yaml
