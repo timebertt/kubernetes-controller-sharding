@@ -39,9 +39,9 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/config/v1alpha1"
-	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting"
+	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/config/v1alpha1"
+	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/controllers/webhosting"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/routes"
 	//+kubebuilder:scaffold:imports
 )

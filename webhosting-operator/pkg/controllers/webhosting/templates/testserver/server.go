@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting/templates"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting/templates/internal"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/controllers/webhosting/templates"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/controllers/webhosting/templates/internal"
 )
 
 func main() {

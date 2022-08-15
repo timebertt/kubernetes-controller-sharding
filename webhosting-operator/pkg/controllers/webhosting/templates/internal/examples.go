@@ -19,26 +19,26 @@ package internal
 import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
+	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 )
 
 // CreateExamples returns an example set of values for testing purposes.
-func CreateExamples() (string, *v1alpha1.Website, *v1alpha1.Theme) {
+func CreateExamples() (string, *webhostingv1alpha1.Website, *webhostingv1alpha1.Theme) {
 	return "homepage-381fa2",
-		&v1alpha1.Website{
+		&webhostingv1alpha1.Website{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "homepage",
 				Namespace: "project-foo",
 			},
-			Spec: v1alpha1.WebsiteSpec{
+			Spec: webhostingv1alpha1.WebsiteSpec{
 				Theme: "fancy",
 			},
 		},
-		&v1alpha1.Theme{
+		&webhostingv1alpha1.Theme{
 			ObjectMeta: v1.ObjectMeta{
 				Name: "fancy",
 			},
-			Spec: v1alpha1.ThemeSpec{
+			Spec: webhostingv1alpha1.ThemeSpec{
 				Color:      "darkcyan",
 				FontFamily: "Menlo",
 			},

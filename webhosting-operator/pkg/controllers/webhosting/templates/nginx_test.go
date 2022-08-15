@@ -20,8 +20,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting/templates"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting/templates/internal"
+	. "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/controllers/webhosting/templates"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/controllers/webhosting/templates/internal"
 )
 
 var _ = Describe("nginx.conf", func() {

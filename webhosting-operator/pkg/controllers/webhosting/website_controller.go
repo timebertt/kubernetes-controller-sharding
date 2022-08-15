@@ -46,9 +46,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/config/v1alpha1"
-	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/webhosting/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/controllers/webhosting/templates"
+	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/config/v1alpha1"
+	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/controllers/webhosting/templates"
 )
 
 // WebsiteReconciler reconciles a Website object.
