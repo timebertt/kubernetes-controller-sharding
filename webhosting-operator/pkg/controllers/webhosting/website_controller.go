@@ -323,12 +323,7 @@ func applyIngressConfigToIngress(config *configv1alpha1.IngressConfiguration, in
 	if len(config.TLS) > 0 {
 		ingress.Spec.TLS = make([]networkingv1.IngressTLS, len(config.TLS))
 		for i, tls := range config.TLS {
-			tls = *tls.DeepCopy()
-			// tls secret not given, generate website specific secret name
-			if tls.SecretName == "" {
-				tls.SecretName = ingress.Name + "-tls"
-			}
-			ingress.Spec.TLS[i] = tls
+			ingress.Spec.TLS[i] = *tls.DeepCopy()
 		}
 	}
 }
