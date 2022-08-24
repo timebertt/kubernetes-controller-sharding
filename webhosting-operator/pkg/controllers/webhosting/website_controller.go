@@ -96,6 +96,16 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// update status with the latest observed generation
 	website.Status.ObservedGeneration = website.Generation
 
+	if website.DeletionTimestamp != nil {
+		// Nothing to do on deletion, all owned objects are cleaned up by the garbage collector.
+		// Set the website's status to terminating and be done with it.
+		// Note: we will only execute this part of the code if the website is deleted with foreground deletion policy,
+		// otherwise it will be gone immediately.
+		website.Status.Phase = webhostingv1alpha1.PhaseTerminating
+
+		return ctrl.Result{}, r.Client.Status().Update(ctx, website)
+	}
+
 	if website.Spec.Theme == "" {
 		log.Error(fmt.Errorf("website doesn't specify a theme"), "Unable to reconcile Website")
 		r.Recorder.Event(website, corev1.EventTypeWarning, "ThemeUnspecified", "Website doesn't specify a Theme")

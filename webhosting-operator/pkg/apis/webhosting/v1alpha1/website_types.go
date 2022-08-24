@@ -46,6 +46,8 @@ const (
 	PhaseReady WebsitePhase = "Ready"
 	// PhaseError means that there is a problem running the Website.
 	PhaseError WebsitePhase = "Error"
+	// PhaseTerminating means that the Website is shutting down.
+	PhaseTerminating WebsitePhase = "Terminating"
 )
 
 //+kubebuilder:object:root=true
