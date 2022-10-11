@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	goruntime "runtime"
 	"strconv"
@@ -160,16 +161,24 @@ func (o *options) Complete() error {
 }
 
 func applyOptionsOverrides(opts ctrl.Options) (ctrl.Options, error) {
+	var err error
+
 	// allow overriding leader election via env var for debugging purposes
 	if leaderElectEnv, ok := os.LookupEnv("LEADER_ELECT"); ok {
-		leaderElect, err := strconv.ParseBool(leaderElectEnv)
+		opts.LeaderElection, err = strconv.ParseBool(leaderElectEnv)
 		if err != nil {
-			return ctrl.Options{}, err
+			return ctrl.Options{}, fmt.Errorf("error parsing LEADER_ELECT env var: %w", err)
 		}
-		opts.LeaderElection = leaderElect
 	}
 
 	opts.Sharded = true
+	// allow disabling sharding via env var for evaluation
+	if shardingEnv, ok := os.LookupEnv("SHARDING_ENABLED"); ok {
+		opts.Sharded, err = strconv.ParseBool(shardingEnv)
+		if err != nil {
+			return ctrl.Options{}, fmt.Errorf("error parsing SHARDING_ENABLED env var: %w", err)
+		}
+	}
 	// allow overriding shard ID via env var
 	opts.ShardID = os.Getenv("SHARD_ID")
 	opts.ShardMode = sharding.Mode(os.Getenv("SHARD_MODE"))
