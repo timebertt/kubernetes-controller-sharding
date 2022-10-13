@@ -2,7 +2,12 @@
 
 Experiment for sharding in Kubernetes controllers
 
-This is a study project as part of my Master studies in Computer Science at [DHBW CAS](https://cas.dhbw.de).
+This study project is part of my master's studies in Computer Science at [DHBW CAS](https://cas.dhbw.de).
+You can find the thesis belonging to this implementation in the repository [thesis-controller-sharding](https://github.com/timebertt/thesis-controller-sharding).
+
+The controller sharding implementation itself is done in a generic way in [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime).
+It is currently located in the `sharding` branch of my fork: https://github.com/timebertt/controller-runtime/tree/sharding.
+This repository contains a sample operator using the sharding implementation for demonstration and evaluation purposes.
 
 ## TL;DR
 
