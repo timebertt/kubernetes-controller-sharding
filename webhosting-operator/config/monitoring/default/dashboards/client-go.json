@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "iteration": 1665765262891,
+  "iteration": 1665772424467,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -916,7 +916,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile($percentile, sum(webhosting_operator:rest_client_rate_limiter_duration_seconds:rate_5m{job=\"$job\",pod=~\"$pod\"}) by (pod,le))",
+          "expr": "histogram_quantile($percentile, sum(rate(rest_client_rate_limiter_duration_seconds_bucket{job=\"$job\",pod=~\"$pod\",verb=~\"$verb\"}[$__rate_interval])) by (pod,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -1008,7 +1008,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile($percentile, sum(webhosting_operator:rest_client_rate_limiter_duration_seconds:rate_5m{job=\"$job\",pod=~\"$pod\",verb=~\"$verb\"}) by (verb,le))",
+          "expr": "histogram_quantile($percentile, sum(rate(rest_client_rate_limiter_duration_seconds_bucket{job=\"$job\",pod=~\"$pod\",verb=~\"$verb\"}[$__rate_interval])) by (verb,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -1209,6 +1209,6 @@
   "timezone": "",
   "title": "Controller Runtime / Client-Go",
   "uid": "qIJCg2S4z",
-  "version": 7,
+  "version": 8,
   "weekStart": ""
 }
