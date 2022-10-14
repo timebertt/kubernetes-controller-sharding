@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: webhosting-operator
+  namespace: webhosting-system
+spec:
+  groups:
+  - name: webhosting-operator.rate-limiter
+    rules:
+    - expr: |
+        sum(rate(rest_client_rate_limiter_duration_seconds_bucket{job="webhosting-operator"}[5m])) without (host)
+      record: webhosting_operator:rest_client_rate_limiter_duration_seconds:rate_5m

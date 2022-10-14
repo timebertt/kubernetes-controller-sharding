@@ -17,10 +17,11 @@ generatorOptions:
 
 configMapGenerator:
 - files:
-  - dashboards/controller-runtime.json
+  - dashboards/client-go.json
   - dashboards/controller-details.json
-  - dashboards/webhosting.json
+  - dashboards/controller-runtime.json
   - dashboards/sharding.json
+  - dashboards/webhosting.json
   name: grafana-dashboard-webhosting
   namespace: monitoring
   options:

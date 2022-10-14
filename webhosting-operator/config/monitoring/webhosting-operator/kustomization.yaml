@@ -9,3 +9,4 @@ resources:
 # "webhosting-system"
 - prometheus_rbac.yaml
 - servicemonitor.yaml
+- prometheus_rule.yaml
