@@ -32,6 +32,11 @@ func (in *ControllerManagerConfig) DeepCopyInto(out *ControllerManagerConfig) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ControllerManagerConfigurationSpec.DeepCopyInto(&out.ControllerManagerConfigurationSpec)
+	if in.ClientConnection != nil {
+		in, out := &in.ClientConnection, &out.ClientConnection
+		*out = new(configv1alpha1.ClientConnectionConfiguration)
+		**out = **in
+	}
 	if in.Debugging != nil {
 		in, out := &in.Debugging, &out.Debugging
 		*out = new(configv1alpha1.DebuggingConfiguration)

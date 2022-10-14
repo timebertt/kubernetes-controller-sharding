@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -84,7 +85,7 @@ func main() {
 	metrics.Registry.Unregister(collectors.NewGoCollector())
 	metrics.Registry.MustRegister(collectors.NewGoCollector(collectors.WithGoCollections(collectors.GoRuntimeMetricsCollection)))
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), opts.managerOptions)
+	mgr, err := ctrl.NewManager(opts.restConfig, opts.managerOptions)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -127,6 +128,7 @@ func main() {
 type options struct {
 	configFile string
 
+	restConfig              *rest.Config
 	managerOptions          ctrl.Options
 	controllerManagerConfig *configv1alpha1.ControllerManagerConfig
 }
@@ -141,6 +143,7 @@ func (o *options) AddFlags(fs *flag.FlagSet) {
 func (o *options) Complete() error {
 	o.controllerManagerConfig = &configv1alpha1.ControllerManagerConfig{}
 
+	// load manager options
 	var err error
 	opts := ctrl.Options{Scheme: scheme}
 	if o.configFile != "" {
@@ -157,6 +160,21 @@ func (o *options) Complete() error {
 
 	// apply some sensible defaults
 	o.managerOptions = setOptionsDefaults(opts)
+
+	// create rest config
+	o.restConfig = ctrl.GetConfigOrDie()
+	// increase default rate limiter settings to make sharder and controller more responsive
+	o.restConfig.QPS = 100
+	o.restConfig.Burst = 150
+	if clientConnection := o.controllerManagerConfig.ClientConnection; clientConnection != nil {
+		if clientConnection.QPS > 0 {
+			o.restConfig.QPS = clientConnection.QPS
+		}
+		if clientConnection.Burst > 0 {
+			o.restConfig.Burst = int(clientConnection.Burst)
+		}
+	}
+
 	return nil
 }
 

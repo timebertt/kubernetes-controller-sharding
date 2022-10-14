@@ -15,6 +15,9 @@ leaderElection:
 debugging:
   enableProfiling: true
   enableContentionProfiling: true
+clientConnection:
+  qps: 800
+  burst: 1000
 ingress:
   hosts:
   - webhosting.timebertt.dev

@@ -30,6 +30,9 @@ type ControllerManagerConfig struct {
 	metav1.TypeMeta `json:",inline"`
 	// ControllerManagerConfigurationSpec is the basic configuration of the operator.
 	runtimeconfigv1alpha1.ControllerManagerConfigurationSpec `json:",inline"`
+	// ClientConnection holds configuration for the kubernetes API clients.
+	// +optional
+	ClientConnection *componentbaseconfigv1alpha1.ClientConnectionConfiguration `json:"clientConnection,omitempty"`
 	// Debugging holds configuration for Debugging related features.
 	// +optional
 	Debugging *componentbaseconfigv1alpha1.DebuggingConfiguration `json:"debugging,omitempty"`
