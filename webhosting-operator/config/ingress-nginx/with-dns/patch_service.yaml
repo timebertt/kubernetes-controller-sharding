@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+  annotations:
+    dns.gardener.cloud/class: garden
+    dns.gardener.cloud/dnsnames: webhosting.timebertt.dev
+    # request TLS certificate for webhosting.timebertt.dev that will be used by all websites
+    cert.gardener.cloud/issuer: letsencrypt
+    cert.gardener.cloud/purpose: managed
+    cert.gardener.cloud/secretname: webhosting-tls

@@ -15,10 +15,10 @@ leaderElection:
 debugging:
   enableProfiling: true
   enableContentionProfiling: true
+clientConnection:
+  qps: 800
+  burst: 1000
 ingress:
-  annotations:
-    cert.gardener.cloud/issuer: letsencrypt
-    cert.gardener.cloud/purpose: managed
   hosts:
   - webhosting.timebertt.dev
   tls:

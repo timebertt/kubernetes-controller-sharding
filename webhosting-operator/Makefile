@@ -6,7 +6,7 @@ CONTROLLER_IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-op
 EXPORTER_IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter:$(TAG)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.24
-# set OVERLAY to with-dns to configure the operator to make ingresses available via public dns
+# set OVERLAY to with-dns to configure ingress-nginx with public dns
 OVERLAY = default
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)

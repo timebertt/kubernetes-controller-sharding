@@ -96,6 +96,16 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// update status with the latest observed generation
 	website.Status.ObservedGeneration = website.Generation
 
+	if website.DeletionTimestamp != nil {
+		// Nothing to do on deletion, all owned objects are cleaned up by the garbage collector.
+		// Set the website's status to terminating and be done with it.
+		// Note: we will only execute this part of the code if the website is deleted with foreground deletion policy,
+		// otherwise it will be gone immediately.
+		website.Status.Phase = webhostingv1alpha1.PhaseTerminating
+
+		return ctrl.Result{}, r.Client.Status().Update(ctx, website)
+	}
+
 	if website.Spec.Theme == "" {
 		log.Error(fmt.Errorf("website doesn't specify a theme"), "Unable to reconcile Website")
 		r.Recorder.Event(website, corev1.EventTypeWarning, "ThemeUnspecified", "Website doesn't specify a Theme")
@@ -313,12 +323,7 @@ func applyIngressConfigToIngress(config *configv1alpha1.IngressConfiguration, in
 	if len(config.TLS) > 0 {
 		ingress.Spec.TLS = make([]networkingv1.IngressTLS, len(config.TLS))
 		for i, tls := range config.TLS {
-			tls = *tls.DeepCopy()
-			// tls secret not given, generate website specific secret name
-			if tls.SecretName == "" {
-				tls.SecretName = ingress.Name + "-tls"
-			}
-			ingress.Spec.TLS[i] = tls
+			ingress.Spec.TLS[i] = *tls.DeepCopy()
 		}
 	}
 }

@@ -5,10 +5,11 @@ metadata:
   namespace: monitoring
 spec:
   replicas: 1 # don't need HA for our purposes
+  alerting: null
   resources:
     requests:
       cpu: 100m
       memory: 1Gi
     limits:
-      cpu: "1" # replaying WAL takes some CPU
+      cpu: 1000m # replaying WAL takes some CPU
       memory: 2Gi

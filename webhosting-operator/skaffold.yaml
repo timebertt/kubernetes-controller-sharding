@@ -52,7 +52,12 @@ profiles:
   deploy:
     kustomize:
       paths:
-      - config/manager/with-dns
+      - config/manager/shoot
+- name: shoot-non-sharded
+  deploy:
+    kustomize:
+      paths:
+      - config/manager/shoot-non-sharded
 portForward:
 - resourceType: deployment
   namespace: webhosting-system
