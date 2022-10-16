@@ -87,8 +87,8 @@ func main() {
 	cmd.Flags().StringVar(&prometheusURL, "prometheus-url", prometheusURL, "URL for querying prometheus")
 	cmd.Flags().DurationVar(&rateInterval, "rate-interval", rateInterval, "Interval to use for rate queries")
 	cmd.Flags().DurationVar(&queryRange.Step, "step", queryRange.Step, "Query resolution step width")
-	cmd.Flags().Var((*timeValue)(&queryRange.Start), "start", "Query start timestamp (RFC33339/duration relative to now/unix timestamp in seconds), inclusive (defaults to now-15m)")
-	cmd.Flags().Var((*timeValue)(&queryRange.End), "end", "Query end timestamp (RFC33339/duration relative to now/unix timestamp in seconds), inclusive (defaults to now)")
+	cmd.Flags().Var((*timeValue)(&queryRange.Start), "start", "Query start timestamp (RFC3339/duration relative to now/unix timestamp in seconds), inclusive (defaults to now-15m)")
+	cmd.Flags().Var((*timeValue)(&queryRange.End), "end", "Query end timestamp (RFC3339/duration relative to now/unix timestamp in seconds), inclusive (defaults to now)")
 
 	if err := cmd.ExecuteContext(signals.SetupSignalHandler()); err != nil {
 		fmt.Printf("Error retrieving measurements: %v\n", err)
@@ -97,7 +97,7 @@ func main() {
 }
 
 // timeValue implements pflag.Value for specifying a timestamp in one of the following formats:
-//   - RFC33339, e.g. 2006-01-02T15:04:05Z07:00
+//   - RFC3339, e.g. 2006-01-02T15:04:05Z07:00
 //   - duration relative to now, e.g. -5m
 //   - unix timestamp in seconds, e.g. 1665825136
 type timeValue time.Time
