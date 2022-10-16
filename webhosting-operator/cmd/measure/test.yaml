@@ -1,0 +1,5 @@
+queries:
+- name: test-websites_per_shard
+  query: sum(kube_website_shard{shard!=""} * on(shard) group_left kube_shard_info{app="webhosting-operator"}) by (shard)
+- name: test-websites_per_project
+  query: count(kube_website_info{}) by (namespace)

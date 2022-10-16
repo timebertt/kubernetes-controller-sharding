@@ -31,18 +31,20 @@ import (
 	"github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
 const (
+	stdin  = "-"
 	stdout = "-"
-	job    = "webhosting-operator"
 )
 
 var (
 	now = time.Now()
 
-	outputDir string
+	queriesInput io.Reader
+	outputDir    string
 
 	prometheusURL = "http://localhost:9091"
 	queryRange    = v1.Range{
@@ -55,9 +57,21 @@ var (
 
 func main() {
 	cmd := &cobra.Command{
-		Use:  "measure",
-		Args: cobra.NoArgs,
+		Use:  "measure QUERIES_FILE|-",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			queriesFileName := args[0]
+			if queriesFileName == stdin {
+				queriesInput = os.Stdin
+			} else {
+				file, err := os.Open(queriesFileName)
+				if err != nil {
+					return err
+				}
+				defer file.Close()
+				queriesInput = file
+			}
+
 			c, err := newClient()
 			if err != nil {
 				return fmt.Errorf("error creating prometheus client: %w", err)
@@ -127,23 +141,31 @@ func newClient() (v1.API, error) {
 	return v1.NewAPI(apiClient), nil
 }
 
+type QueriesConfig struct {
+	Queries []Query `yaml:"queries"`
+}
+
+type Query struct {
+	Name  string `yaml:"name"`
+	Query string `yaml:"query"`
+}
+
 func run(ctx context.Context, c v1.API) error {
-	if err := prepareOutputDir(); err != nil {
+	config, err := decodeQueriesConfig()
+	if err != nil {
+		return fmt.Errorf("error decoding queries file: %w", err)
+	}
+
+	if err = prepareOutputDir(); err != nil {
 		return err
 	}
 
 	fmt.Printf("Using time range for query: %s\n", rangeToString(queryRange))
 
-	for _, q := range []struct {
-		name  string
-		query string
-	}{
-		{"test-websites_per_shard", fmt.Sprintf("sum(kube_website_shard{shard!=\"\"} * on(shard) group_left kube_shard_info{app=\"%s\"}) by (shard)", job)},
-		{"test-websites_per_project", fmt.Sprintf("count(kube_website_info{}) by (namespace)")},
-	} {
-		fileName := q.name + ".csv"
+	for _, q := range config.Queries {
+		fileName := q.Name + ".csv"
 
-		value, err := fetchData(ctx, c, q.query)
+		value, err := fetchData(ctx, c, q.Query)
 		if err != nil {
 			return fmt.Errorf("error fetching data for file %q: %w", fileName, err)
 		}
@@ -169,6 +191,16 @@ func run(ctx context.Context, c v1.API) error {
 	}
 
 	return nil
+}
+
+func decodeQueriesConfig() (*QueriesConfig, error) {
+	configData, err := io.ReadAll(queriesInput)
+	if err != nil {
+		return nil, err
+	}
+
+	c := &QueriesConfig{}
+	return c, yaml.Unmarshal(configData, c)
 }
 
 func prepareOutputDir() error {
