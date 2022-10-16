@@ -9,7 +9,7 @@ spec:
   resources:
     requests:
       cpu: 100m
-      memory: 1Gi
+      memory: 1.5Gi
     limits:
       cpu: 1000m # replaying WAL takes some CPU
-      memory: 2Gi
+      memory: 2.5Gi
