@@ -64,7 +64,9 @@ spec:
         workers: 10.250.0.0/16
     type: gcp
     workers:
-    - cri:
+    # runs system and monitoring components
+    - name: system
+      cri:
         name: containerd
       machine:
         image:
@@ -72,11 +74,35 @@ spec:
         type: n1-standard-4
       maxSurge: 1
       maxUnavailable: 0
-      maximum: 2
+      maximum: 1
       minimum: 1
-      name: worker
       systemComponents:
         allow: true
+      volume:
+        size: 50Gi
+        type: pd-ssd
+      zones:
+      - europe-west1-c
+    # runs webhosting-operator and websites
+    - name: worker
+      cri:
+        name: containerd
+      machine:
+        image:
+          name: gardenlinux
+        type: n1-standard-4
+      maxSurge: 1
+      maxUnavailable: 0
+      maximum: 5
+      minimum: 1
+      systemComponents:
+        allow: false
+      labels:
+        dedicated-for: webhosting
+      taints:
+      - key: dedicated-for
+        value: webhosting
+        effect: NoSchedule
       volume:
         size: 50Gi
         type: pd-ssd

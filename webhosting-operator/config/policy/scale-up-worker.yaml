@@ -1,0 +1,53 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: scale-up-worker
+    pool: worker
+  name: scale-up-worker
+  namespace: default
+spec:
+  replicas: 5
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: scale-up-worker
+      pool: worker
+  template:
+    metadata:
+      labels:
+        app: scale-up-worker
+        pool: worker
+    spec:
+      containers:
+      - name: pause
+        image: registry.k8s.io/pause:3.7
+      priorityClassName: reserve-excess-capacity
+      tolerations:
+      - key: dedicated-for
+        value: webhosting
+        effect: NoSchedule
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: dedicated-for
+                operator: In
+                values:
+                - webhosting
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: scale-up-worker
+                pool: worker
+            topologyKey: kubernetes.io/hostname
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: reserve-excess-capacity
+description: PriorityClass for reserving excess capacity (over-provisioning)
+value: -5

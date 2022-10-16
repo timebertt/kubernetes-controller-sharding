@@ -2,6 +2,46 @@
 apiVersion: skaffold/v2beta29
 kind: Config
 metadata:
+  name: kyverno
+profiles:
+# deploy only on shoot
+- name: shoot
+  activation:
+  - kubeContext: .*timebertt--sharding.*
+  deploy:
+    kustomize:
+      flags:
+        apply:
+        - "--server-side"
+        - "--force-conflicts"
+      paths:
+      - config/kyverno
+---
+apiVersion: skaffold/v2beta29
+kind: Config
+metadata:
+  name: policy
+requires:
+- configs:
+  - kyverno
+profiles:
+# deploy only on shoot
+- name: shoot
+  activation:
+  - kubeContext: .*timebertt--sharding.*
+  deploy:
+    kustomize:
+      flags:
+        apply:
+        - "--server-side"
+        - "--force-conflicts"
+      paths:
+      - config/policy
+    statusCheck: false
+---
+apiVersion: skaffold/v2beta29
+kind: Config
+metadata:
   name: webhosting-operator
 build:
   local:
