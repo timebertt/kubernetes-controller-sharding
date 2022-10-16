@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
 - dedicated-pool-webhosting.yaml
 - scale-up-worker.yaml
+- prepull-nginx.yaml
