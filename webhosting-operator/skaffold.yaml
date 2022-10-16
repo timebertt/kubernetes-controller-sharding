@@ -37,6 +37,7 @@ profiles:
         - "--force-conflicts"
       paths:
       - config/policy
+    statusCheck: false
 ---
 apiVersion: skaffold/v2beta29
 kind: Config
