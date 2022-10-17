@@ -787,7 +787,7 @@
             "uid": "${datasource}"
           },
           "exemplar": true,
-          "expr": "sum(kube_website_info{namespace=~\"$project\"} unless on(uid) kube_website_info{namespace=~\"$project\"} offset $__rate_interval) or vector(0)",
+          "expr": "(sum(kube_website_info{namespace=~\"$project\"} unless on(uid) kube_website_info{namespace=~\"$project\"} offset $__rate_interval) and max(up{job=\"webhosting-exporter\",endpoint!=\"https-self\"} offset $__rate_interval)) or vector(0)",
           "hide": false,
           "interval": "",
           "legendFormat": "Creation",
@@ -799,7 +799,7 @@
             "uid": "${datasource}"
           },
           "exemplar": true,
-          "expr": "-sum(kube_website_info{namespace=~\"$project\"} offset $__rate_interval unless on(uid) kube_website_info{namespace=~\"$project\"}) or vector(0)",
+          "expr": "-(sum(kube_website_info{namespace=~\"$project\"} offset $__rate_interval unless on(uid) kube_website_info{namespace=~\"$project\"}) and max(up{job=\"webhosting-exporter\",endpoint!=\"https-self\"})) or vector(0)",
           "hide": false,
           "interval": "",
           "legendFormat": "Deletion",
