@@ -24,8 +24,8 @@
   "description": "Overview over Webhosting objects",
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "iteration": 1659856286976,
+  "graphTooltip": 1,
+  "iteration": 1666006666488,
   "links": [],
   "liveNow": true,
   "panels": [
@@ -99,7 +99,7 @@
             "uid": "${datasource}"
           },
           "exemplar": true,
-          "expr": "sum(kube_website_info{namespace=~\"$project\"})",
+          "expr": "sum(kube_website_info{namespace=~\"$project\"}) or vector(0)",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -158,7 +158,7 @@
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "lastNotNull"
+            "last"
           ],
           "fields": "",
           "values": false
@@ -173,10 +173,13 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "exemplar": true,
-          "expr": "sum(kube_website_status_phase{namespace=~\"$project\",phase=\"Ready\"}) / sum(kube_website_status_phase{namespace=~\"$project\"}) * 100",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "(sum(kube_website_status_phase{namespace=~\"$project\",phase=\"Ready\"}) or vector(0)) / (sum(kube_website_status_phase{namespace=~\"$project\"}) or vector(0)) * 100",
+          "instant": true,
           "interval": "",
           "legendFormat": "",
+          "range": false,
           "refId": "A"
         }
       ],
@@ -240,7 +243,7 @@
             "uid": "${datasource}"
           },
           "exemplar": true,
-          "expr": "sum(kube_theme_info)",
+          "expr": "sum(kube_theme_info) or vector(0)",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -306,7 +309,7 @@
             "uid": "${datasource}"
           },
           "exemplar": true,
-          "expr": "sum(kube_namespace_status_phase{namespace=~\"project-.+\"})",
+          "expr": "sum(kube_namespace_status_phase{namespace=~\"project-.+\"}) or vector(0)",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -418,7 +421,7 @@
             "uid": "${datasource}"
           },
           "exemplar": true,
-          "expr": "count(kube_website_info{namespace=~\"$project\"}) by (namespace)",
+          "expr": "sum(kube_website_info{namespace=~\"$project\"} or 0*sum(kube_namespace_status_phase{namespace=~\"$project\"}) by (namespace)) by (namespace)",
           "interval": "",
           "legendFormat": "{{namespace}}",
           "refId": "A"
@@ -513,7 +516,7 @@
             "uid": "${datasource}"
           },
           "exemplar": true,
-          "expr": "count(kube_website_info{namespace=~\"$project\"}) by (theme)",
+          "expr": "sum(kube_website_info{namespace=~\"$project\"} or 0*sum(kube_theme_info{}) by (theme)) by (theme)",
           "interval": "",
           "legendFormat": "{{namespace}}",
           "refId": "A"
@@ -1008,6 +1011,6 @@
   "timezone": "",
   "title": "Webhosting",
   "uid": "NbmNpqEnk",
-  "version": 3,
+  "version": 1,
   "weekStart": ""
 }

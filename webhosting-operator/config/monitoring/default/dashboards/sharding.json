@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "iteration": 1660385408565,
+  "iteration": 1666009201801,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -97,7 +97,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(kube_shard_info{app=\"$app\"})",
+          "expr": "sum(kube_shard_info{app=\"$app\"}) or vector(0)",
           "refId": "A"
         }
       ],
@@ -344,7 +344,7 @@
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "lastNotNull"
+            "last"
           ],
           "fields": "",
           "values": false
@@ -361,7 +361,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(kube_shard_state{app=\"$app\",state=\"ready\"}) / sum(kube_shard_info{app=\"$app\"}) * 100",
+          "expr": "(sum(kube_shard_state{app=\"$app\",state=\"ready\"}) or vector(0)) / (sum(kube_shard_info{app=\"$app\"}) or vector(0)) * 100",
           "instant": true,
           "range": false,
           "refId": "A"
@@ -429,7 +429,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\"} or 0*kube_shard_info{app=\"$app\"}) by (shard) / ignoring(shard) group_left sum(kube_website_shard{namespace=~\"$project\"})",
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\"} or 0*sum(kube_shard_info{app=\"$app\"}) by (shard)) by (shard) / ignoring(shard) group_left sum(kube_website_shard{namespace=~\"$project\"}) or vector(0)",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
@@ -538,7 +538,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\"} * on(shard) group_left kube_shard_info{app=\"$app\"}) by (shard)",
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\"} or 0*sum(kube_shard_info{app=\"$app\"}) by (shard)) by (shard)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{shard}}",
@@ -637,7 +637,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\"} or 0*kube_shard_info{app=\"$app\"}) by (shard) / ignoring(shard) group_left sum(kube_website_shard{namespace=~\"$project\"})",
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\"} or 0*sum(kube_shard_info{app=\"$app\"}) by (shard)) by (shard) / ignoring(shard) group_left sum(kube_website_shard{namespace=~\"$project\"})",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -1284,6 +1284,6 @@
   "timezone": "",
   "title": "Sharding",
   "uid": "7liIybkVk",
-  "version": 2,
+  "version": 1,
   "weekStart": ""
 }
