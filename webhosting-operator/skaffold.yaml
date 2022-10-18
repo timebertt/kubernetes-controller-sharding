@@ -70,9 +70,6 @@ deploy:
           # ensure CRDs and RBAC are up-to-date
           - make
           - manifests
-  kubectl:
-    manifests:
-    - config/samples/project_namespace.yaml
 profiles:
 - name: debug
   activation:
