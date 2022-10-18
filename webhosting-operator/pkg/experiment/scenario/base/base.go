@@ -86,13 +86,13 @@ func (s *scenario) Start(ctx context.Context) error {
 
 	log.Info("Scenario prepared")
 
-	// website-generator: creates about 1200 websites over  10 minutes
-	// website-deleter:   deletes about  100 websites over  10 minutes
-	// => in total, there will be about 1100 websites after 10 minutes
+	// website-generator: creates about 6000 websites over  10 minutes
+	// website-deleter:   deletes about  600 websites over  10 minutes
+	// => in total, there will be about 5400 websites after 10 minutes
 	if err := (&generator.Every{
 		Name:   "website-generator",
 		Do:     generator.CreateWebsite,
-		Every:  500 * time.Millisecond,
+		Every:  100 * time.Millisecond,
 		Stop:   time.Now().Add(10 * time.Minute),
 		Labels: s.labels,
 	}).AddToManager(s.mgr); err != nil {
@@ -102,31 +102,31 @@ func (s *scenario) Start(ctx context.Context) error {
 	if err := (&generator.Every{
 		Name:   "website-deleter",
 		Do:     generator.DeleteWebsite,
-		Every:  6 * time.Second,
+		Every:  time.Second,
 		Stop:   time.Now().Add(10 * time.Minute),
 		Labels: s.labels,
 	}).AddToManager(s.mgr); err != nil {
 		return fmt.Errorf("error adding website-deleter: %w", err)
 	}
 
-	// individually trigger reconciliation for each website twice per minute
-	// => peeks at about 37 reconciliations per second on average
+	// individually trigger reconciliation for each website once per minute
+	// => peeks at about 90 reconciliations per second on average
 	if err := (&generator.ForEach[*webhostingv1alpha1.Website]{
 		Name:   "website-mutator",
 		Do:     generator.ReconcileWebsite,
-		Every:  30 * time.Second,
+		Every:  time.Minute,
 		Labels: s.labels,
 	}).AddToManager(s.mgr); err != nil {
 		return fmt.Errorf("error adding website-mutator: %w", err)
 	}
 
-	// update one theme every 15 seconds which causes all referencing websites to be reconciled
-	// => peeks at about 1.5 reconciliations per second on average
-	// (note: these reconciliation triggers occur in bursts of up to ~20)
+	// update one theme every minute which causes all referencing websites to be reconciled
+	// => peeks at about 1.8 reconciliations per second on average
+	// (note: these reconciliation triggers occur in bursts of up to ~100)
 	if err := (&generator.Every{
 		Name:   "theme-mutator",
 		Do:     generator.MutateTheme,
-		Every:  15 * time.Second,
+		Every:  time.Minute,
 		Labels: s.labels,
 	}).AddToManager(s.mgr); err != nil {
 		return fmt.Errorf("error adding theme-mutator: %w", err)

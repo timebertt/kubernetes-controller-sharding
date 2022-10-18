@@ -51,8 +51,9 @@ func (r *Every) AddToManager(mgr manager.Manager) error {
 	}
 
 	c, err := controller.New(r.Name, mgr, controller.Options{
-		Reconciler:   r,
-		RecoverPanic: true,
+		Reconciler:              r,
+		MaxConcurrentReconciles: 10,
+		RecoverPanic:            true,
 	})
 	if err != nil {
 		return err
