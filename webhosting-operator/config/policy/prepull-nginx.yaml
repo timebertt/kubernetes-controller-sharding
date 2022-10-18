@@ -22,10 +22,10 @@ spec:
         - exit 0
       containers:
       - name: pause
-        image: registry.k8s.io/pause:3.7
+        image: pause
       tolerations:
       - key: dedicated-for
-        value: webhosting
+        value: websites
         effect: NoSchedule
       affinity:
         nodeAffinity:
@@ -35,4 +35,4 @@ spec:
               - key: dedicated-for
                 operator: In
                 values:
-                - webhosting
+                - websites

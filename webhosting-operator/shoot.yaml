@@ -34,6 +34,8 @@ spec:
     allowPrivilegedContainers: true
     kubeAPIServer:
       enableBasicAuthentication: false
+    kubeControllerManager:
+      nodeCIDRMaskSize: 20
     kubeProxy:
       mode: IPTables
     version: "1.24"
@@ -83,8 +85,8 @@ spec:
         type: pd-ssd
       zones:
       - europe-west1-c
-    # runs webhosting-operator and websites
-    - name: worker
+    # runs webhosting-operator
+    - name: operator
       cri:
         name: containerd
       machine:
@@ -93,15 +95,40 @@ spec:
         type: n1-standard-4
       maxSurge: 1
       maxUnavailable: 0
-      maximum: 5
+      maximum: 2
       minimum: 1
       systemComponents:
         allow: false
       labels:
-        dedicated-for: webhosting
+        dedicated-for: webhosting-operator
       taints:
       - key: dedicated-for
-        value: webhosting
+        value: webhosting-operator
+        effect: NoSchedule
+      volume:
+        size: 50Gi
+        type: pd-ssd
+      zones:
+      - europe-west1-c
+    # runs websites (pause containers in load test)
+    - name: websites
+      cri:
+        name: containerd
+      machine:
+        image:
+          name: gardenlinux
+        type: n1-standard-8
+      maxSurge: 1
+      maxUnavailable: 0
+      maximum: 5
+      minimum: 0
+      systemComponents:
+        allow: false
+      labels:
+        dedicated-for: websites
+      taints:
+      - key: dedicated-for
+        value: websites
         effect: NoSchedule
       volume:
         size: 50Gi
@@ -110,7 +137,7 @@ spec:
       - europe-west1-c
       kubernetes:
         kubelet:
-          maxPods: 250
+          maxPods: 4000
   purpose: development
   region: europe-west1
   secretBindingName: shoot-operator-gcp
