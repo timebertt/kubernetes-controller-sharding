@@ -1412,7 +1412,8 @@
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
-              "type": "linear"
+              "log": 2,
+              "type": "log"
             },
             "showPoints": "auto",
             "spanNulls": false,
@@ -1532,9 +1533,9 @@
       {
         "allFormat": "glob",
         "current": {
-          "selected": true,
-          "text": "sharder.ConfigMap",
-          "value": "sharder.ConfigMap"
+          "selected": false,
+          "text": "website",
+          "value": "website"
         },
         "datasource": {
           "type": "prometheus",
