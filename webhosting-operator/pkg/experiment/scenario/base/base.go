@@ -87,13 +87,21 @@ func (s *scenario) Start(ctx context.Context) error {
 
 	log.Info("Scenario prepared")
 
-	// website-generator: creates about 6000 websites over  10 minutes
+	// give monitoring stack some time to observe themes/projects and zero websites each
+	select {
+	case <-ctx.Done():
+		log.Info("Scenario cancelled")
+		return ctx.Err()
+	case <-time.After(30 * time.Second):
+	}
+
+	// website-generator: creates about 8400 websites over  10 minutes
 	// website-deleter:   deletes about  600 websites over  10 minutes
-	// => in total, there will be about 5400 websites after 10 minutes
+	// => in total, there will be about 7800 websites after 10 minutes
 	if err := (&generator.Every{
 		Name:   "website-generator",
 		Do:     generator.CreateWebsite,
-		Rate:   rate.Limit(10),
+		Rate:   rate.Limit(14),
 		Stop:   time.Now().Add(10 * time.Minute),
 		Labels: s.labels,
 	}).AddToManager(s.mgr); err != nil {
@@ -122,8 +130,8 @@ func (s *scenario) Start(ctx context.Context) error {
 	}
 
 	// update one theme every minute which causes all referencing websites to be reconciled
-	// => peeks at about 1.8 reconciliations per second on average
-	// (note: these reconciliation triggers occur in bursts of up to ~100)
+	// => peeks at about 2.6 reconciliations per second on average
+	// (note: these reconciliation triggers occur in bursts of up to ~156)
 	if err := (&generator.Every{
 		Name:   "theme-mutator",
 		Do:     generator.MutateTheme,
