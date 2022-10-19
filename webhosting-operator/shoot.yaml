@@ -118,9 +118,9 @@ spec:
         image:
           name: gardenlinux
         type: n1-standard-8
-      maxSurge: 1
+      maxSurge: 5
       maxUnavailable: 0
-      maximum: 5
+      maximum: 10
       minimum: 0
       systemComponents:
         allow: false
@@ -137,7 +137,9 @@ spec:
       - europe-west1-c
       kubernetes:
         kubelet:
-          maxPods: 4000
+          # CNI and kube-proxy generate high CPU load when creating that many pods
+          # with even higher maxPods settings nodes are likely to crash
+          maxPods: 800
   purpose: development
   region: europe-west1
   secretBindingName: shoot-operator-gcp
