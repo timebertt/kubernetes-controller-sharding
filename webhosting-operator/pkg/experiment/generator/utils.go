@@ -17,7 +17,11 @@ limitations under the License.
 package generator
 
 import (
+	"fmt"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -28,13 +32,23 @@ import (
 
 var log = logf.Log
 
-// StartOnce adds a source to the given controller that emits exactly one event/reconcile.Request.
-func StartOnce(c controller.Controller) error {
-	ch := make(chan event.GenericEvent, 1)
-	ch <- event.GenericEvent{}
+// StartN adds a source to the given controller that emits exactly n events/reconcile.Request.
+func StartN(c controller.Controller, n int) error {
+	ch := make(chan event.GenericEvent, n)
+	for i := 0; i < n; i++ {
+		ch <- event.GenericEvent{Object: &metav1.PartialObjectMetadata{
+			ObjectMeta: metav1.ObjectMeta{
+				// use different object names, otherwise key will merge the requests
+				Name: fmt.Sprintf("request-%d", n),
+			},
+		},
+		}
+	}
 
 	return c.Watch(
 		&source.Channel{Source: ch, DestBufferSize: 1},
-		&handler.Funcs{GenericFunc: func(_ event.GenericEvent, q workqueue.RateLimitingInterface) { q.Add(reconcile.Request{}) }},
+		&handler.Funcs{GenericFunc: func(e event.GenericEvent, q workqueue.RateLimitingInterface) {
+			q.Add(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(e.Object)})
+		}},
 	)
 }

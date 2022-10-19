@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/time/rate"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -92,7 +93,7 @@ func (s *scenario) Start(ctx context.Context) error {
 	if err := (&generator.Every{
 		Name:   "website-generator",
 		Do:     generator.CreateWebsite,
-		Every:  100 * time.Millisecond,
+		Rate:   rate.Limit(10),
 		Stop:   time.Now().Add(10 * time.Minute),
 		Labels: s.labels,
 	}).AddToManager(s.mgr); err != nil {
@@ -102,20 +103,20 @@ func (s *scenario) Start(ctx context.Context) error {
 	if err := (&generator.Every{
 		Name:   "website-deleter",
 		Do:     generator.DeleteWebsite,
-		Every:  time.Second,
+		Rate:   rate.Limit(1),
 		Stop:   time.Now().Add(10 * time.Minute),
 		Labels: s.labels,
 	}).AddToManager(s.mgr); err != nil {
 		return fmt.Errorf("error adding website-deleter: %w", err)
 	}
 
-	// individually trigger reconciliation for each website once per minute
-	// => peeks at about 90 reconciliations per second on average
+	// trigger individual reconciliations for website twice per minute, 100 per second at max
 	if err := (&generator.ForEach[*webhostingv1alpha1.Website]{
-		Name:   "website-mutator",
-		Do:     generator.ReconcileWebsite,
-		Every:  time.Minute,
-		Labels: s.labels,
+		Name:      "website-mutator",
+		Do:        generator.ReconcileWebsite,
+		Every:     time.Minute,
+		RateLimit: rate.Limit(100),
+		Labels:    s.labels,
 	}).AddToManager(s.mgr); err != nil {
 		return fmt.Errorf("error adding website-mutator: %w", err)
 	}
@@ -126,7 +127,7 @@ func (s *scenario) Start(ctx context.Context) error {
 	if err := (&generator.Every{
 		Name:   "theme-mutator",
 		Do:     generator.MutateTheme,
-		Every:  time.Minute,
+		Rate:   rate.Every(time.Minute),
 		Labels: s.labels,
 	}).AddToManager(s.mgr); err != nil {
 		return fmt.Errorf("error adding theme-mutator: %w", err)
