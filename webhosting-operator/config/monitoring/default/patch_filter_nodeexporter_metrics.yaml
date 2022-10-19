@@ -1,0 +1,10 @@
+# drop filesystem metrics for websites workers (high cardinality and memory usage of mountpoint and device label)
+- op: add
+  path: /spec/endpoints/0/metricRelabelings
+  value: []
+- op: add
+  path: /spec/endpoints/0/metricRelabelings/-
+  value:
+    sourceLabels: [__name__, instance]
+    regex: "node_filesystem_.+;.*timebertt--sharding-websites-.+"
+    action: drop
