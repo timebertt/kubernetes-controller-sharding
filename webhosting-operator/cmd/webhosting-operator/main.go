@@ -32,6 +32,8 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/sharding"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -212,5 +214,22 @@ func setOptionsDefaults(opts ctrl.Options) ctrl.Options {
 	// allows us to quickly handover leadership on restarts
 	opts.LeaderElectionReleaseOnCancel = true
 
+	opts.NewCache = func(config *rest.Config, opts cache.Options) (cache.Cache, error) {
+		opts.DefaultTransform = dropUnwantedMetadata
+		return cache.New(config, opts)
+	}
+
 	return opts
+}
+
+func dropUnwantedMetadata(i interface{}) (interface{}, error) {
+	obj, ok := i.(client.Object)
+	if !ok {
+		return i, nil
+	}
+
+	obj.SetManagedFields(nil)
+	delete(obj.GetAnnotations(), "kubectl.kubernetes.io/last-applied-configuration")
+
+	return obj, nil
 }
