@@ -148,8 +148,9 @@ type QueriesConfig struct {
 }
 
 type Query struct {
-	Name  string `yaml:"name"`
-	Query string `yaml:"query"`
+	Name     string `yaml:"name"`
+	Query    string `yaml:"query"`
+	Optional bool   `yaml:"optional,omitempty"`
 }
 
 func run(ctx context.Context, c v1.API) error {
@@ -169,7 +170,20 @@ func run(ctx context.Context, c v1.API) error {
 
 		value, err := fetchData(ctx, c, q.Query)
 		if err != nil {
-			return fmt.Errorf("error fetching data for file %q: %w", fileName, err)
+			return fmt.Errorf("error fetching data for query %q: %w", q.Name, err)
+		}
+
+		matrix, ok := value.(model.Matrix)
+		if !ok {
+			return fmt.Errorf("unsupported value type %q for query %q, expected matrix", value.Type().String(), q.Name)
+		}
+
+		if matrix.Len() == 0 {
+			if q.Optional {
+				fmt.Printf("Skipping output for query %q as matrix is empty\n", q.Name)
+				continue
+			}
+			return fmt.Errorf("matrix is empty for query %q", q.Name)
 		}
 
 		if err = func() error {
@@ -186,9 +200,14 @@ func run(ctx context.Context, c v1.API) error {
 				out = file
 			}
 
-			return writeResult(value, out)
+			if err := writeResult(matrix, out); err != nil {
+				return err
+			}
+
+			fmt.Printf("Succesfully written output to %s\n", fileName)
+			return nil
 		}(); err != nil {
-			return fmt.Errorf("error writing result %q: %w", fileName, err)
+			return fmt.Errorf("error writing result to %s: %w", fileName, err)
 		}
 	}
 
@@ -233,16 +252,7 @@ func fetchData(ctx context.Context, c v1.API, query string) (model.Value, error)
 	return result, nil
 }
 
-func writeResult(v model.Value, out io.Writer) error {
-	matrix, ok := v.(model.Matrix)
-	if !ok {
-		return fmt.Errorf("unsupported value type %q, expected matrix", v.Type().String())
-	}
-
-	if matrix.Len() == 0 {
-		return fmt.Errorf("matrix is empty")
-	}
-
+func writeResult(matrix model.Matrix, out io.Writer) error {
 	// go maps are unsorted -> need to sort labels by name so that all values end up in the right column
 	var labelNames []string
 	for name := range matrix[0].Metric {
