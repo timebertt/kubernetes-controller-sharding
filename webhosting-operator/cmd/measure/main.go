@@ -45,6 +45,7 @@ var (
 
 	queriesInput io.Reader
 	outputDir    string
+	outputPrefix string
 
 	prometheusURL = "http://localhost:9091"
 	queryRange    = v1.Range{
@@ -84,6 +85,7 @@ func main() {
 	}
 
 	cmd.Flags().StringVarP(&outputDir, "output-dir", "o", outputDir, "Directory to write output files to, - for stdout (defaults to working directory)")
+	cmd.Flags().StringVar(&outputPrefix, "output-prefix", outputPrefix, "Prefix to prepend to all output files")
 	cmd.Flags().StringVar(&prometheusURL, "prometheus-url", prometheusURL, "URL for querying prometheus")
 	cmd.Flags().DurationVar(&rateInterval, "rate-interval", rateInterval, "Interval to use for rate queries")
 	cmd.Flags().DurationVar(&queryRange.Step, "step", queryRange.Step, "Query resolution step width")
@@ -163,7 +165,7 @@ func run(ctx context.Context, c v1.API) error {
 	fmt.Printf("Using time range for query: %s\n", rangeToString(queryRange))
 
 	for _, q := range config.Queries {
-		fileName := q.Name + ".csv"
+		fileName := outputPrefix + q.Name + ".csv"
 
 		value, err := fetchData(ctx, c, q.Query)
 		if err != nil {
