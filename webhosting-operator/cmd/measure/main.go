@@ -242,7 +242,7 @@ func writeResult(v model.Value, out io.Writer) error {
 	}
 
 	// go maps are unsorted -> need to sort labels by name so that all values end up in the right column
-	labelNames := make([]string, 0, len(matrix[0].Metric)-1)
+	var labelNames []string
 	for name := range matrix[0].Metric {
 		if name == model.MetricNameLabel {
 			continue
