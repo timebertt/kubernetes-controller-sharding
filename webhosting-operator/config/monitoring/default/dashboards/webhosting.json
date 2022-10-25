@@ -367,7 +367,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
-            "spanNulls": false,
+            "spanNulls": true,
             "stacking": {
               "group": "A",
               "mode": "normal"
@@ -404,7 +404,7 @@
       "options": {
         "legend": {
           "calcs": [
-            "max"
+            "last"
           ],
           "displayMode": "table",
           "placement": "right"
@@ -462,7 +462,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
-            "spanNulls": false,
+            "spanNulls": true,
             "stacking": {
               "group": "A",
               "mode": "normal"
@@ -499,7 +499,7 @@
       "options": {
         "legend": {
           "calcs": [
-            "max"
+            "last"
           ],
           "displayMode": "table",
           "placement": "right"
@@ -636,7 +636,7 @@
       "options": {
         "legend": {
           "calcs": [
-            "max"
+            "last"
           ],
           "displayMode": "table",
           "placement": "right"
