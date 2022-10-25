@@ -456,7 +456,10 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
-		For(&webhostingv1alpha1.Website{}, builder.Sharded{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		For(&webhostingv1alpha1.Website{}, builder.Sharded{}, builder.WithPredicates(
+			// trigger on spec change and annotation changes (manual trigger for testing purposes)
+			predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{})),
+		).
 		// watch deployments in order to update phase on relevant changes
 		Owns(&appsv1.Deployment{}, builder.Sharded{}, builder.WithPredicates(DeploymentReadinessChanged)).
 		// watch owned objects for relevant changes to reconcile them back if changed

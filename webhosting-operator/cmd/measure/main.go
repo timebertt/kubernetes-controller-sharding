@@ -45,6 +45,7 @@ var (
 
 	queriesInput io.Reader
 	outputDir    string
+	outputPrefix string
 
 	prometheusURL = "http://localhost:9091"
 	queryRange    = v1.Range{
@@ -84,11 +85,12 @@ func main() {
 	}
 
 	cmd.Flags().StringVarP(&outputDir, "output-dir", "o", outputDir, "Directory to write output files to, - for stdout (defaults to working directory)")
+	cmd.Flags().StringVar(&outputPrefix, "output-prefix", outputPrefix, "Prefix to prepend to all output files")
 	cmd.Flags().StringVar(&prometheusURL, "prometheus-url", prometheusURL, "URL for querying prometheus")
 	cmd.Flags().DurationVar(&rateInterval, "rate-interval", rateInterval, "Interval to use for rate queries")
 	cmd.Flags().DurationVar(&queryRange.Step, "step", queryRange.Step, "Query resolution step width")
-	cmd.Flags().Var((*timeValue)(&queryRange.Start), "start", "Query start timestamp (RFC33339/duration relative to now/unix timestamp in seconds), inclusive (defaults to now-15m)")
-	cmd.Flags().Var((*timeValue)(&queryRange.End), "end", "Query end timestamp (RFC33339/duration relative to now/unix timestamp in seconds), inclusive (defaults to now)")
+	cmd.Flags().Var((*timeValue)(&queryRange.Start), "start", "Query start timestamp (RFC3339/duration relative to now/unix timestamp in seconds), inclusive (defaults to now-15m)")
+	cmd.Flags().Var((*timeValue)(&queryRange.End), "end", "Query end timestamp (RFC3339/duration relative to now/unix timestamp in seconds), inclusive (defaults to now)")
 
 	if err := cmd.ExecuteContext(signals.SetupSignalHandler()); err != nil {
 		fmt.Printf("Error retrieving measurements: %v\n", err)
@@ -97,7 +99,7 @@ func main() {
 }
 
 // timeValue implements pflag.Value for specifying a timestamp in one of the following formats:
-//   - RFC33339, e.g. 2006-01-02T15:04:05Z07:00
+//   - RFC3339, e.g. 2006-01-02T15:04:05Z07:00
 //   - duration relative to now, e.g. -5m
 //   - unix timestamp in seconds, e.g. 1665825136
 type timeValue time.Time
@@ -146,8 +148,9 @@ type QueriesConfig struct {
 }
 
 type Query struct {
-	Name  string `yaml:"name"`
-	Query string `yaml:"query"`
+	Name     string `yaml:"name"`
+	Query    string `yaml:"query"`
+	Optional bool   `yaml:"optional,omitempty"`
 }
 
 func run(ctx context.Context, c v1.API) error {
@@ -163,11 +166,24 @@ func run(ctx context.Context, c v1.API) error {
 	fmt.Printf("Using time range for query: %s\n", rangeToString(queryRange))
 
 	for _, q := range config.Queries {
-		fileName := q.Name + ".csv"
+		fileName := outputPrefix + q.Name + ".csv"
 
 		value, err := fetchData(ctx, c, q.Query)
 		if err != nil {
-			return fmt.Errorf("error fetching data for file %q: %w", fileName, err)
+			return fmt.Errorf("error fetching data for query %q: %w", q.Name, err)
+		}
+
+		matrix, ok := value.(model.Matrix)
+		if !ok {
+			return fmt.Errorf("unsupported value type %q for query %q, expected matrix", value.Type().String(), q.Name)
+		}
+
+		if matrix.Len() == 0 {
+			if q.Optional {
+				fmt.Printf("Skipping output for query %q as matrix is empty\n", q.Name)
+				continue
+			}
+			return fmt.Errorf("matrix is empty for query %q", q.Name)
 		}
 
 		if err = func() error {
@@ -184,9 +200,14 @@ func run(ctx context.Context, c v1.API) error {
 				out = file
 			}
 
-			return writeResult(value, out)
+			if err := writeResult(matrix, out); err != nil {
+				return err
+			}
+
+			fmt.Printf("Succesfully written output to %s\n", fileName)
+			return nil
 		}(); err != nil {
-			return fmt.Errorf("error writing result %q: %w", fileName, err)
+			return fmt.Errorf("error writing result to %s: %w", fileName, err)
 		}
 	}
 
@@ -231,18 +252,9 @@ func fetchData(ctx context.Context, c v1.API, query string) (model.Value, error)
 	return result, nil
 }
 
-func writeResult(v model.Value, out io.Writer) error {
-	matrix, ok := v.(model.Matrix)
-	if !ok {
-		return fmt.Errorf("unsupported value type %q, expected matrix", v.Type().String())
-	}
-
-	if matrix.Len() == 0 {
-		return fmt.Errorf("matrix is empty")
-	}
-
+func writeResult(matrix model.Matrix, out io.Writer) error {
 	// go maps are unsorted -> need to sort labels by name so that all values end up in the right column
-	labelNames := make([]string, 0, len(matrix[0].Metric)-1)
+	var labelNames []string
 	for name := range matrix[0].Metric {
 		if name == model.MetricNameLabel {
 			continue

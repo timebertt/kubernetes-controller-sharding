@@ -54,7 +54,6 @@ make kind-up
 export KUBECONFIG=$PWD/dev/kind_kubeconfig.yaml
 make deploy TAG=latest
 k apply -f config/samples
-k port-forward -n monitoring svc/grafana 3000
 ```
 
 Now, visit the sample websites: http://localhost:8088/project-foo/homepage and http://localhost:8088/project-foo/official.

@@ -62,6 +62,11 @@ rm alertmanager-*.yaml
 # this will override metrics-server APIService (conflicts with gardener-resource-manager), drop it
 rm prometheusAdapter-apiService.yaml
 
+# drop ServiceMonitors for control plane components (not reachable in Shoot cluster)
+rm kubernetesControlPlane-serviceMonitorApiserver.yaml
+rm kubernetesControlPlane-serviceMonitorKubeControllerManager.yaml
+rm kubernetesControlPlane-serviceMonitorKubeScheduler.yaml
+
 cat <<EOF > README.md
 The manifests in this directory were downloaded from
 https://github.com/prometheus-operator/kube-prometheus/tree/$kube_prometheus_version/manifests.

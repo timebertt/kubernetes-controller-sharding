@@ -46,3 +46,24 @@ patches:
     kind: NetworkPolicy
     name: grafana
     namespace: monitoring
+- path: patch_filter_kubelet_metrics.yaml
+  target:
+    group: monitoring.coreos.com
+    version: v1
+    kind: ServiceMonitor
+    name: kubelet
+    namespace: monitoring
+- path: patch_filter_kubestatemetrics_metrics.yaml
+  target:
+    group: apps
+    version: v1
+    kind: Deployment
+    name: kube-state-metrics
+    namespace: monitoring
+- path: patch_filter_nodeexporter_metrics.yaml
+  target:
+    group: monitoring.coreos.com
+    version: v1
+    kind: ServiceMonitor
+    name: node-exporter
+    namespace: monitoring

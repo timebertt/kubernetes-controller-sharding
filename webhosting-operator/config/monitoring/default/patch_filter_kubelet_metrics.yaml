@@ -1,0 +1,36 @@
+# drop storage operation duration metrics (high cardinality)
+- op: add
+  path: /spec/endpoints/0/metricRelabelings/-
+  value:
+    sourceLabels: [__name__]
+    regex: storage_operation_duration_seconds_.+
+    action: drop
+# drop runtime operation duration metrics (high cardinality)
+- op: add
+  path: /spec/endpoints/0/metricRelabelings/-
+  value:
+    sourceLabels: [__name__]
+    regex: kubelet_runtime_operations_duration_seconds_.+
+    action: drop
+# drop metrics for project namespaces
+- op: add
+  path: /spec/endpoints/0/metricRelabelings/-
+  value:
+    sourceLabels: [namespace]
+    regex: project-.+
+    action: drop
+# drop cadvisor metrics for project namespaces
+- op: add
+  path: /spec/endpoints/1/metricRelabelings/-
+  value:
+    sourceLabels: [namespace]
+    regex: project-.+
+    action: drop
+# drop cadvisor network metrics for pod network interfaces on websites workers
+# (not all metrics have a namespace label, so we can't drop them granularly)
+- op: add
+  path: /spec/endpoints/1/metricRelabelings/-
+  value:
+    sourceLabels: [__name__, node, interface]
+    regex: "container_network_.+;.*timebertt--sharding-websites-.+;cali.+"
+    action: drop

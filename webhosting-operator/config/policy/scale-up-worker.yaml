@@ -4,29 +4,29 @@ kind: Deployment
 metadata:
   labels:
     app: scale-up-worker
-    pool: worker
-  name: scale-up-worker
+    pool: websites
+  name: scale-up-worker-websites
   namespace: default
 spec:
-  replicas: 5
+  replicas: 10
   revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: scale-up-worker
-      pool: worker
+      pool: websites
   template:
     metadata:
       labels:
         app: scale-up-worker
-        pool: worker
+        pool: websites
     spec:
       containers:
       - name: pause
-        image: registry.k8s.io/pause:3.7
+        image: pause
       priorityClassName: reserve-excess-capacity
       tolerations:
       - key: dedicated-for
-        value: webhosting
+        value: websites
         effect: NoSchedule
       affinity:
         nodeAffinity:
@@ -36,13 +36,13 @@ spec:
               - key: dedicated-for
                 operator: In
                 values:
-                - webhosting
+                - websites
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
               matchLabels:
                 app: scale-up-worker
-                pool: worker
+                pool: websites
             topologyKey: kubernetes.io/hostname
 ---
 apiVersion: scheduling.k8s.io/v1

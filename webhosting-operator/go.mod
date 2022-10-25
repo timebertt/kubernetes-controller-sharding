@@ -10,6 +10,7 @@ require (
 	github.com/prometheus/common v0.37.0
 	github.com/spf13/cobra v1.4.0
 	go.uber.org/zap v1.19.1
+	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.24.2
 	k8s.io/apimachinery v0.24.2
@@ -82,7 +83,6 @@ require (
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	golang.org/x/tools v0.1.10 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -98,4 +98,4 @@ require (
 )
 
 // https://github.com/timebertt/controller-runtime/tree/sharding based on v0.12.3
-replace sigs.k8s.io/controller-runtime => github.com/timebertt/controller-runtime v0.6.1-0.20221014182726-9e3cb69f9917
+replace sigs.k8s.io/controller-runtime => github.com/timebertt/controller-runtime v0.6.1-0.20221018074954-e9b50d2e71cd

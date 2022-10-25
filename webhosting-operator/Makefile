@@ -151,7 +151,7 @@ up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
 
 .PHONY: deploy
 deploy: $(SKAFFOLD) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
-	$(SKAFFOLD) deploy -i $(CONTROLLER_IMG) -i $(EXPORTER_IMG)
+	$(SKAFFOLD) deploy --port-forward=user --tail -i $(CONTROLLER_IMG) -i $(EXPORTER_IMG)
 
 .PHONY: up
 up: $(SKAFFOLD) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.
