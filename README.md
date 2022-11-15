@@ -1,17 +1,20 @@
-# kubernetes-controller-sharding
+# Kubernetes Controller Sharding
 
-Experiment for sharding in Kubernetes controllers
+_Towards Horizontally Scalable Kubernetes Controllers_
 
-This study project is part of my master's studies in Computer Science at [DHBW CAS](https://cas.dhbw.de).
-You can find the thesis belonging to this implementation in the repository [thesis-controller-sharding](https://github.com/timebertt/thesis-controller-sharding).
+## About
+
+This study project is part of my master's studies in Computer Science at the [DHBW Center for Advanced Studies](https://www.cas.dhbw.de/) (CAS).
+
+You can download and read the full thesis belonging to this implementation here: [thesis-controller-sharding](https://github.com/timebertt/thesis-controller-sharding).
+This repository contains the practical part of the thesis: a sample operator using the sharding implementation, a full monitoring setup and some tools for demonstration and evaluation purposes.
 
 The controller sharding implementation itself is done in a generic way in [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime).
 It is currently located in the `sharding` branch of my fork: https://github.com/timebertt/controller-runtime/tree/sharding.
-This repository contains a sample operator using the sharding implementation for demonstration and evaluation purposes.
 
 ## TL;DR
 
-Try to distribute reconciliation of Kubernetes objects across multiple controller instances.
+Distribute reconciliation of Kubernetes objects across multiple controller instances.
 Remove the limitation to have only one active replica (leader) per controller.
 
 ## Motivation
@@ -28,11 +31,40 @@ This restriction imposes scalability limitations for Kubernetes controllers.
 I.e., the rate of reconciliations, amount of objects, etc. is limited by the machine size that the active controller runs on and the network bandwidth it can use.
 In contrast to usual stateless applications, one cannot increase the throughput of the system by adding more instances (scaling horizontally) but only by using bigger instances (scaling vertically).
 
-This project explores approaches for distributing reconciliation of Kubernetes objects across multiple controller instances. It attempts to lift the restriction of having only one active replica per controller.
-For this, mechanisms are required for determining which instance is responsible for which object to prevent conflicting actions.
-The project evaluates if and how proven sharding mechanisms from the field of distributed databases can be applied to this problem.
+This study project presents a design that allows distributing reconciliation of Kubernetes objects across multiple controller instances.
+It applies proven sharding mechanisms used in distributed databases to Kubernetes controllers to overcome the restriction of having only one active replica per controller.
+The sharding design is implemented in a generic way in my [fork](https://github.com/timebertt/controller-runtime/tree/sharding) of the Kubernetes [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime) project.
+The [webhosting-operator](#webhosting-operator) is implemented as an example operator that uses the sharding implementation for demonstration and evaluation.
+These are first steps towards horizontally scalable Kubernetes controllers.
 
-## Test setup
+## Sharding Design
 
-[webhosting-operator](webhosting-operator) is built as a demo controller for demonstrating and evaluating different sharding approaches for Kubernetes controllers.
-It also includes a setup for monitoring experiments with the operator using popular monitoring tools for Kubernetes as well as a [custom metrics exporter](./webhosting-operator/cmd/webhosting-exporter).
+![Sharding Architecture](assets/architecture.svg)
+
+High-level summary of the sharding design:
+
+- multiple controller instances are deployed
+- one controller instance is elected to be the sharder via usual leader election
+- all instances hold individual shard leases for announcing themselves to the sharder (membership and failure detection)
+- the sharder watches all objects (metadata-only) and shard leases
+- the sharder assigns individual objects to shards (using consistent hashing) by labelling them with the `shard` label
+- the shards use a label selector to restrict the cache and controller to the set of objects assigned to them
+- for moving objects (e.g. during rebalancing on scale-out), the sharder drains the object from the old shard by adding the `drain` label; after the shard has acknowledged the drain operation by removing both labels, the sharder assigns the object to the new shard
+- when a shard releases its shard lease (voluntary disruption) the sharder assigns the objects to another active instance
+- when a shard loses its shard lease the sharder acquires the shard lease (for ensuring the API server's reachability/functionality) and forcefully reassigns the objects
+
+
+Read chapter 4 of the full [thesis](https://github.com/timebertt/thesis-controller-sharding) for a detailed explanation of the sharding design.
+
+## Contents of This Repository
+
+- [webhosting-operator](webhosting-operator/README.md): a sample operator for demonstrating and evaluating the implemented sharding design for Kubernetes controllers
+- [sample-generator](webhosting-operator/cmd/samples-generator): a tool for generating a given amount of random `Website` objects
+- [monitoring setup](webhosting-operator/config/monitoring): a setup for monitoring and measuring load test experiments for the sample operator
+  - includes [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus)
+  - [webhosting-exporter](webhosting-operator/cmd/webhosting-exporter) (based on the [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) library) for metrics on the state of the webhosting-operator's API objects
+  - [grafana](https://github.com/grafana/grafana) along with some [custom dashboards](webhosting-operator/config/monitoring/default/dashboards) for controller-runtime, webhosting-operator, client-go and sharding
+- [experiment](webhosting-operator/cmd/experiment): a tool (based on controller-runtime) for executing load test scenarios for the webhosting-operator
+- [measure](webhosting-operator/cmd/measure): a tool for retrieving configurable measurements from prometheus and storing them in csv-formatted files for further analysis (with `numpy`) and visualization (with `matplotlib`)
+- a few [kyverno](https://github.com/kyverno/kyverno) [policies](webhosting-operator/config/policy) used in load tests
+- a simple [parca](https://github.com/parca-dev/parca) setup for profiling the webhosting-operator during load tests
