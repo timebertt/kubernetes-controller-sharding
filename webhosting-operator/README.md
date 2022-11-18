@@ -1,16 +1,15 @@
 # webhosting-operator
 
 webhosting-operator is a simple operator developed using [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder).
-It is built for demonstrating different sharding approaches for Kubernetes controllers.
+It is built for demonstrating and evaluating the implemented sharding design for Kubernetes controllers.
 
-## Test Setup Requirements
+## Sample Operator Requirements
 
-In order to demonstrate and compare different sharding approaches, an operator is needed that fulfills the following requirements:
+In order to demonstrate and evaluate the proposed sharding design, an operator is needed that fulfills the following requirements:
 
-- it needs to act on multiple custom resources
-  - for demonstrating the sharding by resource type approach
-- in addition to watching its own resources, it needs to watch other objects (e.g. owned objects) as well
-  - sharding will be difficult here, so add it as a challenge
+- it should be composed of a single controller for one (custom) resource
+- in addition to watching its own resources, it needs to watch other relevant objects (e.g. owned objects) as well
+  - sharding is more difficult here, so add it as a challenge
 - it needs to deal with cluster-scoped objects (that are relevant for multiple namespaced objects)
   - this adds side effects (duplicated cache) which need to be taken care of
 
@@ -131,8 +130,6 @@ ingress.networking.k8s.io/official-698696   nginx   *       172.19.0.2   80     
 
 Navigate to http://localhost:8088/project-foo/homepage and http://localhost:8088/project-foo/official in your browser to visit the websites.
 
-You can also check out the publicly hosted `Websites` at https://webhosting.timebertt.dev/project-foo/homepage and https://webhosting.timebertt.dev/project-foo/official.
-
 Generate some more samples with:
 ```bash
 $ k create ns project-bar project-baz
@@ -153,5 +150,3 @@ cat config/monitoring/default/grafana_admin_pass.secret.txt
 ```
 
 Now, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/webhosting?orgId=1) at http://127.0.0.1:3000.
-
-You can also visit the public Grafana [webhosting dashboard](https://grafana.webhosting.timebertt.dev/d/NbmNpqEnk/webhosting?orgId=1) or [sharding dashboard](https://grafana.webhosting.timebertt.dev/d/7liIybkVk/sharding?orgId=1) to see what's currently going on in my cluster. 
