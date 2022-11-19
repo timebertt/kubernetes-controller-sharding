@@ -45,7 +45,7 @@ High-level summary of the sharding design:
 
 - multiple controller instances are deployed
 - one controller instance is elected to be the sharder via usual leader election
-- all instances hold individual shard leases for announcing themselves to the sharder (membership and failure detection)
+- all instances maintain individual shard leases for announcing themselves to the sharder (membership and failure detection)
 - the sharder watches all objects (metadata-only) and shard leases
 - the sharder assigns individual objects to shards (using consistent hashing) by labelling them with the `shard` label
 - the shards use a label selector to restrict the cache and controller to the set of objects assigned to them
