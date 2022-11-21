@@ -7,9 +7,9 @@ _Towards Horizontally Scalable Kubernetes Controllers_
 This study project is part of my master's studies in Computer Science at the [DHBW Center for Advanced Studies](https://www.cas.dhbw.de/) (CAS).
 
 You can download and read the full thesis belonging to this implementation here: [thesis-controller-sharding](https://github.com/timebertt/thesis-controller-sharding).
-This repository contains the practical part of the thesis: a sample operator using the sharding implementation, a full monitoring setup and some tools for demonstration and evaluation purposes.
+This repository contains the practical part of the thesis: a sample operator using the sharding implementation, a full monitoring setup, and some tools for demonstration and evaluation purposes.
 
-The controller sharding implementation itself is done in a generic way in [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime).
+The controller sharding implementation itself is done generically in [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime).
 It is currently located in the `sharding` branch of my fork: https://github.com/timebertt/controller-runtime/tree/sharding.
 
 ## TL;DR
@@ -20,14 +20,14 @@ Remove the limitation to have only one active replica (leader) per controller.
 ## Motivation
 
 Typically, [Kubernetes controllers](https://kubernetes.io/docs/concepts/architecture/controller/) use a leader election mechanism to determine a *single* active controller instance (leader).
-When deploying multiple instances of the same controller, there will only be one active instance at any given time, other instances will be in stand-by.
+When deploying multiple instances of the same controller, there will only be one active instance at any given time, other instances will be on standby.
 This is done to prevent controllers from performing uncoordinated and conflicting actions (reconciliations).
 
 If the current leader goes down and loses leadership (e.g. network failure, rolling update) another instance takes over leadership and becomes the active instance.
-Such setup can be described as an "active-passive HA-setup". It minimizes "controller downtime" and facilitates fast fail-overs.
+Such a setup can be described as an "active-passive HA setup". It minimizes "controller downtime" and facilitates fast failovers.
 However, it cannot be considered as "horizontal scaling" as work is not distributed among multiple instances.
 
-This restriction imposes scalability limitations for Kubernetes controllers. 
+This restriction imposes scalability limitations for Kubernetes controllers.
 I.e., the rate of reconciliations, amount of objects, etc. is limited by the machine size that the active controller runs on and the network bandwidth it can use.
 In contrast to usual stateless applications, one cannot increase the throughput of the system by adding more instances (scaling horizontally) but only by using bigger instances (scaling vertically).
 
@@ -35,7 +35,7 @@ This study project presents a design that allows distributing reconciliation of 
 It applies proven sharding mechanisms used in distributed databases to Kubernetes controllers to overcome the restriction of having only one active replica per controller.
 The sharding design is implemented in a generic way in my [fork](https://github.com/timebertt/controller-runtime/tree/sharding) of the Kubernetes [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime) project.
 The [webhosting-operator](#webhosting-operator) is implemented as an example operator that uses the sharding implementation for demonstration and evaluation.
-These are first steps towards horizontally scalable Kubernetes controllers.
+These are the first steps toward horizontally scalable Kubernetes controllers.
 
 ## Sharding Design
 
@@ -44,10 +44,10 @@ These are first steps towards horizontally scalable Kubernetes controllers.
 High-level summary of the sharding design:
 
 - multiple controller instances are deployed
-- one controller instance is elected to be the sharder via usual leader election
+- one controller instance is elected to be the sharder via the usual leader election
 - all instances maintain individual shard leases for announcing themselves to the sharder (membership and failure detection)
-- the sharder watches all objects (metadata-only) and shard leases
-- the sharder assigns individual objects to shards (using consistent hashing) by labelling them with the `shard` label
+- the sharder watches all objects (metadata-only) and the shard leases
+- the sharder assigns individual objects to shards (using consistent hashing) by labeling them with the `shard` label
 - the shards use a label selector to restrict the cache and controller to the set of objects assigned to them
 - for moving objects (e.g. during rebalancing on scale-out), the sharder drains the object from the old shard by adding the `drain` label; after the shard has acknowledged the drain operation by removing both labels, the sharder assigns the object to the new shard
 - when a shard releases its shard lease (voluntary disruption) the sharder assigns the objects to another active instance
