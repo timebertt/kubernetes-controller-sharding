@@ -140,7 +140,7 @@ Navigate to http://localhost:8088/project-foo/homepage and http://localhost:8088
 
 Generate some more samples with:
 ```bash
-$ k create ns project-bar project-baz
+$ k create ns project-bar && k create ns project-baz
 # create a random amount of websites per namespace (up to 50 each)
 $ go run ./cmd/samples-generator
 created 32 Websites in project "project-foo"

@@ -29,7 +29,7 @@ $(KIND): $(call tool_version_file,$(KIND),$(KIND_VERSION))
 	chmod +x $(KIND)
 
 KUBECTL := $(TOOLS_BIN_DIR)/kubectl
-KUBECTL_VERSION ?= v1.24.2
+KUBECTL_VERSION ?= v1.27.3
 $(KUBECTL): $(call tool_version_file,$(KUBECTL),$(KUBECTL_VERSION))
 	curl -Lo $(KUBECTL) https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/$(shell uname -s | tr '[:upper:]' '[:lower:]')/$(shell uname -m | sed 's/x86_64/amd64/')/kubectl
 	chmod +x $(KUBECTL)
