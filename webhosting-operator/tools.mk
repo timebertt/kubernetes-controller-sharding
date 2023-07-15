@@ -18,7 +18,7 @@ $(TOOLS_BIN_DIR)/.version_%:
 	@touch $@
 
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
-CONTROLLER_GEN_VERSION ?= v0.9.2
+CONTROLLER_GEN_VERSION ?= v0.12.1
 $(CONTROLLER_GEN): $(call tool_version_file,$(CONTROLLER_GEN),$(CONTROLLER_GEN_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION)
 
