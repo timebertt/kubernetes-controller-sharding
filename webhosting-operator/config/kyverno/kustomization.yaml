@@ -2,13 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-- https://github.com/kyverno/kyverno//config?ref=v1.8.0
-
-images:
-- name: ghcr.io/kyverno/kyverno
-  newTag: v1.8.0
-- name: ghcr.io/kyverno/kyvernopre
-  newTag: v1.8.0
+- https://github.com/kyverno/kyverno/releases/download/v1.10.1/install.yaml
 
 configMapGenerator:
 - name: kyverno
