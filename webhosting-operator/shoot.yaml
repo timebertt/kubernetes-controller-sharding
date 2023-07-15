@@ -2,46 +2,32 @@ apiVersion: core.gardener.cloud/v1beta1
 kind: Shoot
 metadata:
   name: sharding
-  namespace: garden-timebertt
+  namespace: garden-fb28d21f90-99b0e
 spec:
   addons:
     kubernetesDashboard:
       enabled: false
     nginxIngress:
       enabled: false
-  cloudProfileName: gcp
-  dns:
-    providers:
-    - secretName: google-clouddns-timebertt-dev
-      type: google-clouddns
+  cloudProfileName: stackit
   extensions:
-  - type: shoot-cert-service
-    providerConfig:
-      apiVersion: service.cert.extensions.gardener.cloud/v1alpha1
-      issuers:
-      - email: timebertt@gmail.com
-        name: letsencrypt
-        server: https://acme-v02.api.letsencrypt.org/directory
-      - email: timebertt@gmail.com
-        name: letsencrypt-staging
-        server: https://acme-staging-v02.api.letsencrypt.org/directory
+  - type: shoot-yawol
   hibernation:
     schedules:
     - start: '00 19 * * 1,2,3,4,5'
       end: '30 07 * * 1,2,3,4,5'
       location: Europe/Berlin
   kubernetes:
-    allowPrivilegedContainers: true
+    enableStaticTokenKubeconfig: false
     kubeAPIServer:
       enableBasicAuthentication: false
     kubeControllerManager:
       nodeCIDRMaskSize: 20
     kubeProxy:
       mode: IPTables
-    version: "1.24"
+    version: "1.25"
     verticalPodAutoscaler:
       enabled: true
-    enableStaticTokenKubeconfig: false
   maintenance:
     autoUpdate:
       kubernetesVersion: true
@@ -56,15 +42,17 @@ spec:
     type: calico
   provider:
     controlPlaneConfig:
-      apiVersion: gcp.provider.extensions.gardener.cloud/v1alpha1
+      apiVersion: openstack.provider.extensions.gardener.cloud/v1alpha1
       kind: ControlPlaneConfig
-      zone: europe-west1-c
+      loadBalancerProvider: yawol
+      zone: eu01-2
     infrastructureConfig:
-      apiVersion: gcp.provider.extensions.gardener.cloud/v1alpha1
+      apiVersion: openstack.provider.extensions.gardener.cloud/v1alpha1
       kind: InfrastructureConfig
+      floatingPoolName: floating-net
       networks:
         workers: 10.250.0.0/16
-    type: gcp
+    type: openstack
     workers:
     # runs system and monitoring components
     - name: system
@@ -72,27 +60,27 @@ spec:
         name: containerd
       machine:
         image:
-          name: gardenlinux
-        type: n1-standard-8
+          name: coreos
+        type: g1.4
       maxSurge: 1
       maxUnavailable: 0
-      maximum: 1
+      maximum: 2
       minimum: 1
       systemComponents:
         allow: true
       volume:
         size: 50Gi
-        type: pd-ssd
+        type: storage_premium_perf1
       zones:
-      - europe-west1-c
+      - eu01-2
     # runs webhosting-operator
     - name: operator
       cri:
         name: containerd
       machine:
         image:
-          name: gardenlinux
-        type: n1-standard-4
+          name: coreos
+        type: g1.3
       maxSurge: 1
       maxUnavailable: 0
       maximum: 1
@@ -107,17 +95,17 @@ spec:
         effect: NoSchedule
       volume:
         size: 50Gi
-        type: pd-ssd
+        type: storage_premium_perf1
       zones:
-      - europe-west1-c
+      - eu01-2
     # runs websites (pause containers in load test)
     - name: websites
       cri:
         name: containerd
       machine:
         image:
-          name: gardenlinux
-        type: n1-standard-8
+          name: coreos
+        type: g1.4
       maxSurge: 5
       maxUnavailable: 0
       maximum: 10
@@ -132,14 +120,14 @@ spec:
         effect: NoSchedule
       volume:
         size: 50Gi
-        type: pd-ssd
+        type: storage_premium_perf1
       zones:
-      - europe-west1-c
+      - eu01-2
       kubernetes:
         kubelet:
           # CNI and kube-proxy generate high CPU load when creating that many pods
           # with even higher maxPods settings nodes are likely to crash
           maxPods: 800
   purpose: development
-  region: europe-west1
-  secretBindingName: shoot-operator-gcp
+  region: RegionOne
+  secretBindingName: cq12kuc8ir

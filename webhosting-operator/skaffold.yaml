@@ -7,7 +7,7 @@ profiles:
 # deploy only on shoot
 - name: shoot
   activation:
-  - kubeContext: .*timebertt--sharding.*
+  - kubeContext: .*fb28d21f90-99b0e--sharding.*
   deploy:
     kustomize:
       flags:
@@ -28,7 +28,7 @@ profiles:
 # deploy only on shoot
 - name: shoot
   activation:
-  - kubeContext: .*timebertt--sharding.*
+  - kubeContext: .*fb28d21f90-99b0e--sharding.*
   deploy:
     kustomize:
       flags:
@@ -85,7 +85,7 @@ profiles:
     value: config/manager/shard
 - name: shoot
   activation:
-  - kubeContext: .*timebertt--sharding.*
+  - kubeContext: .*fb28d21f90-99b0e--sharding.*
   deploy:
     kustomize:
       paths:
@@ -147,7 +147,7 @@ deploy:
 profiles:
 - name: shoot
   activation:
-  - kubeContext: .*timebertt--sharding.*
+  - kubeContext: .*fb28d21f90-99b0e--sharding.*
   deploy:
     kustomize:
       paths:

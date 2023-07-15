@@ -21,4 +21,4 @@ spec:
         resources:
           requests:
             storage: 100Gi
-        storageClassName: gce-ssd
+        storageClassName: premium-perf1-stackit
