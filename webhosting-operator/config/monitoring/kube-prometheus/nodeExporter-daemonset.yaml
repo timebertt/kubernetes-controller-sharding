@@ -5,7 +5,7 @@ metadata:
     app.kubernetes.io/component: exporter
     app.kubernetes.io/name: node-exporter
     app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: 1.3.1
+    app.kubernetes.io/version: 1.5.0
   name: node-exporter
   namespace: monitoring
 spec:
@@ -22,7 +22,7 @@ spec:
         app.kubernetes.io/component: exporter
         app.kubernetes.io/name: node-exporter
         app.kubernetes.io/part-of: kube-prometheus
-        app.kubernetes.io/version: 1.3.1
+        app.kubernetes.io/version: 1.5.0
     spec:
       automountServiceAccountToken: true
       containers:
@@ -30,12 +30,13 @@ spec:
         - --web.listen-address=127.0.0.1:9100
         - --path.sysfs=/host/sys
         - --path.rootfs=/host/root
+        - --path.udev.data=/host/root/run/udev/data
         - --no-collector.wifi
         - --no-collector.hwmon
         - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run/k3s/containerd/.+|var/lib/docker/.+|var/lib/kubelet/pods/.+)($|/)
         - --collector.netclass.ignored-devices=^(veth.*|[a-f0-9]{15})$
         - --collector.netdev.device-exclude=^(veth.*|[a-f0-9]{15})$
-        image: quay.io/prometheus/node-exporter:v1.3.1
+        image: quay.io/prometheus/node-exporter:v1.5.0
         name: node-exporter
         resources:
           limits:
@@ -71,7 +72,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        image: quay.io/brancz/kube-rbac-proxy:v0.12.0
+        image: quay.io/brancz/kube-rbac-proxy:v0.14.0
         name: kube-rbac-proxy
         ports:
         - containerPort: 9100

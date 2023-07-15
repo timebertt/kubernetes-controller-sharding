@@ -32,7 +32,7 @@ spec:
       expr: |
         sum by (namespace, pod, cluster) (
           max by(namespace, pod, cluster) (
-            kube_pod_status_phase{job="kube-state-metrics", phase=~"Pending|Unknown"}
+            kube_pod_status_phase{job="kube-state-metrics", phase=~"Pending|Unknown|Failed"}
           ) * on(namespace, pod, cluster) group_left(owner_kind) topk by(namespace, pod, cluster) (
             1, max by(namespace, pod, owner_kind, cluster) (kube_pod_owner{owner_kind!="Job"})
           )
@@ -230,7 +230,7 @@ spec:
         description: HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler  }}
           has not matched the desired number of replicas for longer than 15 minutes.
         runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubehpareplicasmismatch
-        summary: HPA has not matched descired number of replicas.
+        summary: HPA has not matched desired number of replicas.
       expr: |
         (kube_horizontalpodautoscaler_status_desired_replicas{job="kube-state-metrics"}
           !=
@@ -574,6 +574,7 @@ spec:
         summary: Client certificate is about to expire.
       expr: |
         apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and on(job) histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 604800
+      for: 5m
       labels:
         severity: warning
     - alert: KubeClientCertificateExpiration
@@ -584,6 +585,7 @@ spec:
         summary: Client certificate is about to expire.
       expr: |
         apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and on(job) histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 86400
+      for: 5m
       labels:
         severity: critical
     - alert: KubeAggregatedAPIErrors
@@ -1445,11 +1447,11 @@ spec:
         ))
       record: 'node_namespace_pod:kube_pod_info:'
     - expr: |
-        count by (cluster, node) (sum by (node, cpu) (
-          node_cpu_seconds_total{job="node-exporter"}
-        * on (namespace, pod) group_left(node)
+        count by (cluster, node) (
+          node_cpu_seconds_total{mode="idle",job="node-exporter"}
+          * on (namespace, pod) group_left(node)
           topk by(namespace, pod) (1, node_namespace_pod:kube_pod_info:)
-        ))
+        )
       record: node:node_num_cpu:sum
     - expr: |
         sum(
@@ -1463,8 +1465,16 @@ spec:
         ) by (cluster)
       record: :node_memory_MemAvailable_bytes:sum
     - expr: |
-        sum(rate(node_cpu_seconds_total{job="node-exporter",mode!="idle",mode!="iowait",mode!="steal"}[5m])) /
-        count(sum(node_cpu_seconds_total{job="node-exporter"}) by (cluster, instance, cpu))
+        avg by (cluster, node) (
+          sum without (mode) (
+            rate(node_cpu_seconds_total{mode!="idle",mode!="iowait",mode!="steal",job="node-exporter"}[5m])
+          )
+        )
+      record: node:node_cpu_utilization:ratio_rate5m
+    - expr: |
+        avg by (cluster) (
+          node:node_cpu_utilization:ratio_rate5m
+        )
       record: cluster:node_cpu:ratio_rate5m
   - name: kubelet.rules
     rules:
