@@ -77,8 +77,16 @@ Alternatively, you can also create a cluster in the cloud. If you have a Gardene
 ```bash
 k apply -f shoot.yaml
 # gardenctl target ...
-# deploy ingress-nginx with service annotations for exposing websites via public dns
-make deploy-ingress-nginx OVERLAY=with-dns
+
+# deploy external-dns for managing a DNS record for our webhosting service
+k apply --server-side -k config/external-dns
+k -n external-dns create secret generic google-clouddns-timebertt-dev --from-literal project=$PROJECT_NAME --from-file service-account.json=$SERVICE_ACCOUNT_FILE
+
+# deploy cert-manager for managing TLS certificates
+k apply --server-side -k config/cert-manager
+
+# deploy ingress-nginx with service annotations for exposing websites via public dns and requesting a TLS certificate
+make deploy-ingress-nginx OVERLAY=shoot
 ```
 
 ### 2. Deploy the Operator
@@ -132,7 +140,7 @@ Navigate to http://localhost:8088/project-foo/homepage and http://localhost:8088
 
 Generate some more samples with:
 ```bash
-$ k create ns project-bar project-baz
+$ k create ns project-bar && k create ns project-baz
 # create a random amount of websites per namespace (up to 50 each)
 $ go run ./cmd/samples-generator
 created 32 Websites in project "project-foo"

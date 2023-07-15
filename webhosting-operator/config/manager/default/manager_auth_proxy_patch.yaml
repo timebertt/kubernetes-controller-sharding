@@ -10,7 +10,7 @@ spec:
     spec:
       containers:
       - name: kube-rbac-proxy
-        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.12.0
+        image: quay.io/brancz/kube-rbac-proxy:v0.14.2
         args:
         - --logtostderr
         - --secure-listen-address=:8443

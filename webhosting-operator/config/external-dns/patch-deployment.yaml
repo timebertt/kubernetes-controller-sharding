@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+      - name: external-dns
+        args:
+        - --source=ingress
+        - --source=service
+        - --domain-filter=timebertt.dev
+        - --provider=google
+        - --log-format=json
+        - --google-project=$(GOOGLE_PROJECT)
+        - --google-zone-visibility=public
+        - --policy=sync
+        - --registry=txt
+        - --txt-owner-id=timebertt-fb28d21f90-sharding
+        - --interval=1m
+        env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /etc/secrets/service-account/service-account.json
+        - name: GOOGLE_PROJECT
+          valueFrom:
+            secretKeyRef:
+              name: google-clouddns-timebertt-dev
+              key: project
+        volumeMounts:
+        - name: clouddns-credentials
+          mountPath: /etc/secrets/service-account
+          readOnly: true
+      volumes:
+      - name: clouddns-credentials
+        secret:
+          secretName: google-clouddns-timebertt-dev

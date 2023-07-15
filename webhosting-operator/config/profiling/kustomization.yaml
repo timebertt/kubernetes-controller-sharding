@@ -2,8 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-# from https://github.com/parca-dev/parca/releases/download/v0.13.0/kubernetes-manifest.yaml
-- parca.yaml
+- https://github.com/parca-dev/parca/releases/download/v0.18.0/kubernetes-manifest.yaml
 # provide parca running in namespace "parca" with the permissions required for service discovery in namespace
 # "webhosting-system" and scrape the pprof endpoints of webhosting-operator
 - parca_rbac.yaml
@@ -16,8 +15,16 @@ generatorOptions:
     app.kubernetes.io/name: parca
 
 configMapGenerator:
-- name: parca-config
+- name: parca
   namespace: parca
   behavior: merge
   files:
   - parca.yaml=parca_config.yaml
+
+patches:
+- patch: |
+    apiVersion: policy/v1beta1
+    kind: PodSecurityPolicy
+    metadata:
+      name: parca
+    $patch: delete

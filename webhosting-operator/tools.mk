@@ -18,26 +18,26 @@ $(TOOLS_BIN_DIR)/.version_%:
 	@touch $@
 
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
-CONTROLLER_GEN_VERSION ?= v0.9.2
+CONTROLLER_GEN_VERSION ?= v0.12.1
 $(CONTROLLER_GEN): $(call tool_version_file,$(CONTROLLER_GEN),$(CONTROLLER_GEN_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION)
 
 KIND := $(TOOLS_BIN_DIR)/kind
-KIND_VERSION ?= v0.14.0
+KIND_VERSION ?= v0.20.0
 $(KIND): $(call tool_version_file,$(KIND),$(KIND_VERSION))
 	curl -L -o $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 	chmod +x $(KIND)
 
 KUBECTL := $(TOOLS_BIN_DIR)/kubectl
-KUBECTL_VERSION ?= v1.24.2
+KUBECTL_VERSION ?= v1.27.3
 $(KUBECTL): $(call tool_version_file,$(KUBECTL),$(KUBECTL_VERSION))
 	curl -Lo $(KUBECTL) https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/$(shell uname -s | tr '[:upper:]' '[:lower:]')/$(shell uname -m | sed 's/x86_64/amd64/')/kubectl
 	chmod +x $(KUBECTL)
 
 KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
-KUSTOMIZE_VERSION ?= v4.5.5
+KUSTOMIZE_VERSION ?= v5.1.0
 $(KUSTOMIZE): $(call tool_version_file,$(KUSTOMIZE),$(KUSTOMIZE_VERSION))
-	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VERSION)
+	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/kustomize/kustomize/v5@$(KUSTOMIZE_VERSION)
 
 GINKGO := $(TOOLS_BIN_DIR)/ginkgo
 $(GINKGO): go.mod
@@ -48,7 +48,7 @@ $(SETUP_ENVTEST): go.mod
 	go build -o $(SETUP_ENVTEST) sigs.k8s.io/controller-runtime/tools/setup-envtest
 
 SKAFFOLD := $(TOOLS_BIN_DIR)/skaffold
-SKAFFOLD_VERSION ?= v1.39.1
+SKAFFOLD_VERSION ?= v2.6.1
 $(SKAFFOLD): $(call tool_version_file,$(SKAFFOLD),$(SKAFFOLD_VERSION))
 	curl -Lo $(SKAFFOLD) https://storage.googleapis.com/skaffold/releases/$(SKAFFOLD_VERSION)/skaffold-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/')
 	chmod +x $(SKAFFOLD)
