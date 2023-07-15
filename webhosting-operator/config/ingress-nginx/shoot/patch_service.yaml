@@ -5,7 +5,3 @@ metadata:
   namespace: ingress-nginx
   annotations:
     external-dns.alpha.kubernetes.io/hostname: webhosting.timebertt.dev
-    # request TLS certificate for webhosting.timebertt.dev that will be used by all websites
-    cert.gardener.cloud/issuer: letsencrypt
-    cert.gardener.cloud/purpose: managed
-    cert.gardener.cloud/secretname: webhosting-tls
