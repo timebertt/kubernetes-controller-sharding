@@ -2,8 +2,6 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-    dns.gardener.cloud/class: garden
-    dns.gardener.cloud/dnsnames: grafana.webhosting.timebertt.dev
     cert.gardener.cloud/issuer: letsencrypt
     cert.gardener.cloud/purpose: managed
   labels:

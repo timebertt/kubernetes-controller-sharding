@@ -3,6 +3,6 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: ingress-nginx-admission
 webhooks:
-# drop validation for ingress objects, as it results in high latency and CPU waste
+# drop validation for ingress objects, as it results in high latency and CPU waste during load tests
 - name: validate.nginx.ingress.kubernetes.io
   $patch: delete
