@@ -74,7 +74,7 @@ jobs:
           latest=${{ endsWith(github.ref, github.event.repository.default_branch) }}
 
     - name: Build and push
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v4
       with:
         context: ${{ matrix.context }}
         target: ${{ matrix.name }}
