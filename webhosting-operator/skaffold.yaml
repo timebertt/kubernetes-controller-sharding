@@ -188,7 +188,7 @@ profiles:
   manifests:
     kustomize:
       paths:
-      - config/profiling/default
+      - config/profiling
   deploy:
     kubectl:
       defaultNamespace: ""
