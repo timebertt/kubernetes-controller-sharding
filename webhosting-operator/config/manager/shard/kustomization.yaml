@@ -4,5 +4,5 @@ kind: Kustomization
 resources:
 - ../default
 
-patchesStrategicMerge:
-- manager_shard_patch.yaml
+patches:
+- path: manager_shard_patch.yaml

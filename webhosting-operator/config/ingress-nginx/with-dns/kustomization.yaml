@@ -4,14 +4,15 @@ kind: Kustomization
 resources:
 - ../default
 
-patchesStrategicMerge:
-- patch_service.yaml
-
 patches:
-- path: patch_deployment.yaml
-  target:
+- path: patch_service.yaml
+- target:
     group: apps
     version: v1
     kind: Deployment
     name: ingress-nginx-controller
     namespace: ingress-nginx
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: "--default-ssl-certificate=ingress-nginx/webhosting-tls"

@@ -5,5 +5,5 @@ resources:
 - ../default
 - storageclass.yaml
 
-patchesStrategicMerge:
-- patch_prometheus.yaml
+patches:
+- path: patch_prometheus.yaml

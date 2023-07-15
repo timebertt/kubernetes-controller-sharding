@@ -34,11 +34,9 @@ secretGenerator:
   files:
   - password=grafana_admin_pass.secret.txt
 
-patchesStrategicMerge:
-- patch_grafana_admin.yaml
-- patch_prometheus_resources.yaml
-
 patches:
+- path: patch_grafana_admin.yaml
+- path: patch_prometheus_resources.yaml
 - path: patch_grafana_networkpolicy.yaml
   target:
     group: networking.k8s.io
