@@ -13,6 +13,7 @@ profiles:
       - config/kyverno
   deploy:
     kubectl:
+      defaultNamespace: ""
       flags:
         apply:
         - --server-side
@@ -36,6 +37,7 @@ profiles:
       - config/policy
   deploy:
     kubectl:
+      defaultNamespace: ""
       flags:
         apply:
         - --server-side
@@ -64,6 +66,7 @@ manifests:
     - config/manager/default
 deploy:
   kubectl:
+    defaultNamespace: ""
     flags:
       apply:
       - --server-side
@@ -117,6 +120,7 @@ manifests:
     - config/monitoring/crds
 deploy:
   kubectl:
+    defaultNamespace: ""
     flags:
       apply:
       - --server-side
@@ -149,6 +153,7 @@ manifests:
         - '[ -f config/monitoring/default/grafana_admin_pass.secret.txt ] || cat /dev/urandom | tr -dc "a-zA-Z0-9" | head -c 32 > config/monitoring/default/grafana_admin_pass.secret.txt'
 deploy:
   kubectl:
+    defaultNamespace: ""
     flags:
       apply:
       - --server-side
@@ -186,6 +191,7 @@ profiles:
       - config/profiling/default
   deploy:
     kubectl:
+      defaultNamespace: ""
       flags:
         apply:
         - --server-side
