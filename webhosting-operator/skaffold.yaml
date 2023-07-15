@@ -1,5 +1,4 @@
----
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
   name: kyverno
@@ -8,16 +7,18 @@ profiles:
 - name: shoot
   activation:
   - kubeContext: .*fb28d21f90-99b0e--sharding.*
-  deploy:
+  manifests:
     kustomize:
-      flags:
-        apply:
-        - "--server-side"
-        - "--force-conflicts"
       paths:
       - config/kyverno
+  deploy:
+    kubectl:
+      flags:
+        apply:
+        - --server-side
+        - --force-conflicts
 ---
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
   name: policy
@@ -29,17 +30,19 @@ profiles:
 - name: shoot
   activation:
   - kubeContext: .*fb28d21f90-99b0e--sharding.*
-  deploy:
+  manifests:
     kustomize:
-      flags:
-        apply:
-        - "--server-side"
-        - "--force-conflicts"
       paths:
       - config/policy
+  deploy:
+    kubectl:
+      flags:
+        apply:
+        - --server-side
+        - --force-conflicts
     statusCheck: false
 ---
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
   name: webhosting-operator
@@ -52,17 +55,19 @@ build:
       main: ./cmd/webhosting-operator
       dependencies:
         paths:
-        - "go.mod"
-        - "**/*.go"
-        - "../../../../sigs.k8s.io/controller-runtime/**/*.go"
-deploy:
+        - go.mod
+        - '**/*.go'
+        - ../../../../sigs.k8s.io/controller-runtime/**/*.go
+manifests:
   kustomize:
-    flags:
-      apply:
-      - "--server-side"
-      - "--force-conflicts"
     paths:
     - config/manager/default
+deploy:
+  kubectl:
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
     hooks:
       before:
       - host:
@@ -76,25 +81,25 @@ profiles:
   - command: debug
   patches:
   - op: replace
-    path: /deploy/kustomize/paths/0
+    path: /manifests/kustomize/paths/0
     value: config/manager/debug
 - name: shard
   patches:
   - op: replace
-    path: /deploy/kustomize/paths/0
+    path: /manifests/kustomize/paths/0
     value: config/manager/shard
 - name: shoot
   activation:
   - kubeContext: .*fb28d21f90-99b0e--sharding.*
-  deploy:
-    kustomize:
-      paths:
-      - config/manager/shoot
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: config/manager/shoot
 - name: shoot-non-sharded
-  deploy:
-    kustomize:
-      paths:
-      - config/manager/shoot-non-sharded
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: config/manager/shoot-non-sharded
 portForward:
 - resourceType: deployment
   namespace: webhosting-system
@@ -102,20 +107,22 @@ portForward:
   port: metrics
   localPort: 8081
 ---
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
   name: monitoring-crds
-deploy:
+manifests:
   kustomize:
-    flags:
-      apply:
-      - "--server-side"
-      - "--force-conflicts"
     paths:
     - config/monitoring/crds
+deploy:
+  kubectl:
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
 ---
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
   name: monitoring
@@ -129,26 +136,28 @@ build:
   - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter
     ko:
       main: ./cmd/webhosting-exporter
-deploy:
+manifests:
   kustomize:
-    flags:
-      apply:
-      - "--server-side"
-      - "--force-conflicts"
-    hooks:
-      before:
-      - host:
-          command:
-          - bash
-          - -c
-          - '[ -f config/monitoring/default/grafana_admin_pass.secret.txt ] || cat /dev/urandom | tr -dc "a-zA-Z0-9" | head -c 32 > config/monitoring/default/grafana_admin_pass.secret.txt'
     paths:
     - config/monitoring/default
+  hooks:
+    before:
+    - host:
+        command:
+        - bash
+        - -c
+        - '[ -f config/monitoring/default/grafana_admin_pass.secret.txt ] || cat /dev/urandom | tr -dc "a-zA-Z0-9" | head -c 32 > config/monitoring/default/grafana_admin_pass.secret.txt'
+deploy:
+  kubectl:
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
 profiles:
 - name: shoot
   activation:
   - kubeContext: .*fb28d21f90-99b0e--sharding.*
-  deploy:
+  manifests:
     kustomize:
       paths:
       - config/monitoring/with-pvc
@@ -164,21 +173,23 @@ portForward:
   port: web
   localPort: 9090
 ---
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
   name: profiling
 # profiling config disabled by default, can be enabled with profile "profiling"
 profiles:
 - name: profiling
-  deploy:
+  manifests:
     kustomize:
-      flags:
-        apply:
-        - "--server-side"
-        - "--force-conflicts"
       paths:
       - config/profiling/default
+  deploy:
+    kubectl:
+      flags:
+        apply:
+        - --server-side
+        - --force-conflicts
   portForward:
   - resourceType: service
     namespace: parca
