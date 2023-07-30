@@ -43,11 +43,10 @@ const reconcileWorkers = 10
 type Every struct {
 	client.Client
 
-	Name   string
-	Do     func(ctx context.Context, c client.Client, labels map[string]string) error
-	Rate   rate.Limit
-	Stop   time.Time
-	Labels map[string]string
+	Name string
+	Do   func(ctx context.Context, c client.Client) error
+	Rate rate.Limit
+	Stop time.Time
 }
 
 func (r *Every) AddToManager(mgr manager.Manager) error {
@@ -55,17 +54,15 @@ func (r *Every) AddToManager(mgr manager.Manager) error {
 		r.Client = mgr.GetClient()
 	}
 
-	c, err := controller.New(r.Name, mgr, controller.Options{
-		Reconciler:              r,
-		MaxConcurrentReconciles: reconcileWorkers,
-		RateLimiter:             &workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(r.Rate, int(r.Rate))},
-		RecoverPanic:            pointer.Bool(true),
-	})
-	if err != nil {
-		return err
-	}
-
-	return StartN(c, reconcileWorkers*10)
+	return builder.ControllerManagedBy(mgr).
+		Named(r.Name).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: reconcileWorkers,
+			RateLimiter:             &workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(r.Rate, int(r.Rate))},
+			RecoverPanic:            pointer.Bool(true),
+		}).
+		WatchesRawSource(EmitN(reconcileWorkers), &handler.EnqueueRequestForObject{}).
+		Complete(r)
 }
 
 func (r *Every) Reconcile(ctx context.Context, _ reconcile.Request) (reconcile.Result, error) {
@@ -74,7 +71,7 @@ func (r *Every) Reconcile(ctx context.Context, _ reconcile.Request) (reconcile.R
 		return reconcile.Result{}, nil
 	}
 
-	return reconcile.Result{Requeue: true}, r.Do(ctx, r.Client, r.Labels)
+	return reconcile.Result{Requeue: true}, r.Do(ctx, r.Client)
 }
 
 // ForEach runs the given Func for each object of the given kind with the specified frequency.
