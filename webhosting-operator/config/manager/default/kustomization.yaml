@@ -22,7 +22,7 @@ images:
 
 resources:
 - manager.yaml
-- ../../crd
+- ../crds
 - ../rbac
 - auth_proxy_service.yaml
 - auth_proxy_role.yaml

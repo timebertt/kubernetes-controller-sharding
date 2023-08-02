@@ -45,7 +45,7 @@ clean-tools-bin: ## Empty the tools binary directory
 
 .PHONY: manifests
 manifests: $(CONTROLLER_GEN) ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=operator crd paths="./..." output:rbac:artifacts:config=config/manager/rbac output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=operator crd paths="./..." output:rbac:artifacts:config=config/manager/rbac output:crd:artifacts:config=config/manager/crds
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.

@@ -26,9 +26,9 @@ COPY pkg/ pkg/
 # Build
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o manager ./cmd/webhosting-operator
+    go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o webhosting-operator ./cmd/webhosting-operator
 
-# Use distroless as minimal base image to package the manager binary
+# Use distroless as minimal base image to package the webhosting-operator binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot AS base
 
@@ -41,5 +41,5 @@ USER 65532:65532
 
 FROM base AS webhosting-operator
 
-COPY --from=builder /workspace/manager .
-ENTRYPOINT ["/manager"]
+COPY --from=builder /workspace/webhosting-operator .
+ENTRYPOINT ["/webhosting-operator"]
