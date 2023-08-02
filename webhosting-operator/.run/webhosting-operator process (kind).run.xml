@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="webhosting-operator process (kind)" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="kubernetes-controller-sharding" />
+    <working_directory value="$PROJECT_DIR$/webhosting-operator" />
+    <envs>
+      <env name="KUBECONFIG" value="$PROJECT_DIR$/webhosting-operator/dev/kind_kubeconfig.yaml" />
+      <env name="LEADER_ELECT" value="false" />
+      <env name="SHARD_ID" value="webhosting-operator-0" />
+      <env name="SHARD_MODE" value="sharder" />
+    </envs>
+    <kind value="PACKAGE" />
+    <package value="github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/cmd/webhosting-operator" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/webhosting-operator/main.go" />
+    <method v="2" />
+  </configuration>
+</component>

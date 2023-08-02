@@ -99,7 +99,7 @@ build: generate fmt vet ## Build manager binary.
 
 .PHONY: run
 run: manifests generate fmt vet ## Run the webhosting-operator from your host.
-	go run ./cmd/webhosting-operator --config=config/manager/default/controller_manager_config.yaml
+	go run ./cmd/webhosting-operator
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.

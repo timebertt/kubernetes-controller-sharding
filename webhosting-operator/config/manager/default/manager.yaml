@@ -21,8 +21,6 @@ spec:
       containers:
       - name: manager
         image: controller:latest
-        args:
-        - "--config=/controller_manager_config.yaml"
         ports:
         - name: metrics
           containerPort: 8080
@@ -48,13 +46,5 @@ spec:
           requests:
             cpu: 250m
             memory: 256Mi
-        volumeMounts:
-        - name: manager-config
-          mountPath: /controller_manager_config.yaml
-          subPath: controller_manager_config.yaml
-      volumes:
-      - name: manager-config
-        configMap:
-          name: manager-config
       serviceAccountName: operator
       terminationGracePeriodSeconds: 30
