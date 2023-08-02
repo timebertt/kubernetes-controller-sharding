@@ -86,7 +86,3 @@ type IngressConfiguration struct {
 	// +optional
 	TLS []networkingv1.IngressTLS `json:"tls,omitempty"`
 }
-
-func init() {
-	SchemeBuilder.Register(&WebhostingOperatorConfig{})
-}

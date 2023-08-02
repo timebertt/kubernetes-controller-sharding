@@ -64,7 +64,3 @@ type ThemeList struct {
 	// Items is the list of Themes.
 	Items []Theme `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&Theme{}, &ThemeList{})
-}
