@@ -32,7 +32,6 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/sharding"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -214,10 +213,9 @@ func setOptionsDefaults(opts ctrl.Options) ctrl.Options {
 	// allows us to quickly handover leadership on restarts
 	opts.LeaderElectionReleaseOnCancel = true
 
-	opts.NewCache = func(config *rest.Config, opts cache.Options) (cache.Cache, error) {
-		opts.DefaultTransform = dropUnwantedMetadata
-		return cache.New(config, opts)
-	}
+	opts.Cache.DefaultTransform = dropUnwantedMetadata
+
+	opts.Controller.RecoverPanic = pointer.Bool(true)
 
 	return opts
 }

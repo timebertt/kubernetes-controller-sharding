@@ -99,21 +99,23 @@ func (s *scenario) Start(ctx context.Context) error {
 	// website-deleter:   deletes about  600 websites over  10 minutes
 	// => in total, there will be about 7800 websites after 10 minutes
 	if err := (&generator.Every{
-		Name:   "website-generator",
-		Do:     generator.CreateWebsite,
-		Rate:   rate.Limit(14),
-		Stop:   time.Now().Add(10 * time.Minute),
-		Labels: s.labels,
+		Name: "website-generator",
+		Do: func(ctx context.Context, c client.Client) error {
+			return generator.CreateWebsite(ctx, c, s.labels)
+		},
+		Rate: rate.Limit(14),
+		Stop: time.Now().Add(10 * time.Minute),
 	}).AddToManager(s.mgr); err != nil {
 		return fmt.Errorf("error adding website-generator: %w", err)
 	}
 
 	if err := (&generator.Every{
-		Name:   "website-deleter",
-		Do:     generator.DeleteWebsite,
-		Rate:   rate.Limit(1),
-		Stop:   time.Now().Add(10 * time.Minute),
-		Labels: s.labels,
+		Name: "website-deleter",
+		Do: func(ctx context.Context, c client.Client) error {
+			return generator.DeleteWebsite(ctx, c, s.labels)
+		},
+		Rate: rate.Limit(1),
+		Stop: time.Now().Add(10 * time.Minute),
 	}).AddToManager(s.mgr); err != nil {
 		return fmt.Errorf("error adding website-deleter: %w", err)
 	}
@@ -133,10 +135,11 @@ func (s *scenario) Start(ctx context.Context) error {
 	// => peeks at about 2.6 reconciliations per second on average
 	// (note: these reconciliation triggers occur in bursts of up to ~156)
 	if err := (&generator.Every{
-		Name:   "theme-mutator",
-		Do:     generator.MutateTheme,
-		Rate:   rate.Every(time.Minute),
-		Labels: s.labels,
+		Name: "theme-mutator",
+		Do: func(ctx context.Context, c client.Client) error {
+			return generator.MutateTheme(ctx, c, s.labels)
+		},
+		Rate: rate.Every(time.Minute),
 	}).AddToManager(s.mgr); err != nil {
 		return fmt.Errorf("error adding theme-mutator: %w", err)
 	}

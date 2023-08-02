@@ -32,7 +32,9 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -88,6 +90,10 @@ func main() {
 				// disable all endpoints
 				HealthProbeBindAddress: "0",
 				MetricsBindAddress:     "0",
+
+				Controller: config.Controller{
+					RecoverPanic: pointer.Bool(true),
+				},
 			})
 			if err != nil {
 				return err
