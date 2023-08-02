@@ -45,11 +45,12 @@ clean-tools-bin: ## Empty the tools binary directory
 
 .PHONY: manifests
 manifests: $(CONTROLLER_GEN) ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=operator crd paths="./..." output:rbac:artifacts:config=config/manager/rbac output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=operator crd paths="./..." output:rbac:artifacts:config=config/manager/rbac output:crd:artifacts:config=config/manager/crds
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	hack/update-codegen.sh
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -98,7 +99,7 @@ build: generate fmt vet ## Build manager binary.
 
 .PHONY: run
 run: manifests generate fmt vet ## Run the webhosting-operator from your host.
-	go run ./cmd/webhosting-operator --config=config/manager/default/controller_manager_config.yaml
+	go run ./cmd/webhosting-operator
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.

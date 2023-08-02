@@ -8,4 +8,6 @@ configMapGenerator:
 - files:
   - controller_manager_config.yaml
   name: manager-config
-  behavior: replace
+
+patches:
+- path: manager_patch.yaml

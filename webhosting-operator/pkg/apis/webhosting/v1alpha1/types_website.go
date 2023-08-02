@@ -81,7 +81,3 @@ type WebsiteList struct {
 	// Items is the list of Websites.
 	Items []Website `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&Website{}, &WebsiteList{})
-}

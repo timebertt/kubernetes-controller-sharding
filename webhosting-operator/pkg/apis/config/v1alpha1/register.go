@@ -20,17 +20,28 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
+
+// GroupName is the group name used in this package.
+const GroupName = "config.webhosting.timebertt.dev"
+
+// SchemeGroupVersion is group version used to register these objects
+var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha1"}
 
 var (
-	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "config.webhosting.timebertt.dev", Version: "v1alpha1"}
-
-	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
-	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
-
-	// AddToScheme adds the types in this group-version to the given scheme.
+	// SchemeBuilder is a new Scheme Builder which registers our API.
+	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes, addDefaultingFuncs)
+	// AddToScheme is a reference to the Scheme Builder's AddToScheme function.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
+
+// Adds the list of known types to the given scheme.
+func addKnownTypes(scheme *runtime.Scheme) error {
+	scheme.AddKnownTypes(SchemeGroupVersion,
+		&WebhostingOperatorConfig{},
+	)
+
+	return nil
+}

@@ -13,3 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+// +groupName=webhosting.timebertt.dev
+
+package config // import "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting"

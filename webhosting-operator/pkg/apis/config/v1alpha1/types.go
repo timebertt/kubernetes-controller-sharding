@@ -20,30 +20,64 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
-	runtimeconfigv1alpha1 "sigs.k8s.io/controller-runtime/pkg/config/v1alpha1"
 )
 
 //+kubebuilder:object:root=true
 
-// ControllerManagerConfig is the Schema for the controllermanagerconfigs API
-type ControllerManagerConfig struct {
+// WebhostingOperatorConfig is the Schema for the controllermanagerconfigs API
+type WebhostingOperatorConfig struct {
 	metav1.TypeMeta `json:",inline"`
-	// ControllerManagerConfigurationSpec is the basic configuration of the operator.
-	runtimeconfigv1alpha1.ControllerManagerConfigurationSpec `json:",inline"`
+
 	// ClientConnection holds configuration for the kubernetes API clients.
 	// +optional
 	ClientConnection *componentbaseconfigv1alpha1.ClientConnectionConfiguration `json:"clientConnection,omitempty"`
+	// LeaderElection is the LeaderElection config to be used when configuring
+	// the manager.Manager leader election
+	// +optional
+	LeaderElection *componentbaseconfigv1alpha1.LeaderElectionConfiguration `json:"leaderElection,omitempty"`
 	// Debugging holds configuration for Debugging related features.
 	// +optional
 	Debugging *componentbaseconfigv1alpha1.DebuggingConfiguration `json:"debugging,omitempty"`
+	// Health contains the controller health configuration
+	Health HealthEndpoint `json:"health"`
+	// Metrics contains the controller metrics configuration
+	Metrics MetricsEndpoint `json:"metrics"`
+	// GracefulShutdownTimeout is the duration given to runnable to stop before the manager actually returns on stop.
+	// To disable graceful shutdown, set it to 0s.
+	// To use graceful shutdown without timeout, set to a negative duration, e.G. -1s.
+	// The graceful shutdown is skipped for safety reasons in case the leader election lease is lost.
+	// Defaults to 15s
+	GracefulShutdownTimeout *metav1.Duration `json:"gracefulShutDown,omitempty"`
+
 	// Ingress specifies configuration for the Ingress objects created for Websites.
 	// +optional
 	Ingress *IngressConfiguration `json:"ingress,omitempty"`
 }
 
+// HealthEndpoint defines the health configs.
+type HealthEndpoint struct {
+	// BindAddress is the TCP address that the controller should bind to
+	// for serving health probes
+	// It can be set to "0" to disable serving the health probe.
+	// Defaults to :8081
+	// +optional
+	BindAddress string `json:"bindAddress,omitempty"`
+}
+
+// MetricsEndpoint defines the metrics configs.
+type MetricsEndpoint struct {
+	// BindAddress is the TCP address that the controller should bind to
+	// for serving prometheus metrics.
+	// It can be set to "0" to disable the metrics serving.
+	// Defaults to 127.0.0.1:8080
+	// +optional
+	BindAddress string `json:"bindAddress,omitempty"`
+}
+
 // IngressConfiguration contains configuration for the Ingress objects created for Websites.
 type IngressConfiguration struct {
 	// Annotations is a set of annotations to add to all created Ingress objects.
+	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// Hosts is a list of hosts, under which Websites shall be available.
 	// +optional
@@ -54,8 +88,4 @@ type IngressConfiguration struct {
 	// created and filled by an external controller (e.g. cert-manager).
 	// +optional
 	TLS []networkingv1.IngressTLS `json:"tls,omitempty"`
-}
-
-func init() {
-	SchemeBuilder.Register(&ControllerManagerConfig{})
 }

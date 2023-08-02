@@ -20,13 +20,21 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      GOPATH: /home/runner/work/kubernetes-controller-sharding/kubernetes-controller-sharding/go
+    defaults:
+      run:
+        working-directory: go/src/github.com/timebertt/kubernetes-controller-sharding
+
     steps:
     - uses: actions/checkout@v3
+      with:
+        path: go/src/github.com/timebertt/kubernetes-controller-sharding
     - name: Setup Go
       uses: actions/setup-go@v4
       with:
-        go-version-file: webhosting-operator/go.mod
-        cache-dependency-path: webhosting-operator/go.sum
+        go-version-file: go/src/github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/go.mod
+        cache-dependency-path: go/src/github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/go.sum
     - name: Verify
       run: make -C webhosting-operator verify
 

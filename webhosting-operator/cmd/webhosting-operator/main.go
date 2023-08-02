@@ -26,13 +26,16 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller/sharding"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -92,18 +95,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	if debugging := opts.controllerManagerConfig.Debugging; debugging != nil && pointer.BoolDeref(debugging.EnableProfiling, false) {
+	if *opts.config.Debugging.EnableProfiling {
 		if err := (routes.Profiling{}).AddToManager(mgr); err != nil {
 			setupLog.Error(err, "failed adding profiling handlers to manager")
 			os.Exit(1)
 		}
-		if pointer.BoolDeref(opts.controllerManagerConfig.Debugging.EnableContentionProfiling, false) {
+		if *opts.config.Debugging.EnableContentionProfiling {
 			goruntime.SetBlockProfileRate(1)
 		}
 	}
 
 	if err = (&webhosting.WebsiteReconciler{
-		Config: opts.controllerManagerConfig,
+		Config: opts.config,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Website")
 		os.Exit(1)
@@ -129,45 +132,65 @@ func main() {
 type options struct {
 	configFile string
 
-	restConfig              *rest.Config
-	managerOptions          ctrl.Options
-	controllerManagerConfig *configv1alpha1.ControllerManagerConfig
+	restConfig     *rest.Config
+	config         *configv1alpha1.WebhostingOperatorConfig
+	managerOptions ctrl.Options
 }
 
 func (o *options) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&o.configFile, "config", "",
-		"The controller will load its initial configuration from this file. "+
-			"Omit this flag to use the default configuration values. "+
-			"Command-line flags override configuration from this file.")
+		"Path to the file containing the operator's configuration (WebhostingOperatorConfig). "+
+			"If not specified, the operator will use the default configuration values.")
 }
 
 func (o *options) Complete() error {
-	o.controllerManagerConfig = &configv1alpha1.ControllerManagerConfig{}
+	o.config = &configv1alpha1.WebhostingOperatorConfig{}
 
-	// load manager options
-	var err error
-	opts := ctrl.Options{Scheme: scheme}
+	// load config file if specified
 	if o.configFile != "" {
-		opts, err = opts.AndFrom(ctrl.ConfigFile().AtPath(o.configFile).OfKind(o.controllerManagerConfig))
+		configBytes, err := os.ReadFile(o.configFile)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed reading config file: %w", err)
 		}
+
+		if err := runtime.DecodeInto(serializer.NewCodecFactory(scheme).UniversalDecoder(), configBytes, o.config); err != nil {
+			return fmt.Errorf("failed decoding config file: %w", err)
+		}
+	} else {
+		scheme.Default(o.config)
 	}
 
-	opts, err = applyOptionsOverrides(opts)
+	// load rest config
+	var err error
+	o.restConfig, err = ctrl.GetConfig()
 	if err != nil {
+		return fmt.Errorf("failed loading kubeconfig: %w", err)
+	}
+
+	// bring everything together
+	o.managerOptions = ctrl.Options{
+		Scheme: scheme,
+		// allows us to quickly handover leadership on restarts
+		LeaderElectionReleaseOnCancel: true,
+		Cache: cache.Options{
+			DefaultTransform: dropUnwantedMetadata,
+		},
+		Controller: config.Controller{
+			RecoverPanic: pointer.Bool(true),
+		},
+	}
+
+	o.applyConfigToRESTConfig()
+	o.applyConfigToOptions()
+	if err := o.applyOptionsOverrides(); err != nil {
 		return err
 	}
 
-	// apply some sensible defaults
-	o.managerOptions = setOptionsDefaults(opts)
+	return nil
+}
 
-	// create rest config
-	o.restConfig = ctrl.GetConfigOrDie()
-	// increase default rate limiter settings to make sharder and controller more responsive
-	o.restConfig.QPS = 100
-	o.restConfig.Burst = 150
-	if clientConnection := o.controllerManagerConfig.ClientConnection; clientConnection != nil {
+func (o *options) applyConfigToRESTConfig() {
+	if clientConnection := o.config.ClientConnection; clientConnection != nil {
 		if clientConnection.QPS > 0 {
 			o.restConfig.QPS = clientConnection.QPS
 		}
@@ -175,49 +198,49 @@ func (o *options) Complete() error {
 			o.restConfig.Burst = int(clientConnection.Burst)
 		}
 	}
-
-	return nil
 }
 
-func applyOptionsOverrides(opts ctrl.Options) (ctrl.Options, error) {
+func (o *options) applyConfigToOptions() {
+	if leaderElection := o.config.LeaderElection; leaderElection != nil {
+		o.managerOptions.LeaderElection = *leaderElection.LeaderElect
+		o.managerOptions.LeaderElectionResourceLock = leaderElection.ResourceLock
+		o.managerOptions.LeaderElectionID = leaderElection.ResourceName
+		o.managerOptions.LeaderElectionNamespace = leaderElection.ResourceNamespace
+		o.managerOptions.LeaseDuration = pointer.Duration(leaderElection.LeaseDuration.Duration)
+		o.managerOptions.RenewDeadline = pointer.Duration(leaderElection.RenewDeadline.Duration)
+		o.managerOptions.RetryPeriod = pointer.Duration(leaderElection.RetryPeriod.Duration)
+	}
+
+	o.managerOptions.HealthProbeBindAddress = o.config.Health.BindAddress
+	o.managerOptions.MetricsBindAddress = o.config.Metrics.BindAddress
+	o.managerOptions.GracefulShutdownTimeout = pointer.Duration(o.config.GracefulShutdownTimeout.Duration)
+}
+
+func (o *options) applyOptionsOverrides() error {
 	var err error
 
 	// allow overriding leader election via env var for debugging purposes
 	if leaderElectEnv, ok := os.LookupEnv("LEADER_ELECT"); ok {
-		opts.LeaderElection, err = strconv.ParseBool(leaderElectEnv)
+		o.managerOptions.LeaderElection, err = strconv.ParseBool(leaderElectEnv)
 		if err != nil {
-			return ctrl.Options{}, fmt.Errorf("error parsing LEADER_ELECT env var: %w", err)
+			return fmt.Errorf("error parsing LEADER_ELECT env var: %w", err)
 		}
 	}
 
-	opts.Sharded = true
+	o.managerOptions.Sharded = true
 	// allow disabling sharding via env var for evaluation
 	if shardingEnv, ok := os.LookupEnv("SHARDING_ENABLED"); ok {
-		opts.Sharded, err = strconv.ParseBool(shardingEnv)
+		o.managerOptions.Sharded, err = strconv.ParseBool(shardingEnv)
 		if err != nil {
-			return ctrl.Options{}, fmt.Errorf("error parsing SHARDING_ENABLED env var: %w", err)
+			return fmt.Errorf("error parsing SHARDING_ENABLED env var: %w", err)
 		}
 	}
+
 	// allow overriding shard ID via env var
-	opts.ShardID = os.Getenv("SHARD_ID")
-	opts.ShardMode = sharding.Mode(os.Getenv("SHARD_MODE"))
+	o.managerOptions.ShardID = os.Getenv("SHARD_ID")
+	o.managerOptions.ShardMode = sharding.Mode(os.Getenv("SHARD_MODE"))
 
-	return opts, nil
-}
-
-func setOptionsDefaults(opts ctrl.Options) ctrl.Options {
-	if opts.HealthProbeBindAddress == "" { // "" disables the health server
-		opts.HealthProbeBindAddress = ":8080"
-	}
-
-	// allows us to quickly handover leadership on restarts
-	opts.LeaderElectionReleaseOnCancel = true
-
-	opts.Cache.DefaultTransform = dropUnwantedMetadata
-
-	opts.Controller.RecoverPanic = pointer.Bool(true)
-
-	return opts
+	return nil
 }
 
 func dropUnwantedMetadata(i interface{}) (interface{}, error) {
