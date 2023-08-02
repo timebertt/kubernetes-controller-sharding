@@ -215,6 +215,8 @@ func setOptionsDefaults(opts ctrl.Options) ctrl.Options {
 
 	opts.Cache.DefaultTransform = dropUnwantedMetadata
 
+	opts.Controller.RecoverPanic = pointer.Bool(true)
+
 	return opts
 }
 

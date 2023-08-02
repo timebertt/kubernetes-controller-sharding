@@ -25,7 +25,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
@@ -59,7 +58,6 @@ func (r *Every) AddToManager(mgr manager.Manager) error {
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: reconcileWorkers,
 			RateLimiter:             &workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(r.Rate, int(r.Rate))},
-			RecoverPanic:            pointer.Bool(true),
 		}).
 		WatchesRawSource(EmitN(reconcileWorkers), &handler.EnqueueRequestForObject{}).
 		Complete(r)
@@ -113,7 +111,6 @@ func (r *ForEach[T]) AddToManager(mgr manager.Manager) error {
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: reconcileWorkers,
 			RateLimiter:             rateLimiter,
-			RecoverPanic:            pointer.Bool(true),
 		}).
 		Watches(
 			r.obj,
