@@ -1,0 +1,101 @@
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+  # website metrics
+  - metricNamePrefix: kube_website
+    groupVersionKind:
+      group: webhosting.timebertt.dev
+      version: v1alpha1
+      kind: Website
+    labelsFromPath:
+      namespace: [metadata, namespace]
+      website: [metadata, name]
+      uid: [metadata, uid]
+    metrics:
+    - name: info
+      help: "Information about a Website"
+      each:
+        type: Info
+        info:
+          labelsFromPath:
+            theme: [spec, theme]
+    - name: shard
+      help: "Sharding information about a Website"
+      each:
+        type: Info
+        info:
+          labelsFromPath:
+            shard: [metadata, labels, shard]
+            drain: [metadata, labels, drain]
+    - name: metadata_generation
+      help: "The generation of a Website"
+      each:
+        type: Gauge
+        gauge:
+          path: [metadata, generation]
+    - name: observed_generation
+      help: "The latest generation observed by the Website controller"
+      each:
+        type: Gauge
+        gauge:
+          path: [status, observedGeneration]
+    - name: status_phase
+      help: "The Website's current phase"
+      each:
+        type: StateSet
+        stateSet:
+          labelName: phase
+          path: [status, phase]
+          list: [Pending, Ready, Error]
+  # theme metrics
+  - metricNamePrefix: kube_theme
+    groupVersionKind:
+      group: webhosting.timebertt.dev
+      version: v1alpha1
+      kind: Theme
+    labelsFromPath:
+      theme: [metadata, name]
+    metrics:
+    - name: info
+      help: "Information about a Theme"
+      each:
+        type: Info
+        info:
+          labelsFromPath:
+            color: [spec, color]
+            font_family: [spec, fontFamily]
+    - name: metadata_generation
+      help: "The generation of a Theme"
+      each:
+        type: Gauge
+        gauge:
+          path: [metadata, generation]
+  # shard metrics
+  - metricNamePrefix: kube_shard
+    groupVersionKind:
+      group: coordination.k8s.io
+      version: v1
+      kind: Lease
+    labelsFromPath:
+      namespace: [metadata, namespace]
+      shard: [metadata, name]
+      app: [metadata, labels, shard]
+    metrics:
+    - name: info
+      help: "Information about a Shard"
+      each:
+        type: Info
+        info:
+          labelsFromPath:
+            uid: [metadata, uid]
+    - name: state
+      help: "The Shard's current state"
+      each:
+        type: StateSet
+        stateSet:
+          labelName: state
+          path: [metadata, labels, state]
+          list: [orphaned, dead, uncertain, expired, ready, unknown]
+      # The usual leader election leases don't have the state label making the generator log errors.
+      # Hence, decrease verbosity of such errors to reduce distraction.
+      errorLogV: 4

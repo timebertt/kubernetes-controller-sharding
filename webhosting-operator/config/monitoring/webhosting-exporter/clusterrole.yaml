@@ -4,6 +4,14 @@ metadata:
   name: webhosting-exporter
 rules:
 - apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - webhosting.timebertt.dev
   resources:
   - websites

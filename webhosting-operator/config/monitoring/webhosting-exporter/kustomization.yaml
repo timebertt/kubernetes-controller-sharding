@@ -21,7 +21,7 @@ resources:
 - deployment.yaml
 - servicemonitor.yaml
 
-images:
-- name: exporter
-  newName: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter
-  newTag: latest
+configMapGenerator:
+- name: webhosting-exporter-config
+  files:
+  - config.yaml
