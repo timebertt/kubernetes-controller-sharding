@@ -50,6 +50,7 @@ manifests: $(CONTROLLER_GEN) ## Generate WebhookConfiguration, ClusterRole and C
 .PHONY: generate
 generate: $(CONTROLLER_GEN) ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	hack/update-codegen.sh
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
