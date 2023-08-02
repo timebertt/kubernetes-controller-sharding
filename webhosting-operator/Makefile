@@ -3,7 +3,6 @@ PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 # Image URL to use all building/pushing image targets
 TAG ?= latest
 CONTROLLER_IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator:$(TAG)
-EXPORTER_IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter:$(TAG)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.24
 # set OVERLAY to shoot to configure ingress-nginx with public dns and a TLS certificate
@@ -96,25 +95,18 @@ verify: verify-fmt verify-generate verify-modules test ## Verify everything (all
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
 	go build -o bin/webhosting-operator ./cmd/webhosting-operator
-	go build -o bin/webhosting-exporter ./cmd/webhosting-exporter
 
 .PHONY: run
 run: manifests generate fmt vet ## Run the webhosting-operator from your host.
 	go run ./cmd/webhosting-operator --config=config/manager/default/controller_manager_config.yaml
 
-.PHONY: run-exporter
-run-exporter: ## Run the webhosting-exporter from your host.
-	go run ./cmd/webhosting-exporter --port=8180 --telemetry-port=8181 --kubeconfig=$(KUBECONFIG)
-
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
 	docker build -t $(CONTROLLER_IMG) --target webhosting-operator .
-	docker build -t $(EXPORTER_IMG) --target webhosting-exporter .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push $(CONTROLLER_IMG)
-	docker push $(EXPORTER_IMG)
 
 ##@ Deployment
 
@@ -143,7 +135,7 @@ up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
 
 .PHONY: deploy
 deploy: $(SKAFFOLD) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
-	$(SKAFFOLD) deploy --port-forward=user --tail -i $(CONTROLLER_IMG) -i $(EXPORTER_IMG)
+	$(SKAFFOLD) deploy --port-forward=user --tail -i $(CONTROLLER_IMG)
 
 .PHONY: up
 up: $(SKAFFOLD) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.

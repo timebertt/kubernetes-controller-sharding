@@ -133,13 +133,6 @@ metadata:
 requires:
 - configs:
   - monitoring-crds
-build:
-  local:
-    concurrency: 0
-  artifacts:
-  - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-exporter
-    ko:
-      main: ./cmd/webhosting-exporter
 manifests:
   kustomize:
     paths:
