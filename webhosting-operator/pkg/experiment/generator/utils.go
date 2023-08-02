@@ -17,6 +17,7 @@ limitations under the License.
 package generator
 
 import (
+	"context"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,7 +39,7 @@ func StartN(c controller.Controller, n int) error {
 	for i := 0; i < n; i++ {
 		ch <- event.GenericEvent{Object: &metav1.PartialObjectMetadata{
 			ObjectMeta: metav1.ObjectMeta{
-				// use different object names, otherwise key will merge the requests
+				// use different object names, otherwise queue will merge the requests
 				Name: fmt.Sprintf("request-%d", n),
 			},
 		},
@@ -47,7 +48,7 @@ func StartN(c controller.Controller, n int) error {
 
 	return c.Watch(
 		&source.Channel{Source: ch, DestBufferSize: 1},
-		&handler.Funcs{GenericFunc: func(e event.GenericEvent, q workqueue.RateLimitingInterface) {
+		&handler.Funcs{GenericFunc: func(_ context.Context, e event.GenericEvent, q workqueue.RateLimitingInterface) {
 			q.Add(reconcile.Request{NamespacedName: client.ObjectKeyFromObject(e.Object)})
 		}},
 	)

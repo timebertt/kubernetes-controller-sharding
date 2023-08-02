@@ -44,7 +44,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
@@ -73,12 +72,6 @@ type WebsiteReconciler struct {
 
 // RBAC required for sharding
 //+kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;watch;update;patch;delete
-
-// InjectClient injects a client that has access to both the sharded cache and un-sharded cache.
-func (r *WebsiteReconciler) InjectClient(c client.Client) error {
-	r.Client = c
-	return nil
-}
 
 // Reconcile reconciles a Website object.
 func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -442,6 +435,9 @@ const websiteThemeField = "spec.theme"
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.Client == nil {
+		r.Client = mgr.GetClient()
+	}
 	if r.Scheme == nil {
 		r.Scheme = mgr.GetScheme()
 	}
@@ -468,13 +464,13 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&networkingv1.Ingress{}, builder.Sharded{}, builder.WithPredicates(IngressSpecChanged)).
 		// watch themes to roll out theme changes to all referencing websites
 		Watches(
-			&source.Kind{Type: &webhostingv1alpha1.Theme{}},
+			&webhostingv1alpha1.Theme{},
 			handler.EnqueueRequestsFromMapFunc(r.MapThemeToWebsites),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
-			RecoverPanic:            true,
+			RecoverPanic:            pointer.Bool(true),
 		}).
 		Build(r)
 	if err != nil {
@@ -487,7 +483,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // MapThemeToWebsites maps a theme to all websites that use it.
-func (r *WebsiteReconciler) MapThemeToWebsites(theme client.Object) []reconcile.Request {
+func (r *WebsiteReconciler) MapThemeToWebsites(ctx context.Context, theme client.Object) []reconcile.Request {
 	websiteList := &webhostingv1alpha1.WebsiteList{}
 	if err := r.Client.List(context.TODO(), websiteList, client.MatchingFields{websiteThemeField: theme.GetName()}); err != nil {
 		r.logger.Error(err, "failed to list websites belonging to theme", "theme", client.ObjectKeyFromObject(theme))
