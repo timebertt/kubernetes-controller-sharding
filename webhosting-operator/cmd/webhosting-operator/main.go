@@ -131,7 +131,7 @@ type options struct {
 
 	restConfig              *rest.Config
 	managerOptions          ctrl.Options
-	controllerManagerConfig *configv1alpha1.ControllerManagerConfig
+	controllerManagerConfig *configv1alpha1.WebhostingOperatorConfig
 }
 
 func (o *options) AddFlags(fs *flag.FlagSet) {
@@ -142,7 +142,7 @@ func (o *options) AddFlags(fs *flag.FlagSet) {
 }
 
 func (o *options) Complete() error {
-	o.controllerManagerConfig = &configv1alpha1.ControllerManagerConfig{}
+	o.controllerManagerConfig = &configv1alpha1.WebhostingOperatorConfig{}
 
 	// load manager options
 	var err error

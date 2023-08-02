@@ -58,7 +58,7 @@ type WebsiteReconciler struct {
 	Recorder      record.EventRecorder
 	logger        logr.Logger
 
-	Config *configv1alpha1.ControllerManagerConfig
+	Config *configv1alpha1.WebhostingOperatorConfig
 }
 
 //+kubebuilder:rbac:groups=webhosting.timebertt.dev,resources=websites,verbs=get;list;watch;create;update;patch;delete

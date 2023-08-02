@@ -1,5 +1,5 @@
 apiVersion: config.webhosting.timebertt.dev/v1alpha1
-kind: ControllerManagerConfig
+kind: WebhostingOperatorConfig
 health:
   healthProbeBindAddress: :8081
 metrics:
