@@ -103,12 +103,6 @@ profiles:
   - op: replace
     path: /manifests/kustomize/paths/0
     value: config/manager/shoot-non-sharded
-portForward:
-- resourceType: deployment
-  namespace: webhosting-system
-  resourceName: webhosting-operator
-  port: metrics
-  localPort: 8081
 ---
 apiVersion: skaffold/v4beta6
 kind: Config

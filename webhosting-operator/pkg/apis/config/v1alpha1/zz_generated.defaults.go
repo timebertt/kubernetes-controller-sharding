@@ -29,5 +29,21 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
+	scheme.AddTypeDefaultingFunc(&WebhostingOperatorConfig{}, func(obj interface{}) { SetObjectDefaults_WebhostingOperatorConfig(obj.(*WebhostingOperatorConfig)) })
 	return nil
+}
+
+func SetObjectDefaults_WebhostingOperatorConfig(in *WebhostingOperatorConfig) {
+	SetDefaults_WebhostingOperatorConfig(in)
+	if in.ClientConnection != nil {
+		SetDefaults_ClientConnectionConfiguration(in.ClientConnection)
+	}
+	if in.LeaderElection != nil {
+		SetDefaults_LeaderElectionConfiguration(in.LeaderElection)
+	}
+	if in.Debugging != nil {
+		SetDefaults_DebuggingConfiguration(in.Debugging)
+	}
+	SetDefaults_HealthEndpoint(&in.Health)
+	SetDefaults_MetricsEndpoint(&in.Metrics)
 }

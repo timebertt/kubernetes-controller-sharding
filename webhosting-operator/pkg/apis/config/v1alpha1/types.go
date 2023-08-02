@@ -46,6 +46,7 @@ type WebhostingOperatorConfig struct {
 	// To disable graceful shutdown, set it to 0s.
 	// To use graceful shutdown without timeout, set to a negative duration, e.G. -1s.
 	// The graceful shutdown is skipped for safety reasons in case the leader election lease is lost.
+	// Defaults to 15s
 	GracefulShutdownTimeout *metav1.Duration `json:"gracefulShutDown,omitempty"`
 
 	// Ingress specifies configuration for the Ingress objects created for Websites.
@@ -58,6 +59,7 @@ type HealthEndpoint struct {
 	// BindAddress is the TCP address that the controller should bind to
 	// for serving health probes
 	// It can be set to "0" to disable serving the health probe.
+	// Defaults to :8081
 	// +optional
 	BindAddress string `json:"bindAddress,omitempty"`
 }
@@ -67,6 +69,7 @@ type MetricsEndpoint struct {
 	// BindAddress is the TCP address that the controller should bind to
 	// for serving prometheus metrics.
 	// It can be set to "0" to disable the metrics serving.
+	// Defaults to 127.0.0.1:8080
 	// +optional
 	BindAddress string `json:"bindAddress,omitempty"`
 }
