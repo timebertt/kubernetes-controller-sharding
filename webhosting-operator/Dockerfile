@@ -26,8 +26,7 @@ COPY pkg/ pkg/
 # Build
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o manager ./cmd/webhosting-operator && \
-    go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o webhosting-exporter ./cmd/webhosting-exporter
+    go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o manager ./cmd/webhosting-operator
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
@@ -44,8 +43,3 @@ FROM base AS webhosting-operator
 
 COPY --from=builder /workspace/manager .
 ENTRYPOINT ["/manager"]
-
-FROM base AS webhosting-exporter
-
-COPY --from=builder /workspace/webhosting-exporter .
-ENTRYPOINT ["/webhosting-exporter"]
