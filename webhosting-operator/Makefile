@@ -2,7 +2,9 @@ PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 
 # Image URL to use all building/pushing image targets
 TAG ?= latest
-CONTROLLER_IMG ?= ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator:$(TAG)
+GHCR_REPO ?= ghcr.io/timebertt/kubernetes-controller-sharding
+OPERATOR_IMG ?= $(GHCR_REPO)/webhosting-operator:$(TAG)
+
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.24
 # set OVERLAY to shoot to configure ingress-nginx with public dns and a TLS certificate
@@ -101,13 +103,12 @@ build: generate fmt vet ## Build manager binary.
 run: manifests generate fmt vet ## Run the webhosting-operator from your host.
 	go run ./cmd/webhosting-operator
 
-.PHONY: docker-build
-docker-build: test ## Build docker image with the manager.
-	docker build -t $(CONTROLLER_IMG) --target webhosting-operator .
+PUSH ?= false
+images: export KO_DOCKER_REPO = $(GHCR_REPO)
 
-.PHONY: docker-push
-docker-push: ## Push docker image with the manager.
-	docker push $(CONTROLLER_IMG)
+.PHONY: images
+images: $(KO) ## Build and push container images using ko.
+	$(KO) build --push=$(PUSH) --sbom none --base-import-paths -t $(TAG) --platform linux/amd64,linux/arm64 ./cmd/webhosting-operator
 
 ##@ Deployment
 
@@ -136,7 +137,7 @@ up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
 
 .PHONY: deploy
 deploy: $(SKAFFOLD) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
-	$(SKAFFOLD) deploy --port-forward=user --tail -i $(CONTROLLER_IMG)
+	$(SKAFFOLD) deploy --port-forward=user --tail -i $(OPERATOR_IMG)
 
 .PHONY: up
 up: $(SKAFFOLD) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.

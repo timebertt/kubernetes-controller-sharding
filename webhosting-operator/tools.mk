@@ -28,6 +28,11 @@ $(KIND): $(call tool_version_file,$(KIND),$(KIND_VERSION))
 	curl -L -o $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 	chmod +x $(KIND)
 
+KO := $(TOOLS_BIN_DIR)/ko
+KO_VERSION ?= v0.14.1
+$(KO): $(call tool_version_file,$(KO),$(KO_VERSION))
+	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install github.com/google/ko@$(KO_VERSION)
+
 KUBECTL := $(TOOLS_BIN_DIR)/kubectl
 KUBECTL_VERSION ?= v1.27.3
 $(KUBECTL): $(call tool_version_file,$(KUBECTL),$(KUBECTL_VERSION))
