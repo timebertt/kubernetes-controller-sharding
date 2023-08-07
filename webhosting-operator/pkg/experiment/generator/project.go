@@ -26,6 +26,31 @@ import (
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/utils"
 )
 
+// EnsureProjects ensures there are exactly n projects with the given labels.
+// It keeps existing projects to speed up experiment preparation.
+func EnsureProjects(ctx context.Context, c client.Client, labels map[string]string, n int) error {
+	// delete excess projects
+	namespaceList := &corev1.NamespaceList{}
+	if err := c.List(ctx, namespaceList, client.MatchingLabels(labels)); err != nil {
+		return err
+	}
+
+	for _, namespace := range utils.PickNRandom(namespaceList.Items, len(namespaceList.Items)-n) {
+		if err := c.Delete(ctx, &namespace); err != nil {
+			return err
+		}
+	}
+
+	// create missing projects
+	for i := 0; i < n-len(namespaceList.Items); i++ {
+		if err := CreateProject(ctx, c, labels); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // CreateProject creates a random project namespace using the given client and labels.
 func CreateProject(ctx context.Context, c client.Client, labels map[string]string) error {
 	namespace := &corev1.Namespace{

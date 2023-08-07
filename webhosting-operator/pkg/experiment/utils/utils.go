@@ -33,3 +33,19 @@ func CopyMap(in map[string]string) map[string]string {
 func PickRandom[T any](in []T) T {
 	return in[rand.Intn(len(in))]
 }
+
+// PickNRandom picks n random elements from the given slice.
+func PickNRandom[T any](in []T, n int) []T {
+	if n <= 0 {
+		return nil
+	}
+	if n >= len(in) {
+		return in
+	}
+
+	rand.Shuffle(len(in), func(i, j int) {
+		in[i], in[j] = in[j], in[i]
+	})
+
+	return in[:n]
+}

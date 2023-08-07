@@ -31,6 +31,31 @@ var (
 	themeFonts  = []string{"Arial", "Verdana", "Tahoma", "Trebuchet MS", "Times New Roman", "Georgia", "Garamond", "Courier New", "Brush Script MT"}
 )
 
+// EnsureThemes ensures there are exactly n themes with the given labels.
+// It keeps existing themes to speed up experiment preparation.
+func EnsureThemes(ctx context.Context, c client.Client, labels map[string]string, n int) error {
+	// delete excess themes
+	themeList := &webhostingv1alpha1.ThemeList{}
+	if err := c.List(ctx, themeList, client.MatchingLabels(labels)); err != nil {
+		return err
+	}
+
+	for _, theme := range utils.PickNRandom(themeList.Items, len(themeList.Items)-n) {
+		if err := c.Delete(ctx, &theme); err != nil {
+			return err
+		}
+	}
+
+	// create missing themes
+	for i := 0; i < n-len(themeList.Items); i++ {
+		if err := CreateTheme(ctx, c, labels); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // CreateTheme creates a random theme using the given client and labels.
 func CreateTheme(ctx context.Context, c client.Client, labels map[string]string) error {
 	theme := &webhostingv1alpha1.Theme{
@@ -52,8 +77,21 @@ func CreateTheme(ctx context.Context, c client.Client, labels map[string]string)
 	return nil
 }
 
-// MutateTheme mutates a random existing theme using the given client and labels.
-func MutateTheme(ctx context.Context, c client.Client, labels map[string]string) error {
+// MutateTheme mutates the given theme using the given client and labels.
+func MutateTheme(ctx context.Context, c client.Client, theme *webhostingv1alpha1.Theme) error {
+	theme.Spec.Color = utils.PickRandom(themeColors)
+	theme.Spec.FontFamily = utils.PickRandom(themeFonts)
+
+	if err := c.Update(ctx, theme); err != nil {
+		return err
+	}
+
+	log.V(1).Info("Mutated theme", "themeName", theme.Name)
+	return nil
+}
+
+// MutateRandomTheme mutates a random existing theme using the given client and labels.
+func MutateRandomTheme(ctx context.Context, c client.Client, labels map[string]string) error {
 	themeList := &webhostingv1alpha1.ThemeList{}
 	if err := c.List(ctx, themeList, client.MatchingLabels(labels)); err != nil {
 		return err
@@ -65,15 +103,7 @@ func MutateTheme(ctx context.Context, c client.Client, labels map[string]string)
 	}
 
 	theme := utils.PickRandom(themeList.Items)
-	theme.Spec.Color = utils.PickRandom(themeColors)
-	theme.Spec.FontFamily = utils.PickRandom(themeFonts)
-
-	if err := c.Update(ctx, &theme); err != nil {
-		return err
-	}
-
-	log.V(1).Info("Mutated theme", "themeName", theme.Name)
-	return nil
+	return MutateTheme(ctx, c, &theme)
 }
 
 // CleanupThemes deletes all themes with the given labels.

@@ -137,7 +137,7 @@ func (s *scenario) Start(ctx context.Context) error {
 	if err := (&generator.Every{
 		Name: "theme-mutator",
 		Do: func(ctx context.Context, c client.Client) error {
-			return generator.MutateTheme(ctx, c, s.labels)
+			return generator.MutateRandomTheme(ctx, c, s.labels)
 		},
 		Rate: rate.Every(time.Minute),
 	}).AddToManager(s.mgr); err != nil {

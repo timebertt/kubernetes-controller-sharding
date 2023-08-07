@@ -28,6 +28,31 @@ import (
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/utils"
 )
 
+// EnsureWebsites ensures there are exactly n websites with the given labels.
+// It keeps existing websites to speed up experiment preparation.
+func EnsureWebsites(ctx context.Context, c client.Client, labels map[string]string, n int) error {
+	// delete excess websites
+	websiteList := &webhostingv1alpha1.WebsiteList{}
+	if err := c.List(ctx, websiteList, client.MatchingLabels(labels)); err != nil {
+		return err
+	}
+
+	for _, theme := range utils.PickNRandom(websiteList.Items, len(websiteList.Items)-n) {
+		if err := c.Delete(ctx, &theme); err != nil {
+			return err
+		}
+	}
+
+	// create missing websites
+	for i := 0; i < n-len(websiteList.Items); i++ {
+		if err := CreateWebsite(ctx, c, labels); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // CreateWebsite creates a random website using the given client and labels.
 func CreateWebsite(ctx context.Context, c client.Client, labels map[string]string) error {
 	// pick random theme and project for a new website
@@ -56,6 +81,24 @@ func CreateWebsite(ctx context.Context, c client.Client, labels map[string]strin
 	}
 
 	log.V(1).Info("Created website", "website", client.ObjectKeyFromObject(website))
+	return nil
+}
+
+// MutateWebsite mutates the given website using the given client and labels.
+func MutateWebsite(ctx context.Context, c client.Client, website *webhostingv1alpha1.Website, labels map[string]string) error {
+	// pick new random theme for the website
+	themeList := &webhostingv1alpha1.ThemeList{}
+	if err := c.List(ctx, themeList, client.MatchingLabels(labels)); err != nil {
+		return err
+	}
+
+	website.Spec.Theme = utils.PickRandom(themeList.Items).Name
+
+	if err := c.Update(ctx, website); err != nil {
+		return err
+	}
+
+	log.V(1).Info("Mutated website", "website", client.ObjectKeyFromObject(website))
 	return nil
 }
 
