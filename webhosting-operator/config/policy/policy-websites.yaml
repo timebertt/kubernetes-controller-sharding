@@ -41,3 +41,20 @@ spec:
       patchStrategicMerge:
         spec:
           replicas: 0
+  # use fake ingress class to prevent overloading ingress controller (this is not what we want to load test)
+  - name: disable-ingress
+    match:
+      any:
+      - resources:
+          kinds:
+          - Ingress
+          selector:
+            matchLabels:
+              app: website
+          namespaceSelector:
+            matchLabels:
+              generated-by: experiment
+    mutate:
+      patchStrategicMerge:
+        spec:
+          ingressClassName: fake
