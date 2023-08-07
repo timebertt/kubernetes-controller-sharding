@@ -1,0 +1,25 @@
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  name: kube-controller-manager
+  namespace: shoot--fb28d21f90--sharding
+spec:
+  failurePolicy: Ignore
+  rules:
+  # increases kube-controller-manager's client-side rate limits to speed up garbage collection after executing load tests
+  - name: increase-rate-limits
+    match:
+      any:
+      - resources:
+          kinds:
+          - Deployment
+          names:
+          - kube-controller-manager
+    mutate:
+      patchesJson6902: |-
+        - op: add
+          path: /spec/template/spec/containers/0/command/-
+          value: "--kube-api-qps=800"
+        - op: add
+          path: /spec/template/spec/containers/0/command/-
+          value: "--kube-api-burst=1000"
