@@ -23,19 +23,21 @@ spec:
         - op: add
           path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms/-"
           value: {"matchExpressions": [{"key":"dedicated-for","operator":"In","values":["websites"]}]}
-  # replace nginx image with pause image in load tests to minimize actual compute load on nodes
-  - name: use-pause-image
+  # don't actually run website pods in load tests
+  # otherwise, we would need an immense amount of compute power for running dummy websites
+  - name: scale-down-websites
     match:
       any:
       - resources:
           kinds:
-          - Pod
+          - Deployment
+          selector:
+            matchLabels:
+              app: website
           namespaceSelector:
             matchLabels:
               generated-by: experiment
     mutate:
       patchStrategicMerge:
         spec:
-          containers:
-          - (name): nginx
-            image: pause
+          replicas: 0

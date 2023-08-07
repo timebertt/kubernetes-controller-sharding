@@ -98,18 +98,18 @@ spec:
         type: storage_premium_perf1
       zones:
       - eu01-2
-    # runs websites (pause containers in load test)
+    # runs actual websites
     - name: websites
       cri:
         name: containerd
       machine:
         image:
           name: coreos
-        type: g1.4
+        type: g1.2
       maxSurge: 5
       maxUnavailable: 0
       maximum: 10
-      minimum: 0
+      minimum: 1
       systemComponents:
         allow: false
       labels:
@@ -123,11 +123,6 @@ spec:
         type: storage_premium_perf1
       zones:
       - eu01-2
-      kubernetes:
-        kubelet:
-          # CNI and kube-proxy generate high CPU load when creating that many pods
-          # with even higher maxPods settings nodes are likely to crash
-          maxPods: 800
   purpose: development
   region: RegionOne
   secretBindingName: cq12kuc8ir

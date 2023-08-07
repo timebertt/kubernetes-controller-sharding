@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
 - policy-webhosting-operator.yaml
 - policy-websites.yaml
-- scale-up-worker.yaml
 - prepull-nginx.yaml
 
 images:

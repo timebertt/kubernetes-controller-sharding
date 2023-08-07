@@ -4,6 +4,9 @@ metadata:
   name: prepull-nginx
   labels:
     app: prepull-nginx
+  annotations:
+    description: |
+      This DaemonSet makes sure the image used for websites is present on all website workers.
 spec:
   selector:
     matchLabels:
