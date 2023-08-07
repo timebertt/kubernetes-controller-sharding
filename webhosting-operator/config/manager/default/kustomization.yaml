@@ -21,6 +21,7 @@ images:
   newTag: latest
 
 resources:
+- namespace.yaml
 - manager.yaml
 - ../crds
 - ../rbac
