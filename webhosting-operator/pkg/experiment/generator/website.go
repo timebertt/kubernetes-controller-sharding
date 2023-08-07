@@ -92,9 +92,11 @@ func MutateWebsite(ctx context.Context, c client.Client, website *webhostingv1al
 		return err
 	}
 
+	patch := client.MergeFrom(website.DeepCopy())
+
 	website.Spec.Theme = utils.PickRandom(themeList.Items).Name
 
-	if err := c.Update(ctx, website); err != nil {
+	if err := c.Patch(ctx, website, patch); err != nil {
 		return err
 	}
 

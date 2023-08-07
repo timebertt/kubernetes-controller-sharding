@@ -79,10 +79,12 @@ func CreateTheme(ctx context.Context, c client.Client, labels map[string]string)
 
 // MutateTheme mutates the given theme using the given client and labels.
 func MutateTheme(ctx context.Context, c client.Client, theme *webhostingv1alpha1.Theme) error {
+	patch := client.MergeFrom(theme.DeepCopy())
+
 	theme.Spec.Color = utils.PickRandom(themeColors)
 	theme.Spec.FontFamily = utils.PickRandom(themeFonts)
 
-	if err := c.Update(ctx, theme); err != nil {
+	if err := c.Patch(ctx, theme, patch); err != nil {
 		return err
 	}
 
