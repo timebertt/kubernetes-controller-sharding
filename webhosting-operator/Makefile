@@ -133,7 +133,7 @@ deploy-ingress-nginx: $(KUSTOMIZE) $(KUBECTL) ## Deploy ingress-nginx to K8s clu
 	$(KUBECTL) -n ingress-nginx wait deploy ingress-nginx-controller --for=condition=Available --timeout=2m
 
 # use static label for skaffold to prevent rolling all components on every skaffold invocation
-up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
+deploy up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
 
 .PHONY: deploy
 deploy: $(SKAFFOLD) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
