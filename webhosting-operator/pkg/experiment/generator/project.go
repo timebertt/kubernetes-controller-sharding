@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/utils"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
 )
 
 // EnsureProjects ensures there are exactly n projects with the given labels.

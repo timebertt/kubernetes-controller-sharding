@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/utils"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
 )
 
 var (
