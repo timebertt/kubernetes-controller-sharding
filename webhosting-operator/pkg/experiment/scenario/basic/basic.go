@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package base
+package basic
 
 import (
 	"context"
@@ -31,7 +31,7 @@ import (
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/generator"
 )
 
-const ScenarioName = "base"
+const ScenarioName = "basic"
 
 var log = logf.Log.WithName("scenario").WithName(ScenarioName)
 
@@ -167,7 +167,6 @@ func (s *scenario) Start(ctx context.Context) error {
 	}
 
 	log.Info("Scenario finished, cleaning up")
-	close(s.done)
 
 	cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -180,5 +179,6 @@ func (s *scenario) Start(ctx context.Context) error {
 	}
 
 	log.Info("Cleanup done")
+	close(s.done)
 	return nil
 }
