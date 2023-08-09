@@ -33,7 +33,7 @@ import (
 
 const ScenarioName = "reconcile"
 
-var log = logf.Log
+var log = logf.Log.WithName("scenario").WithName(ScenarioName)
 
 func init() {
 	experiment.RegisterScenario(&scenario{})
@@ -49,6 +49,15 @@ type scenario struct {
 
 func (s *scenario) Name() string {
 	return ScenarioName
+}
+
+func (s *scenario) Description() string {
+	return "High frequency reconciliation load test scenario (15m) with a static number of websites (10k)"
+}
+
+func (s *scenario) LongDescription() string {
+	return `The ` + ScenarioName + ` scenario generates 10k websites during preparation.
+Then, it reconciles each website every 10s, i.e., it generates a reconciliation frequency of 1000/s.`
 }
 
 func (s *scenario) Done() <-chan struct{} {

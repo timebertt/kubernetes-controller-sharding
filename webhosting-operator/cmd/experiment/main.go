@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -36,6 +35,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -66,13 +66,17 @@ func main() {
 		TimeEncoder: zapcore.RFC3339TimeEncoder,
 	}
 
-	allScenarios := experiment.GetAllScenarios()
+	var (
+		mgr              manager.Manager
+		selectedScenario experiment.Scenario
+	)
+
 	cmd := &cobra.Command{
-		Use:       "experiment SCENARIO",
-		Short:     "Run experiment scenario, one of: " + strings.Join(allScenarios, ", "),
-		Args:      cobra.ExactValidArgs(1),
-		ValidArgs: allScenarios,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Use:  "experiment",
+		Args: cobra.NoArgs,
+
+		SilenceErrors: true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 
 			ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zapOpts)))
@@ -83,7 +87,8 @@ func main() {
 			restConfig.QPS = 1000
 			restConfig.Burst = 1200
 
-			mgr, err := ctrl.NewManager(restConfig, ctrl.Options{
+			var err error
+			mgr, err = ctrl.NewManager(restConfig, ctrl.Options{
 				Scheme: scheme,
 				// disable leader election
 				LeaderElection: false,
@@ -95,12 +100,10 @@ func main() {
 					RecoverPanic: pointer.Bool(true),
 				},
 			})
-			if err != nil {
-				return err
-			}
-
-			scenario := experiment.GetScenario(args[0])
-			if err = scenario.AddToManager(mgr); err != nil {
+			return err
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			if err := selectedScenario.AddToManager(mgr); err != nil {
 				return err
 			}
 
@@ -110,7 +113,7 @@ func main() {
 			go func() {
 				select {
 				case <-ctx.Done():
-				case <-scenario.Done():
+				case <-selectedScenario.Done():
 					// stop the manager when scenario is done
 					cancel()
 				}
@@ -122,7 +125,28 @@ func main() {
 	}
 
 	zapOpts.BindFlags(flag.CommandLine)
-	cmd.Flags().AddGoFlagSet(flag.CommandLine)
+	cmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
+
+	group := cobra.Group{
+		ID:    "scenarios",
+		Title: "Available Scenarios",
+	}
+	cmd.AddGroup(&group)
+
+	for _, s := range experiment.GetAllScenarios() {
+		scenario := s
+
+		cmd.AddCommand(&cobra.Command{
+			Use:     scenario.Name(),
+			Short:   scenario.Description(),
+			Long:    scenario.LongDescription(),
+			Args:    cobra.NoArgs,
+			GroupID: group.ID,
+			Run: func(cmd *cobra.Command, args []string) {
+				selectedScenario = scenario
+			},
+		})
+	}
 
 	if err := cmd.ExecuteContext(ctrl.SetupSignalHandler()); err != nil {
 		fmt.Printf("Error running experiment: %v\n", err)

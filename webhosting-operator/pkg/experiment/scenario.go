@@ -29,6 +29,10 @@ var registry = make(map[string]Scenario)
 type Scenario interface {
 	// Name returns the name of the scenario.
 	Name() string
+	// Description returns the description of the scenario.
+	Description() string
+	// LongDescription returns the description of the scenario.
+	LongDescription() string
 	// Done is closed once the scenario is finished.
 	Done() <-chan struct{}
 	// AddToManager adds all runnables of the scenario to the manager.
@@ -45,12 +49,16 @@ func RegisterScenario(s Scenario) {
 }
 
 // GetAllScenarios returns all registered scenarios.
-func GetAllScenarios() []string {
-	var all []string
-	for s := range registry {
+func GetAllScenarios() []Scenario {
+	var all []Scenario
+	for _, s := range registry {
 		all = append(all, s)
 	}
-	sort.Strings(all)
+
+	sort.Slice(all, func(i, j int) bool {
+		return all[i].Name() < all[j].Name()
+	})
+
 	return all
 }
 

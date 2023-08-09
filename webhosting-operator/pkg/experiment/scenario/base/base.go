@@ -33,7 +33,7 @@ import (
 
 const ScenarioName = "base"
 
-var log = logf.Log
+var log = logf.Log.WithName("scenario").WithName(ScenarioName)
 
 func init() {
 	experiment.RegisterScenario(&scenario{})
@@ -49,6 +49,19 @@ type scenario struct {
 
 func (s *scenario) Name() string {
 	return ScenarioName
+}
+
+func (s *scenario) Description() string {
+	return "Basic load test scenario (15m) that creates roughly 8k websites over 10m"
+}
+
+func (s *scenario) LongDescription() string {
+	return `The ` + ScenarioName + ` scenario combines several operations typical for a lively operator environment:
+- website creation: 8000 over 10m
+- website deletion: 600 over 10m
+- website reconciliation: max 100/s
+- theme reconciliation: 1/m -> triggers reconciliation of all referencing websites
+`
 }
 
 func (s *scenario) Done() <-chan struct{} {
