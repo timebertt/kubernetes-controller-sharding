@@ -136,17 +136,17 @@ deploy-ingress-nginx: $(KUSTOMIZE) $(KUBECTL) ## Deploy ingress-nginx to K8s clu
 deploy up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
 
 .PHONY: deploy
-deploy: $(SKAFFOLD) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
+deploy: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
 	$(SKAFFOLD) deploy --port-forward=user --tail -i $(OPERATOR_IMG)
 
 .PHONY: up
-up: $(SKAFFOLD) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.
+up: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.
 	$(SKAFFOLD) run --port-forward=user --tail
 
 .PHONY: dev
-dev: $(SKAFFOLD) ## Start continuous dev loop with skaffold.
+dev: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Start continuous dev loop with skaffold.
 	$(SKAFFOLD) dev --port-forward=user --cleanup=false --trigger=manual
 
 .PHONY: down
-down: $(SKAFFOLD) ## Remove everything from K8s cluster specified in $KUBECONFIG.
+down: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Remove everything from K8s cluster specified in $KUBECONFIG.
 	$(SKAFFOLD) delete

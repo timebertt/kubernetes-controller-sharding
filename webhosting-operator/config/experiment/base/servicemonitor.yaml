@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: experiment
+spec:
+  endpoints:
+  - path: /metrics
+    port: metrics
+    scheme: http
+    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    interval: 10s
+    scrapeTimeout: 10s
+    relabelings:
+    - targetLabel: job
+      replacement: experiment
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: experiment

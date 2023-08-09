@@ -14,6 +14,9 @@ spec:
           - Pod
           namespaces:
           - webhosting-system
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: webhosting-operator
     mutate:
       patchesJson6902: |-
         - op: add

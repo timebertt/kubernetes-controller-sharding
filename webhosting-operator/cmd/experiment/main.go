@@ -34,6 +34,7 @@ import (
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/config"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -43,6 +44,7 @@ import (
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
 
 	// Import all scenarios
 	_ "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/scenario/all"
@@ -89,18 +91,28 @@ func main() {
 
 			var err error
 			mgr, err = ctrl.NewManager(restConfig, ctrl.Options{
-				Scheme: scheme,
+				Scheme:                 scheme,
+				HealthProbeBindAddress: ":8081",
+				MetricsBindAddress:     ":8080",
 				// disable leader election
 				LeaderElection: false,
-				// disable all endpoints
-				HealthProbeBindAddress: "0",
-				MetricsBindAddress:     "0",
 
 				Controller: config.Controller{
 					RecoverPanic: pointer.Bool(true),
 				},
 			})
-			return err
+			if err != nil {
+				return err
+			}
+
+			if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+				return fmt.Errorf("unable to set up health check: %w", err)
+			}
+			if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+				return fmt.Errorf("unable to set up ready check: %w", err)
+			}
+
+			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			if err := selectedScenario.AddToManager(mgr); err != nil {
@@ -115,6 +127,10 @@ func main() {
 				case <-ctx.Done():
 				case <-selectedScenario.Done():
 					// stop the manager when scenario is done
+					if utils.RunningInCluster() {
+						// but give monitoring a bit more time to scrape the final metrics values if running in a cluster
+						<-time.After(time.Minute)
+					}
 					cancel()
 				}
 			}()
