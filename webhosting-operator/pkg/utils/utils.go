@@ -21,8 +21,8 @@ import (
 )
 
 // CopyMap returns a new map with the same contents as the given map.
-func CopyMap(in map[string]string) map[string]string {
-	out := make(map[string]string, len(in))
+func CopyMap[K comparable, V any](in map[K]V) map[K]V {
+	out := make(map[K]V, len(in))
 	for k, v := range in {
 		out[k] = v
 	}

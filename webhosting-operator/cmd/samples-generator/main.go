@@ -39,6 +39,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
 )
 
 const projectPrefix = "project-"
@@ -128,7 +129,7 @@ func generateSamples(ctx context.Context, c client.Client) error {
 					},
 				},
 				Spec: webhostingv1alpha1.WebsiteSpec{
-					Theme: themes[rand.Intn(len(themes))],
+					Theme: utils.PickRandom(themes),
 				},
 			}); err != nil {
 				return err
