@@ -2,22 +2,17 @@ apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
   name: kyverno
-profiles:
-# deploy only on shoot
-- name: shoot
-  activation:
-  - kubeContext: .*fb28d21f90-99b0e--sharding.*
-  manifests:
-    kustomize:
-      paths:
-      - config/kyverno
-  deploy:
-    kubectl:
-      defaultNamespace: ""
-      flags:
-        apply:
-        - --server-side
-        - --force-conflicts
+manifests:
+  kustomize:
+    paths:
+    - config/kyverno
+deploy:
+  kubectl:
+    defaultNamespace: ""
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
 ---
 apiVersion: skaffold/v4beta6
 kind: Config
@@ -26,23 +21,26 @@ metadata:
 requires:
 - configs:
   - kyverno
+manifests:
+  kustomize:
+    paths:
+    - config/policy/default
+deploy:
+  kubectl:
+    defaultNamespace: ""
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
+  statusCheck: false
 profiles:
-# deploy only on shoot
 - name: shoot
   activation:
   - kubeContext: .*fb28d21f90-99b0e--sharding.*
   manifests:
     kustomize:
       paths:
-      - config/policy
-  deploy:
-    kubectl:
-      defaultNamespace: ""
-      flags:
-        apply:
-        - --server-side
-        - --force-conflicts
-    statusCheck: false
+      - config/policy/shoot
 ---
 apiVersion: skaffold/v4beta6
 kind: Config

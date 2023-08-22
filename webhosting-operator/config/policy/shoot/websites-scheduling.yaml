@@ -1,27 +1,25 @@
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: webhosting-operator
+  name: websites-scheduling
 spec:
   failurePolicy: Fail
   rules:
-  # schedule webhosting-operator on dedicated worker pool for better isolation in load tests
+  # schedule websites on dedicated worker pool for better isolation in load tests
   - name: add-scheduling-constraints
     match:
       any:
       - resources:
           kinds:
           - Pod
-          namespaces:
-          - webhosting-system
           selector:
             matchLabels:
-              app.kubernetes.io/name: webhosting-operator
+              app: website
     mutate:
       patchesJson6902: |-
         - op: add
           path: "/spec/tolerations/-"
-          value: {"key":"dedicated-for","operator":"Equal","value":"webhosting-operator","effect":"NoSchedule"}        
+          value: {"key":"dedicated-for","operator":"Equal","value":"websites","effect":"NoSchedule"}        
         - op: add
           path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms/-"
-          value: {"matchExpressions": [{"key":"dedicated-for","operator":"In","values":["webhosting-operator"]}]}        
+          value: {"matchExpressions": [{"key":"dedicated-for","operator":"In","values":["websites"]}]}

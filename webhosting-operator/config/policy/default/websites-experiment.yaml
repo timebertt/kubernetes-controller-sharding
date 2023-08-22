@@ -1,28 +1,10 @@
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: websites
+  name: websites-experiment
 spec:
   failurePolicy: Fail
   rules:
-  # schedule websites on dedicated worker pool for better isolation in load tests
-  - name: add-scheduling-constraints
-    match:
-      any:
-      - resources:
-          kinds:
-          - Pod
-          selector:
-            matchLabels:
-              app: website
-    mutate:
-      patchesJson6902: |-
-        - op: add
-          path: "/spec/tolerations/-"
-          value: {"key":"dedicated-for","operator":"Equal","value":"websites","effect":"NoSchedule"}        
-        - op: add
-          path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms/-"
-          value: {"matchExpressions": [{"key":"dedicated-for","operator":"In","values":["websites"]}]}
   # don't actually run website pods in load tests
   # otherwise, we would need an immense amount of compute power for running dummy websites
   - name: scale-down-websites
