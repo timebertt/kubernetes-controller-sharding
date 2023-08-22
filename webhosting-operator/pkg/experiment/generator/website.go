@@ -30,10 +30,12 @@ import (
 
 // EnsureWebsites ensures there are exactly n websites with the given labels.
 // It keeps existing websites to speed up experiment preparation.
-func EnsureWebsites(ctx context.Context, c client.Client, labels map[string]string, n int) error {
+func EnsureWebsites(ctx context.Context, c client.Client, n int, opts ...GenerateOption) error {
+	options := (&GenerateOptions{}).ApplyOptions(opts...)
+
 	// delete excess websites
 	websiteList := &webhostingv1alpha1.WebsiteList{}
-	if err := c.List(ctx, websiteList, client.MatchingLabels(labels)); err != nil {
+	if err := c.List(ctx, websiteList, client.MatchingLabels(options.Labels)); err != nil {
 		return err
 	}
 
@@ -45,7 +47,7 @@ func EnsureWebsites(ctx context.Context, c client.Client, labels map[string]stri
 
 	// create missing websites
 	for i := 0; i < n-len(websiteList.Items); i++ {
-		if err := CreateWebsite(ctx, c, labels); err != nil {
+		if err := CreateWebsite(ctx, c, options); err != nil {
 			return err
 		}
 	}
@@ -54,14 +56,16 @@ func EnsureWebsites(ctx context.Context, c client.Client, labels map[string]stri
 }
 
 // CreateWebsite creates a random website using the given client and labels.
-func CreateWebsite(ctx context.Context, c client.Client, labels map[string]string) error {
+func CreateWebsite(ctx context.Context, c client.Client, opts ...GenerateOption) error {
+	options := (&GenerateOptions{}).ApplyOptions(opts...)
+
 	// pick random theme and project for a new website
 	themeList := &webhostingv1alpha1.ThemeList{}
-	if err := c.List(ctx, themeList, client.MatchingLabels(labels)); err != nil {
+	if err := c.List(ctx, themeList, client.MatchingLabels(options.Labels)); err != nil {
 		return err
 	}
 	namespaceList := &corev1.NamespaceList{}
-	if err := c.List(ctx, namespaceList, client.MatchingLabels(labels)); err != nil {
+	if err := c.List(ctx, namespaceList, client.MatchingLabels(options.Labels)); err != nil {
 		return err
 	}
 
@@ -69,12 +73,12 @@ func CreateWebsite(ctx context.Context, c client.Client, labels map[string]strin
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "experiment-",
 			Namespace:    utils.PickRandom(namespaceList.Items).Name,
-			Labels:       utils.CopyMap(labels),
 		},
 		Spec: webhostingv1alpha1.WebsiteSpec{
 			Theme: utils.PickRandom(themeList.Items).Name,
 		},
 	}
+	options.ApplyToObject(&website.ObjectMeta)
 
 	if err := c.Create(ctx, website); err != nil {
 		return err

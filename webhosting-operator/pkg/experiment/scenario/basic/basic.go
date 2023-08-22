@@ -84,16 +84,18 @@ func (s *scenario) AddToManager(mgr manager.Manager) error {
 func (s *scenario) Start(ctx context.Context) error {
 	log.Info("Scenario started")
 
+	opts := []generator.GenerateOption{generator.WithLabels(s.labels)}
+
 	// generate themes
 	for i := 0; i < 50; i++ {
-		if err := generator.CreateTheme(ctx, s.Client, s.labels); err != nil {
+		if err := generator.CreateTheme(ctx, s.Client, opts...); err != nil {
 			return err
 		}
 	}
 
 	// generate projects
 	for i := 0; i < 20; i++ {
-		if err := generator.CreateProject(ctx, s.Client, s.labels); err != nil {
+		if err := generator.CreateProject(ctx, s.Client, opts...); err != nil {
 			return err
 		}
 	}
@@ -114,7 +116,7 @@ func (s *scenario) Start(ctx context.Context) error {
 	if err := (&generator.Every{
 		Name: "website-generator",
 		Do: func(ctx context.Context, c client.Client) error {
-			return generator.CreateWebsite(ctx, c, s.labels)
+			return generator.CreateWebsite(ctx, c, opts...)
 		},
 		Rate: rate.Limit(14),
 		Stop: time.Now().Add(10 * time.Minute),

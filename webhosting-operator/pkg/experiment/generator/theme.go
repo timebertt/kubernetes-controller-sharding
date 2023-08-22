@@ -33,10 +33,12 @@ var (
 
 // EnsureThemes ensures there are exactly n themes with the given labels.
 // It keeps existing themes to speed up experiment preparation.
-func EnsureThemes(ctx context.Context, c client.Client, labels map[string]string, n int) error {
+func EnsureThemes(ctx context.Context, c client.Client, n int, opts ...GenerateOption) error {
+	options := (&GenerateOptions{}).ApplyOptions(opts...)
+
 	// delete excess themes
 	themeList := &webhostingv1alpha1.ThemeList{}
-	if err := c.List(ctx, themeList, client.MatchingLabels(labels)); err != nil {
+	if err := c.List(ctx, themeList, client.MatchingLabels(options.Labels)); err != nil {
 		return err
 	}
 
@@ -48,7 +50,7 @@ func EnsureThemes(ctx context.Context, c client.Client, labels map[string]string
 
 	// create missing themes
 	for i := 0; i < n-len(themeList.Items); i++ {
-		if err := CreateTheme(ctx, c, labels); err != nil {
+		if err := CreateTheme(ctx, c, options); err != nil {
 			return err
 		}
 	}
@@ -57,17 +59,19 @@ func EnsureThemes(ctx context.Context, c client.Client, labels map[string]string
 }
 
 // CreateTheme creates a random theme using the given client and labels.
-func CreateTheme(ctx context.Context, c client.Client, labels map[string]string) error {
+func CreateTheme(ctx context.Context, c client.Client, opts ...GenerateOption) error {
+	options := (&GenerateOptions{}).ApplyOptions(opts...)
+
 	theme := &webhostingv1alpha1.Theme{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "theme-",
-			Labels:       utils.CopyMap(labels),
 		},
 		Spec: webhostingv1alpha1.ThemeSpec{
 			Color:      utils.PickRandom(themeColors),
 			FontFamily: utils.PickRandom(themeFonts),
 		},
 	}
+	options.ApplyToObject(&theme.ObjectMeta)
 
 	if err := c.Create(ctx, theme); err != nil {
 		return err

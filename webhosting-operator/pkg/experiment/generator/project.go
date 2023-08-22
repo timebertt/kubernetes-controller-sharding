@@ -28,10 +28,12 @@ import (
 
 // EnsureProjects ensures there are exactly n projects with the given labels.
 // It keeps existing projects to speed up experiment preparation.
-func EnsureProjects(ctx context.Context, c client.Client, labels map[string]string, n int) error {
+func EnsureProjects(ctx context.Context, c client.Client, n int, opts ...GenerateOption) error {
+	options := (&GenerateOptions{}).ApplyOptions(opts...)
+
 	// delete excess projects
 	namespaceList := &corev1.NamespaceList{}
-	if err := c.List(ctx, namespaceList, client.MatchingLabels(labels)); err != nil {
+	if err := c.List(ctx, namespaceList, client.MatchingLabels(options.Labels)); err != nil {
 		return err
 	}
 
@@ -43,7 +45,7 @@ func EnsureProjects(ctx context.Context, c client.Client, labels map[string]stri
 
 	// create missing projects
 	for i := 0; i < n-len(namespaceList.Items); i++ {
-		if err := CreateProject(ctx, c, labels); err != nil {
+		if err := CreateProject(ctx, c, options); err != nil {
 			return err
 		}
 	}
@@ -52,13 +54,15 @@ func EnsureProjects(ctx context.Context, c client.Client, labels map[string]stri
 }
 
 // CreateProject creates a random project namespace using the given client and labels.
-func CreateProject(ctx context.Context, c client.Client, labels map[string]string) error {
+func CreateProject(ctx context.Context, c client.Client, opts ...GenerateOption) error {
+	options := (&GenerateOptions{}).ApplyOptions(opts...)
+
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "project-",
-			Labels:       utils.CopyMap(labels),
 		},
 	}
+	options.ApplyToObject(&namespace.ObjectMeta)
 
 	if err := c.Create(ctx, namespace); err != nil {
 		return err
