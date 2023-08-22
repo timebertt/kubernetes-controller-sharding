@@ -20,8 +20,10 @@ import (
 	"context"
 	"fmt"
 
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -54,4 +56,24 @@ func EmitN(n int) source.Source {
 
 		return nil
 	})
+}
+
+// CreateClusterScopedOwnerObject creates a new cluster-scoped object that has a single purpose: being used as an owner
+// for multiple objects that should be cleaned up at once. This is useful for cleaning up a lot of objects (of different
+// kinds) at once with a single DELETE call.
+func CreateClusterScopedOwnerObject(ctx context.Context, c client.Client, opts ...GenerateOption) (client.Object, *metav1.OwnerReference, error) {
+	options := (&GenerateOptions{}).ApplyOptions(opts...)
+
+	ownerObject := &rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "experiment-owner-",
+		},
+	}
+	options.ApplyToObject(&ownerObject.ObjectMeta)
+
+	if err := c.Create(ctx, ownerObject); err != nil {
+		return nil, nil, err
+	}
+
+	return ownerObject, metav1.NewControllerRef(ownerObject, rbacv1.SchemeGroupVersion.WithKind("ClusterRole")), nil
 }

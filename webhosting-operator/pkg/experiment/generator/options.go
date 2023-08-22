@@ -25,7 +25,8 @@ type GenerateOption interface {
 }
 
 type GenerateOptions struct {
-	Labels map[string]string
+	Labels         map[string]string
+	OwnerReference *metav1.OwnerReference
 }
 
 func (o *GenerateOptions) ApplyOptions(opts ...GenerateOption) *GenerateOptions {
@@ -45,11 +46,19 @@ func (o *GenerateOptions) ApplyToOptions(options *GenerateOptions) {
 			options.Labels[k] = v
 		}
 	}
+
+	if ownerRef := o.OwnerReference; ownerRef != nil {
+		options.OwnerReference = ownerRef.DeepCopy()
+	}
 }
 
 func (o *GenerateOptions) ApplyToObject(obj *metav1.ObjectMeta) {
 	for k, v := range o.Labels {
 		metav1.SetMetaDataLabel(obj, k, v)
+	}
+
+	if ownerRef := o.OwnerReference; ownerRef != nil {
+		obj.OwnerReferences = append(obj.OwnerReferences, *ownerRef)
 	}
 }
 
@@ -68,5 +77,11 @@ func WithLabels(labels map[string]string) GenerateOption {
 		for k, v := range labels {
 			options.Labels[k] = v
 		}
+	})
+}
+
+func WithOwnerReference(ownerRef *metav1.OwnerReference) GenerateOption {
+	return GenerateOptionFunc(func(options *GenerateOptions) {
+		options.OwnerReference = ownerRef.DeepCopy()
 	})
 }
