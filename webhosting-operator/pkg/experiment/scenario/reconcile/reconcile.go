@@ -137,12 +137,10 @@ func (s *scenario) Start(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
-		log.Info("Scenario cancelled")
-		return ctx.Err()
+		log.Info("Scenario cancelled, cleaning up")
 	case <-time.After(15 * time.Minute):
+		log.Info("Scenario finished, cleaning up")
 	}
-
-	log.Info("Scenario finished, cleaning up")
 
 	cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
