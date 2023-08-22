@@ -1558,14 +1558,14 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(controller_runtime_reconcile_total, controller)",
+        "definition": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, controller)",
         "hide": 0,
         "includeAll": false,
         "multi": false,
         "name": "controller",
         "options": [],
         "query": {
-          "query": "label_values(controller_runtime_reconcile_total, controller)",
+          "query": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, controller)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
@@ -1590,14 +1590,14 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(controller_runtime_reconcile_total, pod)",
+        "definition": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, pod)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "pod",
         "options": [],
         "query": {
-          "query": "label_values(controller_runtime_reconcile_total, pod)",
+          "query": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, pod)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,

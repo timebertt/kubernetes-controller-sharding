@@ -793,6 +793,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -825,7 +827,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -892,7 +895,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -956,7 +960,7 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "8.5.5",
+      "pluginVersion": "9.3.2",
       "targets": [
         {
           "datasource": {
@@ -1000,6 +1004,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1033,7 +1039,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1096,6 +1103,8 @@
             "mode": "continuous-GrYlRd"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1129,7 +1138,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -1723,14 +1733,14 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(controller_runtime_reconcile_total, controller)",
+        "definition": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, controller)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "controller",
         "options": [],
         "query": {
-          "query": "label_values(controller_runtime_reconcile_total, controller)",
+          "query": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, controller)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,

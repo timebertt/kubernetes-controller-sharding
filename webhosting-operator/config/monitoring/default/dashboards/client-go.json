@@ -1104,14 +1104,14 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(controller_runtime_reconcile_total, pod)",
+        "definition": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, pod)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "pod",
         "options": [],
         "query": {
-          "query": "label_values(controller_runtime_reconcile_total, pod)",
+          "query": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, pod)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
@@ -1136,14 +1136,14 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(rest_client_requests_total, method)",
+        "definition": "label_values(rest_client_requests_total{job=\"$job\"}, method)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "verb",
         "options": [],
         "query": {
-          "query": "label_values(rest_client_requests_total, method)",
+          "query": "label_values(rest_client_requests_total{job=\"$job\"}, method)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
@@ -1168,14 +1168,14 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(rest_client_requests_total, code)",
+        "definition": "label_values(rest_client_requests_total{job=\"$job\"}, code)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "code",
         "options": [],
         "query": {
-          "query": "label_values(rest_client_requests_total, code)",
+          "query": "label_values(rest_client_requests_total{job=\"$job\"}, code)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
