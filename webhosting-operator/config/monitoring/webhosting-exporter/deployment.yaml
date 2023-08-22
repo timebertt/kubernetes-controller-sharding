@@ -22,11 +22,11 @@ spec:
         name: webhosting-exporter
         resources:
           limits:
-            cpu: 100m
-            memory: 250Mi
+            cpu: 250m
+            memory: 400Mi
           requests:
-            cpu: 10m
-            memory: 190Mi
+            cpu: 100m
+            memory: 200Mi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
