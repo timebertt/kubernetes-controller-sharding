@@ -28,34 +28,14 @@ import (
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
 )
 
-// EnsureWebsites ensures there are exactly n websites with the given labels.
-// It keeps existing websites to speed up experiment preparation.
-func EnsureWebsites(ctx context.Context, c client.Client, n int, opts ...GenerateOption) error {
-	options := (&GenerateOptions{}).ApplyOptions(opts...)
-
-	// delete excess websites
-	websiteList := &webhostingv1alpha1.WebsiteList{}
-	if err := c.List(ctx, websiteList, client.MatchingLabels(options.Labels)); err != nil {
-		return err
-	}
-
-	for _, theme := range utils.PickNRandom(websiteList.Items, len(websiteList.Items)-n) {
-		if err := c.Delete(ctx, &theme); err != nil {
-			return err
-		}
-	}
-
-	// create missing websites
-	for i := 0; i < n-len(websiteList.Items); i++ {
-		if err := CreateWebsite(ctx, c, options); err != nil {
-			return err
-		}
-	}
-
-	return nil
+// CreateWebsites creates n random websites.
+func CreateWebsites(ctx context.Context, c client.Client, n int, opts ...GenerateOption) error {
+	return NTimesConcurrently(n, 10, func() error {
+		return CreateWebsite(ctx, c, opts...)
+	})
 }
 
-// CreateWebsite creates a random website using the given client and labels.
+// CreateWebsite creates a random website.
 func CreateWebsite(ctx context.Context, c client.Client, opts ...GenerateOption) error {
 	options := (&GenerateOptions{}).ApplyOptions(opts...)
 

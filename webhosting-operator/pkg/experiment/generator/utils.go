@@ -19,7 +19,9 @@ package generator
 import (
 	"context"
 	"fmt"
+	"sync"
 
+	"github.com/hashicorp/go-multierror"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/workqueue"
@@ -56,6 +58,55 @@ func EmitN(n int) source.Source {
 
 		return nil
 	})
+}
+
+// NTimesConcurrently runs the given action n times. It distributes the work across the given number of concurrent
+// workers.
+func NTimesConcurrently(n, workers int, do func() error) error {
+	var (
+		wg   sync.WaitGroup
+		work = make(chan struct{}, workers)
+		errs = make(chan error, workers)
+	)
+
+	// start workers
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			for range work {
+				errs <- do()
+			}
+		}()
+	}
+
+	// collect all errors
+	var (
+		allErrs  *multierror.Error
+		errsDone = make(chan struct{})
+	)
+	go func() {
+		for err := range errs {
+			allErrs = multierror.Append(allErrs, err)
+		}
+		close(errsDone)
+	}()
+
+	// emit n work items
+	for i := 0; i < n; i++ {
+		work <- struct{}{}
+	}
+	close(work)
+
+	// wait for all workers to process all work items
+	wg.Wait()
+	// signal error worker and wait for it to process all errors
+	close(errs)
+	<-errsDone
+
+	return allErrs.ErrorOrNil()
 }
 
 // CreateClusterScopedOwnerObject creates a new cluster-scoped object that has a single purpose: being used as an owner

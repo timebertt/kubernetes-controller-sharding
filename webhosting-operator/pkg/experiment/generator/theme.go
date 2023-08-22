@@ -31,34 +31,14 @@ var (
 	themeFonts  = []string{"Arial", "Verdana", "Tahoma", "Trebuchet MS", "Times New Roman", "Georgia", "Garamond", "Courier New", "Brush Script MT"}
 )
 
-// EnsureThemes ensures there are exactly n themes with the given labels.
-// It keeps existing themes to speed up experiment preparation.
-func EnsureThemes(ctx context.Context, c client.Client, n int, opts ...GenerateOption) error {
-	options := (&GenerateOptions{}).ApplyOptions(opts...)
-
-	// delete excess themes
-	themeList := &webhostingv1alpha1.ThemeList{}
-	if err := c.List(ctx, themeList, client.MatchingLabels(options.Labels)); err != nil {
-		return err
-	}
-
-	for _, theme := range utils.PickNRandom(themeList.Items, len(themeList.Items)-n) {
-		if err := c.Delete(ctx, &theme); err != nil {
-			return err
-		}
-	}
-
-	// create missing themes
-	for i := 0; i < n-len(themeList.Items); i++ {
-		if err := CreateTheme(ctx, c, options); err != nil {
-			return err
-		}
-	}
-
-	return nil
+// CreateThemes creates n random themes.
+func CreateThemes(ctx context.Context, c client.Client, n int, opts ...GenerateOption) error {
+	return NTimesConcurrently(n, 10, func() error {
+		return CreateTheme(ctx, c, opts...)
+	})
 }
 
-// CreateTheme creates a random theme using the given client and labels.
+// CreateTheme creates a random theme.
 func CreateTheme(ctx context.Context, c client.Client, opts ...GenerateOption) error {
 	options := (&GenerateOptions{}).ApplyOptions(opts...)
 

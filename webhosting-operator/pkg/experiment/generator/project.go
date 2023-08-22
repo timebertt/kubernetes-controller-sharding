@@ -22,38 +22,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
 )
 
-// EnsureProjects ensures there are exactly n projects with the given labels.
-// It keeps existing projects to speed up experiment preparation.
-func EnsureProjects(ctx context.Context, c client.Client, n int, opts ...GenerateOption) error {
-	options := (&GenerateOptions{}).ApplyOptions(opts...)
-
-	// delete excess projects
-	namespaceList := &corev1.NamespaceList{}
-	if err := c.List(ctx, namespaceList, client.MatchingLabels(options.Labels)); err != nil {
-		return err
-	}
-
-	for _, namespace := range utils.PickNRandom(namespaceList.Items, len(namespaceList.Items)-n) {
-		if err := c.Delete(ctx, &namespace); err != nil {
-			return err
-		}
-	}
-
-	// create missing projects
-	for i := 0; i < n-len(namespaceList.Items); i++ {
-		if err := CreateProject(ctx, c, options); err != nil {
-			return err
-		}
-	}
-
-	return nil
+// CreateProjects creates n random project namespaces.
+func CreateProjects(ctx context.Context, c client.Client, n int, opts ...GenerateOption) error {
+	return NTimesConcurrently(n, 10, func() error {
+		return CreateProject(ctx, c, opts...)
+	})
 }
 
-// CreateProject creates a random project namespace using the given client and labels.
+// CreateProject creates a random project namespace.
 func CreateProject(ctx context.Context, c client.Client, opts ...GenerateOption) error {
 	options := (&GenerateOptions{}).ApplyOptions(opts...)
 
