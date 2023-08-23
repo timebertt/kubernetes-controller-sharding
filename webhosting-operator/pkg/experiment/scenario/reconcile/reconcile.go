@@ -74,13 +74,14 @@ func (s *scenario) Prepare(ctx context.Context) error {
 }
 
 func (s *scenario) Run(ctx context.Context) error {
-	// trigger individual reconciliations for website every 10s
+	// trigger individual reconciliations for websites every 10s
 	if err := (&generator.ForEach[*webhostingv1alpha1.Website]{
 		Name: "website-reconcile-trigger",
 		Do: func(ctx context.Context, c client.Client, obj *webhostingv1alpha1.Website) error {
 			return client.IgnoreNotFound(generator.ReconcileWebsite(ctx, c, obj))
 		},
-		Every: 10 * time.Second,
+		Every:   10 * time.Second,
+		Workers: 60,
 	}).AddToManager(s.Manager); err != nil {
 		return fmt.Errorf("error adding website-reconcile-trigger: %w", err)
 	}

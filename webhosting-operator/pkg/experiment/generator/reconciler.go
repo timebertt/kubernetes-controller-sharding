@@ -37,16 +37,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const reconcileWorkers = 10
+const defaultReconcileWorkers = 10
 
 // Every runs the given Func with the specified frequency.
 type Every struct {
 	client.Client
 
-	Name string
-	Do   func(ctx context.Context, c client.Client) error
-	Rate rate.Limit
-	Stop time.Time
+	Name    string
+	Do      func(ctx context.Context, c client.Client) error
+	Rate    rate.Limit
+	Stop    time.Time
+	Workers int
 }
 
 func (r *Every) AddToManager(mgr manager.Manager) error {
@@ -54,13 +55,18 @@ func (r *Every) AddToManager(mgr manager.Manager) error {
 		r.Client = mgr.GetClient()
 	}
 
+	workers := defaultReconcileWorkers
+	if r.Workers > 0 {
+		workers = r.Workers
+	}
+
 	return builder.ControllerManagedBy(mgr).
 		Named(r.Name).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: reconcileWorkers,
+			MaxConcurrentReconciles: workers,
 			RateLimiter:             &workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(r.Rate, int(r.Rate))},
 		}).
-		WatchesRawSource(EmitN(reconcileWorkers), &handler.EnqueueRequestForObject{}).
+		WatchesRawSource(EmitN(workers), &handler.EnqueueRequestForObject{}).
 		Complete(StopOnContextCanceled(r))
 }
 
@@ -77,10 +83,11 @@ func (r *Every) Reconcile(ctx context.Context, _ reconcile.Request) (reconcile.R
 type ForEach[T client.Object] struct {
 	client.Client
 
-	Name      string
-	Do        func(ctx context.Context, c client.Client, obj T) error
-	Every     time.Duration
-	Stop      time.Time
+	Name    string
+	Do      func(ctx context.Context, c client.Client, obj T) error
+	Every   time.Duration
+	Stop    time.Time
+	Workers int
 
 	gvk schema.GroupVersionKind
 	obj T
@@ -100,10 +107,15 @@ func (r *ForEach[T]) AddToManager(mgr manager.Manager) error {
 		return err
 	}
 
+	workers := defaultReconcileWorkers
+	if r.Workers > 0 {
+		workers = r.Workers
+	}
+
 	return builder.ControllerManagedBy(mgr).
 		Named(r.Name).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: reconcileWorkers,
+			MaxConcurrentReconciles: workers,
 			RateLimiter:             unlimitedRateLimiter(),
 		}).
 		Watches(
