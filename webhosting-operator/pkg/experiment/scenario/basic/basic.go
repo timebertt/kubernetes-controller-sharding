@@ -107,7 +107,6 @@ func (s *scenario) Run(ctx context.Context) error {
 		},
 		Every:     time.Minute,
 		RateLimit: rate.Limit(100),
-		Labels:    s.Labels,
 	}).AddToManager(s.Manager); err != nil {
 		return fmt.Errorf("error adding website-mutator: %w", err)
 	}

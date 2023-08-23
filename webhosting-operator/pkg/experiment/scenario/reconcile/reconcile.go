@@ -83,7 +83,6 @@ func (s *scenario) Run(ctx context.Context) error {
 		},
 		Every:     10 * time.Second,
 		RateLimit: rate.Limit(1000),
-		Labels:    s.Labels,
 	}).AddToManager(s.Manager); err != nil {
 		return fmt.Errorf("error adding website-reconcile-trigger: %w", err)
 	}

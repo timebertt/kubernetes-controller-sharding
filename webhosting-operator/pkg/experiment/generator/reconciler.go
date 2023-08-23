@@ -81,7 +81,6 @@ type ForEach[T client.Object] struct {
 	Every     time.Duration
 	RateLimit rate.Limit
 	Stop      time.Time
-	Labels    map[string]string
 
 	gvk schema.GroupVersionKind
 	obj T
