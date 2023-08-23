@@ -3,4 +3,5 @@ kind: Kustomization
 
 resources:
 - ../default
+- experiment-scheduling.yaml
 - webhosting-operator-scheduling.yaml

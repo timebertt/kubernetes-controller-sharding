@@ -1,11 +1,11 @@
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: webhosting-operator-scheduling
+  name: experiment-scheduling
 spec:
   failurePolicy: Fail
   rules:
-  # schedule webhosting-operator on dedicated worker pool for better isolation in load tests
+  # schedule experiment on dedicated worker pool for better isolation in load tests
   - name: add-scheduling-constraints
     match:
       any:
@@ -13,17 +13,17 @@ spec:
           kinds:
           - Pod
           namespaces:
-          - webhosting-system
+          - experiment
           selector:
             matchLabels:
-              app.kubernetes.io/name: webhosting-operator
+              app.kubernetes.io/name: experiment
           operations:
           - CREATE
     mutate:
       patchesJson6902: |-
         - op: add
           path: "/spec/tolerations/-"
-          value: {"key":"dedicated-for","operator":"Equal","value":"webhosting-operator","effect":"NoSchedule"}        
+          value: {"key":"dedicated-for","operator":"Equal","value":"experiment","effect":"NoSchedule"}        
         - op: add
           path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms/-"
-          value: {"matchExpressions": [{"key":"dedicated-for","operator":"In","values":["webhosting-operator"]}]}        
+          value: {"matchExpressions": [{"key":"dedicated-for","operator":"In","values":["experiment"]}]}        
