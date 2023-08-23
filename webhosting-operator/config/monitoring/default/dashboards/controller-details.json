@@ -1504,7 +1504,7 @@
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "prometheus",
           "value": "prometheus"
         },
@@ -1549,33 +1549,6 @@
       },
       {
         "allFormat": "glob",
-        "current": {
-          "selected": false,
-          "text": "website",
-          "value": "website"
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${datasource}"
-        },
-        "definition": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, controller)",
-        "hide": 0,
-        "includeAll": false,
-        "multi": false,
-        "name": "controller",
-        "options": [],
-        "query": {
-          "query": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, controller)",
-          "refId": "StandardVariableQuery"
-        },
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "allFormat": "glob",
         "allValue": ".*",
         "current": {
           "selected": true,
@@ -1598,6 +1571,33 @@
         "options": [],
         "query": {
           "query": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, pod)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allFormat": "glob",
+        "current": {
+          "selected": false,
+          "text": "website",
+          "value": "website"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, controller)",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "controller",
+        "options": [],
+        "query": {
+          "query": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, controller)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
