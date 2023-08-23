@@ -32,5 +32,5 @@
   path: /spec/endpoints/1/metricRelabelings/-
   value:
     sourceLabels: [__name__, node, interface]
-    regex: "container_network_.+;.*timebertt--sharding-websites-.+;cali.+"
+    regex: "container_network_.+;.*fb28d21f90--sharding-websites-.+;cali.+"
     action: drop

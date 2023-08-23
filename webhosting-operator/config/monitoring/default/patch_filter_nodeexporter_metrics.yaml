@@ -6,5 +6,5 @@
   path: /spec/endpoints/0/metricRelabelings/-
   value:
     sourceLabels: [__name__, instance]
-    regex: "node_filesystem_.+;.*timebertt--sharding-websites-.+"
+    regex: "node_filesystem_.+;.*fb28d21f90--sharding-websites-.+"
     action: drop
