@@ -4,6 +4,7 @@ PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 TAG ?= latest
 GHCR_REPO ?= ghcr.io/timebertt/kubernetes-controller-sharding
 OPERATOR_IMG ?= $(GHCR_REPO)/webhosting-operator:$(TAG)
+EXPERIMENT_IMG ?= $(GHCR_REPO)/experiment:$(TAG)
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.24
@@ -137,7 +138,7 @@ deploy up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-opera
 
 .PHONY: deploy
 deploy: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
-	$(SKAFFOLD) deploy --port-forward=user --tail -i $(OPERATOR_IMG)
+	$(SKAFFOLD) deploy --port-forward=user --tail -i $(OPERATOR_IMG) -i $(EXPERIMENT_IMG)
 
 .PHONY: up
 up: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.
