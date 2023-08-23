@@ -21,6 +21,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -31,7 +32,9 @@ import (
 // CreateWebsites creates n random websites.
 func CreateWebsites(ctx context.Context, c client.Client, n int, opts ...GenerateOption) error {
 	return NTimesConcurrently(n, 10, func() error {
-		return CreateWebsite(ctx, c, opts...)
+		return RetryOnError(ctx, 5, func(ctx context.Context) error {
+			return CreateWebsite(ctx, c, opts...)
+		}, apierrors.IsAlreadyExists)
 	})
 }
 

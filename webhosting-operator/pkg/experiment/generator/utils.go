@@ -20,10 +20,12 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -107,6 +109,33 @@ func NTimesConcurrently(n, workers int, do func() error) error {
 	<-errsDone
 
 	return allErrs.ErrorOrNil()
+}
+
+// RetryOnError runs the given action with a short timeout and retries it up to `retries` times if it retruns a
+// retriable error.
+// This is useful when creating a lot of objects in parallel with generateName which can lead to AlreadyExists errors.
+func RetryOnError(ctx context.Context, retries int, do func(context.Context) error, retriable func(error) bool) error {
+	i := 0
+	return wait.PollUntilContextTimeout(ctx, 50*time.Millisecond, 10*time.Second, true, func(ctx context.Context) (done bool, err error) {
+		err = do(ctx)
+		if err == nil {
+			return true, nil
+		}
+
+		// stop retrying on non-retriable errors
+		if !retriable(err) {
+			return true, err
+		}
+
+		// stop retrying when reaching the max retry count
+		i++
+		if i > retries {
+			return true, err
+		}
+
+		// otherwise, retry another time
+		return false, nil
+	})
 }
 
 // CreateClusterScopedOwnerObject creates a new cluster-scoped object that has a single purpose: being used as an owner
