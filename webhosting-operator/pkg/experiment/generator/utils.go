@@ -18,6 +18,7 @@ package generator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -32,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
@@ -59,6 +61,19 @@ func EmitN(n int) source.Source {
 		}
 
 		return nil
+	})
+}
+
+// StopOnContextCanceled wraps the given reconciler so that "context canceled" errors are ignored. This is helpful when
+// a reconciler is expected to be canceled (e.g., when the scenario finishes). We neither need to retry nor log on such
+// errors. We can just stop silently.
+func StopOnContextCanceled(r reconcile.Reconciler) reconcile.Reconciler {
+	return reconcile.Func(func(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
+		result, err := r.Reconcile(ctx, request)
+		if errors.Is(err, context.Canceled) {
+			err = nil
+		}
+		return result, err
 	})
 }
 

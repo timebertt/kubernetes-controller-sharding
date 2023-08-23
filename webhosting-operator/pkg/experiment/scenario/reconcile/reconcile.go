@@ -119,8 +119,10 @@ func (s *scenario) Start(ctx context.Context) error {
 
 	// trigger individual reconciliations for website every 10s
 	if err := (&generator.ForEach[*webhostingv1alpha1.Website]{
-		Name:      "website-reconcile-trigger",
-		Do:        generator.ReconcileWebsite,
+		Name: "website-reconcile-trigger",
+		Do: func(ctx context.Context, c client.Client, obj *webhostingv1alpha1.Website) error {
+			return client.IgnoreNotFound(generator.ReconcileWebsite(ctx, c, obj))
+		},
 		Every:     10 * time.Second,
 		RateLimit: rate.Limit(1000),
 		Labels:    s.labels,

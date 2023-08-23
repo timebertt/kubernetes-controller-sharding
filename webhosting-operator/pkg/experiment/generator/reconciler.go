@@ -60,7 +60,7 @@ func (r *Every) AddToManager(mgr manager.Manager) error {
 			RateLimiter:             &workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(r.Rate, int(r.Rate))},
 		}).
 		WatchesRawSource(EmitN(reconcileWorkers), &handler.EnqueueRequestForObject{}).
-		Complete(r)
+		Complete(StopOnContextCanceled(r))
 }
 
 func (r *Every) Reconcile(ctx context.Context, _ reconcile.Request) (reconcile.Result, error) {
@@ -122,7 +122,7 @@ func (r *ForEach[T]) AddToManager(mgr manager.Manager) error {
 				GenericFunc: func(event.GenericEvent) bool { return false },
 			}),
 		).
-		Complete(r)
+		Complete(StopOnContextCanceled(r))
 }
 
 func (r *ForEach[T]) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
