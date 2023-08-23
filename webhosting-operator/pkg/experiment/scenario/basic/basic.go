@@ -54,7 +54,7 @@ func (s *scenario) LongDescription() string {
 	return `The ` + ScenarioName + ` scenario combines several operations typical for a lively operator environment:
 - website creation: 8000 over 10m
 - website deletion: 600 over 10m
-- website reconciliation: max 100/s
+- website reconciliation: max 130/s
 - theme reconciliation: 1/m -> triggers reconciliation of all referencing websites
 `
 }
@@ -99,20 +99,20 @@ func (s *scenario) Run(ctx context.Context) error {
 		return fmt.Errorf("error adding website-deleter: %w", err)
 	}
 
-	// trigger individual reconciliations for website twice per minute, 100 per second at max
+	// trigger individual reconciliations for website once per minute
+	// => peaks at about 130 reconciliations per second
 	if err := (&generator.ForEach[*webhostingv1alpha1.Website]{
 		Name: "website-mutator",
 		Do: func(ctx context.Context, c client.Client, obj *webhostingv1alpha1.Website) error {
 			return client.IgnoreNotFound(generator.ReconcileWebsite(ctx, c, obj))
 		},
-		Every:     time.Minute,
-		RateLimit: rate.Limit(100),
+		Every: time.Minute,
 	}).AddToManager(s.Manager); err != nil {
 		return fmt.Errorf("error adding website-mutator: %w", err)
 	}
 
 	// update one theme every minute which causes all referencing websites to be reconciled
-	// => peeks at about 2.6 reconciliations per second on average
+	// => peaks at about 2.6 reconciliations per second on average
 	// (note: these reconciliation triggers occur in bursts of up to ~156)
 	if err := (&generator.Every{
 		Name: "theme-mutator",

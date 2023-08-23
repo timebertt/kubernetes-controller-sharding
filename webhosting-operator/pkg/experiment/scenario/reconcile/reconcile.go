@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/time/rate"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
@@ -81,8 +80,7 @@ func (s *scenario) Run(ctx context.Context) error {
 		Do: func(ctx context.Context, c client.Client, obj *webhostingv1alpha1.Website) error {
 			return client.IgnoreNotFound(generator.ReconcileWebsite(ctx, c, obj))
 		},
-		Every:     10 * time.Second,
-		RateLimit: rate.Limit(1000),
+		Every: 10 * time.Second,
 	}).AddToManager(s.Manager); err != nil {
 		return fmt.Errorf("error adding website-reconcile-trigger: %w", err)
 	}
