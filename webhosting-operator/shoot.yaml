@@ -54,7 +54,7 @@ spec:
         workers: 10.250.0.0/16
     type: openstack
     workers:
-    # runs system and monitoring components
+    # runs system and monitoring components, and sample websites
     - name: system
       cri:
         name: containerd
@@ -92,31 +92,6 @@ spec:
       taints:
       - key: dedicated-for
         value: webhosting-operator
-        effect: NoSchedule
-      volume:
-        size: 50Gi
-        type: storage_premium_perf1
-      zones:
-      - eu01-2
-    # runs actual websites
-    - name: websites
-      cri:
-        name: containerd
-      machine:
-        image:
-          name: coreos
-        type: g1.2
-      maxSurge: 5
-      maxUnavailable: 0
-      maximum: 10
-      minimum: 1
-      systemComponents:
-        allow: false
-      labels:
-        dedicated-for: websites
-      taints:
-      - key: dedicated-for
-        value: websites
         effect: NoSchedule
       volume:
         size: 50Gi
