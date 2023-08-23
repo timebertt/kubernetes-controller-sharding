@@ -1,0 +1,42 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: websites-experiment
+spec:
+  failurePolicy: Fail
+  rules:
+  # don't actually run website pods in load tests
+  # otherwise, we would need an immense amount of compute power for running dummy websites
+  - name: scale-down-websites
+    match:
+      any:
+      - resources:
+          kinds:
+          - Deployment
+          selector:
+            matchLabels:
+              app: website
+          namespaceSelector:
+            matchLabels:
+              generated-by: experiment
+    mutate:
+      patchStrategicMerge:
+        spec:
+          replicas: 0
+  # use fake ingress class to prevent overloading ingress controller (this is not what we want to load test)
+  - name: disable-ingress
+    match:
+      any:
+      - resources:
+          kinds:
+          - Ingress
+          selector:
+            matchLabels:
+              app: website
+          namespaceSelector:
+            matchLabels:
+              generated-by: experiment
+    mutate:
+      patchStrategicMerge:
+        spec:
+          ingressClassName: fake

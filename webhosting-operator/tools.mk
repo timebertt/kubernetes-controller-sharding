@@ -57,3 +57,9 @@ SKAFFOLD_VERSION ?= v2.6.1
 $(SKAFFOLD): $(call tool_version_file,$(SKAFFOLD),$(SKAFFOLD_VERSION))
 	curl -Lo $(SKAFFOLD) https://storage.googleapis.com/skaffold/releases/$(SKAFFOLD_VERSION)/skaffold-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/')
 	chmod +x $(SKAFFOLD)
+
+YQ := $(TOOLS_BIN_DIR)/yq
+YQ_VERSION ?= v4.34.2
+$(YQ): $(call tool_version_file,$(YQ),$(YQ_VERSION))
+	curl -L -o $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(shell uname -s | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+	chmod +x $(YQ)

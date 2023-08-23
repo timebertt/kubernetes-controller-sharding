@@ -1,5 +1,5 @@
 # patch rate limiter settings of kube-controller-manager in shoot control plane, use with:
-# k -n shoot--timebertt--sharding patch deploy kube-controller-manager --type json --patch-file config/patch_kube-controller-manager_ratelimiter.yaml
+# k -n shoot--fb28d21f90--sharding patch deploy kube-controller-manager --type json --patch-file config/patch_kube-controller-manager_ratelimiter.yaml
 - op: add
   path: /spec/template/spec/containers/0/command/-
   value: "--kube-api-qps=800"

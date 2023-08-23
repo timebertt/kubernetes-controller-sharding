@@ -141,7 +141,7 @@ Navigate to http://localhost:8088/project-foo/homepage and http://localhost:8088
 Generate some more samples with:
 ```bash
 $ k create ns project-bar && k create ns project-baz
-# create a random amount of websites per namespace (up to 50 each)
+# create a random number of websites per project namespace (up to 50 each)
 $ go run ./cmd/samples-generator
 created 32 Websites in project "project-foo"
 created 25 Websites in project "project-bar"
@@ -150,7 +150,7 @@ created 23 Websites in project "project-baz"
 
 ### 4. Access Monitoring Components
 
-You've already deployed a customized installation of [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) including `webhosting-exporter` for observing the operator and its objects in the previous steps.
+You've already deployed a customized installation of [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) including `webhosting-exporter` for observing the operator and its objects created in the previous steps.
 
 ```bash
 # get the grafana admin password
@@ -158,3 +158,35 @@ cat config/monitoring/default/grafana_admin_pass.secret.txt
 ```
 
 Now, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/webhosting?orgId=1) at http://127.0.0.1:3000.
+Also, explore the controller-runtime and related dashboards!
+
+### 5. Run Load Test Experiments
+
+The [experiment](./cmd/experiment) tool allows executing different load test scenarios for evaluation purposes.
+
+```text
+$ go run ./cmd/experiment -h
+Usage:
+  experiment [command]
+
+Available Scenarios
+  basic       Basic load test scenario (15m) that creates roughly 8k websites over 10m
+  reconcile   High frequency reconciliation load test scenario (15m) with a static number of websites (10k)
+...
+```
+
+Run a load test scenario using one of these commands:
+
+```bash
+# run the basic scenario from your development machine
+go run ./cmd/experiment basic
+
+# build the experiment image and run the basic scenario as a Job on the cluster
+make up SKAFFOLD_MODULE=experiment EXPERIMENT_SCENARIO=basic
+
+# use a pre-built experiment image to run the basic scenario as a Job on the cluster
+make deploy SKAFFOLD_MODULE=experiment EXPERIMENT_SCENARIO=basic TAG=latest
+```
+
+When running load test experiments on the cluster, a `ServiceMonitor` is created to instruct prometheus to scrape `experiment`.
+As the tool is based on controller-runtime as well, the controller-runtime dashboards can be used for visualizing the load test scenario and verifying that the tool is able to generate the desired load.

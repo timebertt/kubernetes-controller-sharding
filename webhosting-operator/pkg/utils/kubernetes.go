@@ -1,5 +1,5 @@
 /*
-Copyright 2022 Tim Ebert.
+Copyright 2023 Tim Ebert.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,19 +17,15 @@ limitations under the License.
 package utils
 
 import (
-	"math/rand"
+	"os"
 )
 
-// CopyMap returns a new map with the same contents as the given map.
-func CopyMap(in map[string]string) map[string]string {
-	out := make(map[string]string, len(in))
-	for k, v := range in {
-		out[k] = v
+// RunningInCluster implements a heuristic for determining whether the process is running in a cluster or not.
+func RunningInCluster() bool {
+	_, err := os.Stat("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	if err == nil {
+		return true
 	}
-	return out
-}
 
-// PickRandom picks a random element from the given slice.
-func PickRandom[T any](in []T) T {
-	return in[rand.Intn(len(in))]
+	return os.Getenv("KUBERNETES_SERVICE_HOST") != ""
 }

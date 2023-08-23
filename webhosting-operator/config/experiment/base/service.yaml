@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: experiment
+  namespace: system
+spec:
+  ports:
+  - name: metrics
+    port: 8080
+    protocol: TCP
+    targetPort: metrics

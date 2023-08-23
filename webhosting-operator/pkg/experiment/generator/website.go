@@ -21,22 +21,34 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/utils"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
 )
 
-// CreateWebsite creates a random website using the given client and labels.
-func CreateWebsite(ctx context.Context, c client.Client, labels map[string]string) error {
+// CreateWebsites creates n random websites.
+func CreateWebsites(ctx context.Context, c client.Client, n int, opts ...GenerateOption) error {
+	return NTimesConcurrently(n, 10, func() error {
+		return RetryOnError(ctx, 5, func(ctx context.Context) error {
+			return CreateWebsite(ctx, c, opts...)
+		}, apierrors.IsAlreadyExists)
+	})
+}
+
+// CreateWebsite creates a random website.
+func CreateWebsite(ctx context.Context, c client.Client, opts ...GenerateOption) error {
+	options := (&GenerateOptions{}).ApplyOptions(opts...)
+
 	// pick random theme and project for a new website
 	themeList := &webhostingv1alpha1.ThemeList{}
-	if err := c.List(ctx, themeList, client.MatchingLabels(labels)); err != nil {
+	if err := c.List(ctx, themeList, client.MatchingLabels(options.Labels)); err != nil {
 		return err
 	}
 	namespaceList := &corev1.NamespaceList{}
-	if err := c.List(ctx, namespaceList, client.MatchingLabels(labels)); err != nil {
+	if err := c.List(ctx, namespaceList, client.MatchingLabels(options.Labels)); err != nil {
 		return err
 	}
 
@@ -44,18 +56,38 @@ func CreateWebsite(ctx context.Context, c client.Client, labels map[string]strin
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "experiment-",
 			Namespace:    utils.PickRandom(namespaceList.Items).Name,
-			Labels:       utils.CopyMap(labels),
 		},
 		Spec: webhostingv1alpha1.WebsiteSpec{
 			Theme: utils.PickRandom(themeList.Items).Name,
 		},
 	}
+	options.ApplyToObject(&website.ObjectMeta)
 
 	if err := c.Create(ctx, website); err != nil {
 		return err
 	}
 
 	log.V(1).Info("Created website", "website", client.ObjectKeyFromObject(website))
+	return nil
+}
+
+// MutateWebsite mutates the given website using the given client and labels.
+func MutateWebsite(ctx context.Context, c client.Client, website *webhostingv1alpha1.Website, labels map[string]string) error {
+	// pick new random theme for the website
+	themeList := &webhostingv1alpha1.ThemeList{}
+	if err := c.List(ctx, themeList, client.MatchingLabels(labels)); err != nil {
+		return err
+	}
+
+	patch := client.MergeFrom(website.DeepCopy())
+
+	website.Spec.Theme = utils.PickRandom(themeList.Items).Name
+
+	if err := c.Patch(ctx, website, patch); err != nil {
+		return err
+	}
+
+	log.V(1).Info("Mutated website", "website", client.ObjectKeyFromObject(website))
 	return nil
 }
 

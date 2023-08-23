@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -35,7 +34,9 @@ import (
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/config"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -43,6 +44,7 @@ import (
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
 
 	// Import all scenarios
 	_ "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/scenario/all"
@@ -66,13 +68,17 @@ func main() {
 		TimeEncoder: zapcore.RFC3339TimeEncoder,
 	}
 
-	allScenarios := experiment.GetAllScenarios()
+	var (
+		mgr              manager.Manager
+		selectedScenario experiment.Scenario
+	)
+
 	cmd := &cobra.Command{
-		Use:       "experiment SCENARIO",
-		Short:     "Run experiment scenario, one of: " + strings.Join(allScenarios, ", "),
-		Args:      cobra.ExactValidArgs(1),
-		ValidArgs: allScenarios,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Use:  "experiment",
+		Args: cobra.NoArgs,
+
+		SilenceErrors: true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 
 			ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zapOpts)))
@@ -83,13 +89,13 @@ func main() {
 			restConfig.QPS = 1000
 			restConfig.Burst = 1200
 
-			mgr, err := ctrl.NewManager(restConfig, ctrl.Options{
-				Scheme: scheme,
+			var err error
+			mgr, err = ctrl.NewManager(restConfig, ctrl.Options{
+				Scheme:                 scheme,
+				HealthProbeBindAddress: ":8081",
+				MetricsBindAddress:     ":8080",
 				// disable leader election
 				LeaderElection: false,
-				// disable all endpoints
-				HealthProbeBindAddress: "0",
-				MetricsBindAddress:     "0",
 
 				Controller: config.Controller{
 					RecoverPanic: pointer.Bool(true),
@@ -99,8 +105,17 @@ func main() {
 				return err
 			}
 
-			scenario := experiment.GetScenario(args[0])
-			if err = scenario.AddToManager(mgr); err != nil {
+			if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+				return fmt.Errorf("unable to set up health check: %w", err)
+			}
+			if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+				return fmt.Errorf("unable to set up ready check: %w", err)
+			}
+
+			return nil
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			if err := selectedScenario.AddToManager(mgr); err != nil {
 				return err
 			}
 
@@ -110,8 +125,12 @@ func main() {
 			go func() {
 				select {
 				case <-ctx.Done():
-				case <-scenario.Done():
+				case <-selectedScenario.Done():
 					// stop the manager when scenario is done
+					if utils.RunningInCluster() {
+						// but give monitoring a bit more time to scrape the final metrics values if running in a cluster
+						<-time.After(time.Minute)
+					}
 					cancel()
 				}
 			}()
@@ -122,7 +141,28 @@ func main() {
 	}
 
 	zapOpts.BindFlags(flag.CommandLine)
-	cmd.Flags().AddGoFlagSet(flag.CommandLine)
+	cmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
+
+	group := cobra.Group{
+		ID:    "scenarios",
+		Title: "Available Scenarios",
+	}
+	cmd.AddGroup(&group)
+
+	for _, s := range experiment.GetAllScenarios() {
+		scenario := s
+
+		cmd.AddCommand(&cobra.Command{
+			Use:     scenario.Name(),
+			Short:   scenario.Description(),
+			Long:    scenario.LongDescription(),
+			Args:    cobra.NoArgs,
+			GroupID: group.ID,
+			Run: func(cmd *cobra.Command, args []string) {
+				selectedScenario = scenario
+			},
+		})
+	}
 
 	if err := cmd.ExecuteContext(ctrl.SetupSignalHandler()); err != nil {
 		fmt.Printf("Error running experiment: %v\n", err)

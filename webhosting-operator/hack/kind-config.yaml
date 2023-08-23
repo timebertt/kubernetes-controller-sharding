@@ -12,3 +12,10 @@ nodes:
     apiVersion: kubelet.config.k8s.io/v1beta1
     kind: KubeletConfiguration
     maxPods: 250
+  - |
+    apiVersion: kubeadm.k8s.io/v1beta3
+    kind: ClusterConfiguration
+    controllerManager:
+      extraArgs:
+        kube-api-qps: "800"
+        kube-api-burst: "1000"

@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: experiment
+
+commonLabels:
+  app.kubernetes.io/name: experiment
+
+images:
+- name: experiment
+  newName: ghcr.io/timebertt/kubernetes-controller-sharding/experiment
+  newTag: latest
+
+resources:
+- namespace.yaml
+- job.yaml
+- rbac.yaml
+- service.yaml
+# provide prometheus running in namespace "monitoring" with the permissions required for service discovery in namespace
+# "experiment"
+- prometheus_rbac.yaml
+- servicemonitor.yaml

@@ -33,19 +33,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/ratelimiter"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const reconcileWorkers = 10
+const defaultReconcileWorkers = 10
 
 // Every runs the given Func with the specified frequency.
 type Every struct {
 	client.Client
 
-	Name string
-	Do   func(ctx context.Context, c client.Client) error
-	Rate rate.Limit
-	Stop time.Time
+	Name    string
+	Do      func(ctx context.Context, c client.Client) error
+	Rate    rate.Limit
+	Stop    time.Time
+	Workers int
 }
 
 func (r *Every) AddToManager(mgr manager.Manager) error {
@@ -53,14 +55,19 @@ func (r *Every) AddToManager(mgr manager.Manager) error {
 		r.Client = mgr.GetClient()
 	}
 
+	workers := defaultReconcileWorkers
+	if r.Workers > 0 {
+		workers = r.Workers
+	}
+
 	return builder.ControllerManagedBy(mgr).
 		Named(r.Name).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: reconcileWorkers,
+			MaxConcurrentReconciles: workers,
 			RateLimiter:             &workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(r.Rate, int(r.Rate))},
 		}).
-		WatchesRawSource(EmitN(reconcileWorkers), &handler.EnqueueRequestForObject{}).
-		Complete(r)
+		WatchesRawSource(EmitN(workers), &handler.EnqueueRequestForObject{}).
+		Complete(StopOnContextCanceled(r))
 }
 
 func (r *Every) Reconcile(ctx context.Context, _ reconcile.Request) (reconcile.Result, error) {
@@ -76,12 +83,11 @@ func (r *Every) Reconcile(ctx context.Context, _ reconcile.Request) (reconcile.R
 type ForEach[T client.Object] struct {
 	client.Client
 
-	Name      string
-	Do        func(ctx context.Context, c client.Client, obj T) error
-	Every     time.Duration
-	RateLimit rate.Limit
-	Stop      time.Time
-	Labels    map[string]string
+	Name    string
+	Do      func(ctx context.Context, c client.Client, obj T) error
+	Every   time.Duration
+	Stop    time.Time
+	Workers int
 
 	gvk schema.GroupVersionKind
 	obj T
@@ -90,11 +96,6 @@ type ForEach[T client.Object] struct {
 func (r *ForEach[T]) AddToManager(mgr manager.Manager) error {
 	if r.Client == nil {
 		r.Client = mgr.GetClient()
-	}
-
-	rateLimiter := workqueue.DefaultControllerRateLimiter()
-	if r.RateLimit > 0 {
-		rateLimiter = &workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(r.RateLimit, int(r.RateLimit))}
 	}
 
 	var t T
@@ -106,11 +107,16 @@ func (r *ForEach[T]) AddToManager(mgr manager.Manager) error {
 		return err
 	}
 
+	workers := defaultReconcileWorkers
+	if r.Workers > 0 {
+		workers = r.Workers
+	}
+
 	return builder.ControllerManagedBy(mgr).
 		Named(r.Name).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: reconcileWorkers,
-			RateLimiter:             rateLimiter,
+			MaxConcurrentReconciles: workers,
+			RateLimiter:             unlimitedRateLimiter(),
 		}).
 		Watches(
 			r.obj,
@@ -122,7 +128,7 @@ func (r *ForEach[T]) AddToManager(mgr manager.Manager) error {
 				GenericFunc: func(event.GenericEvent) bool { return false },
 			}),
 		).
-		Complete(r)
+		Complete(StopOnContextCanceled(r))
 }
 
 func (r *ForEach[T]) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
@@ -140,4 +146,10 @@ func (r *ForEach[T]) Reconcile(ctx context.Context, request reconcile.Request) (
 	}
 
 	return reconcile.Result{RequeueAfter: r.Every}, r.Do(ctx, r.Client, obj)
+}
+
+// unlimitedRateLimiter returns a RateLimiter that doesn't apply any rate limits to the workqueue.
+func unlimitedRateLimiter() ratelimiter.RateLimiter {
+	// if no limiter is given, MaxOfRateLimiter returns 0 for When and NumRequeues => unlimited
+	return &workqueue.MaxOfRateLimiter{}
 }

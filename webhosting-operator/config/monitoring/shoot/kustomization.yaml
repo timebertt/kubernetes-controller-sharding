@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../default
+- storageclass.yaml
+
+patches:
+- path: patch_prometheus.yaml
+# drop ServiceMonitors for control plane components (not reachable in Shoot cluster)
+- patch: |
+    apiVersion: monitoring.coreos.com/v1
+    metadata:
+      name: kube-apiserver
+      namespace: monitoring
+    kind: ServiceMonitor
+    $patch: delete
+- patch: |
+    apiVersion: monitoring.coreos.com/v1
+    metadata:
+      name: kube-controller-manager
+      namespace: monitoring
+    kind: ServiceMonitor
+    $patch: delete
+- patch: |
+    apiVersion: monitoring.coreos.com/v1
+    metadata:
+      name: kube-scheduler
+      namespace: monitoring
+    kind: ServiceMonitor
+    $patch: delete

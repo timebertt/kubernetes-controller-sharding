@@ -2,22 +2,17 @@ apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
   name: kyverno
-profiles:
-# deploy only on shoot
-- name: shoot
-  activation:
-  - kubeContext: .*fb28d21f90-99b0e--sharding.*
-  manifests:
-    kustomize:
-      paths:
-      - config/kyverno
-  deploy:
-    kubectl:
-      defaultNamespace: ""
-      flags:
-        apply:
-        - --server-side
-        - --force-conflicts
+manifests:
+  kustomize:
+    paths:
+    - config/kyverno
+deploy:
+  kubectl:
+    defaultNamespace: ""
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
 ---
 apiVersion: skaffold/v4beta6
 kind: Config
@@ -26,23 +21,26 @@ metadata:
 requires:
 - configs:
   - kyverno
+manifests:
+  kustomize:
+    paths:
+    - config/policy/default
+deploy:
+  kubectl:
+    defaultNamespace: ""
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
+  statusCheck: false
 profiles:
-# deploy only on shoot
 - name: shoot
   activation:
   - kubeContext: .*fb28d21f90-99b0e--sharding.*
   manifests:
     kustomize:
       paths:
-      - config/policy
-  deploy:
-    kubectl:
-      defaultNamespace: ""
-      flags:
-        apply:
-        - --server-side
-        - --force-conflicts
-    statusCheck: false
+      - config/policy/shoot
 ---
 apiVersion: skaffold/v4beta6
 kind: Config
@@ -107,6 +105,52 @@ profiles:
 apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
+  name: experiment
+profiles:
+- name: expirement
+  activation:
+  - env: EXPERIMENT_SCENARIO=.+
+  build:
+    local:
+      concurrency: 0
+    artifacts:
+    - image: ghcr.io/timebertt/kubernetes-controller-sharding/experiment
+      ko:
+        main: ./cmd/experiment
+        dependencies:
+          paths:
+          - go.mod
+          - '**/*.go'
+          - ../../../../sigs.k8s.io/controller-runtime/**/*.go
+  manifests:
+    kustomize:
+      paths:
+      - config/experiment/{{ .EXPERIMENT_SCENARIO }}
+  deploy:
+    kubectl:
+      hooks:
+        before:
+          - host:
+              command:
+              - /usr/bin/env
+              - bash
+              - -c
+              - |
+                active_pods="$(kubectl -n experiment get job experiment -ojsonpath='{.status.active}' 2>dev/null)"
+                if [ "${active_pods:-0}" -gt 0 ] && [ -z "$EXPERIMENT_DELETE_FORCE" ] ; then
+                  echo "Experiment is running currently, refusing to delete the job. Set EXPERIMENT_DELETE_FORCE to override."
+                  exit 1
+                fi
+                kubectl -n experiment delete job experiment --ignore-not-found --wait=true
+      defaultNamespace: ""
+      flags:
+        apply:
+        - --server-side
+        - --force-conflicts
+---
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
   name: monitoring-crds
 manifests:
   kustomize:
@@ -152,7 +196,7 @@ profiles:
   manifests:
     kustomize:
       paths:
-      - config/monitoring/with-pvc
+      - config/monitoring/shoot
 portForward:
 - resourceType: service
   namespace: monitoring

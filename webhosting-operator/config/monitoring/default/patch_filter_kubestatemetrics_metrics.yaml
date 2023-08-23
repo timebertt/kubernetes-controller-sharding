@@ -2,4 +2,4 @@
 - op: add
   path: /spec/template/spec/containers/0/args/-
   value:
-    --namespaces=default,ingress-nginx,kube-node-lease,kube-public,kube-system,kyverno,monitoring,parca,webhosting-system
+    --namespaces=cert-manager,default,experiment,external-dns,ingress-nginx,kube-node-lease,kube-public,kube-system,kyverno,monitoring,parca,webhosting-system

@@ -19,11 +19,12 @@ package generator
 import (
 	"context"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/utils"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
 )
 
 var (
@@ -31,18 +32,29 @@ var (
 	themeFonts  = []string{"Arial", "Verdana", "Tahoma", "Trebuchet MS", "Times New Roman", "Georgia", "Garamond", "Courier New", "Brush Script MT"}
 )
 
-// CreateTheme creates a random theme using the given client and labels.
-func CreateTheme(ctx context.Context, c client.Client, labels map[string]string) error {
+// CreateThemes creates n random themes.
+func CreateThemes(ctx context.Context, c client.Client, n int, opts ...GenerateOption) error {
+	return NTimesConcurrently(n, 10, func() error {
+		return RetryOnError(ctx, 5, func(ctx context.Context) error {
+			return CreateTheme(ctx, c, opts...)
+		}, apierrors.IsAlreadyExists)
+	})
+}
+
+// CreateTheme creates a random theme.
+func CreateTheme(ctx context.Context, c client.Client, opts ...GenerateOption) error {
+	options := (&GenerateOptions{}).ApplyOptions(opts...)
+
 	theme := &webhostingv1alpha1.Theme{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "theme-",
-			Labels:       utils.CopyMap(labels),
 		},
 		Spec: webhostingv1alpha1.ThemeSpec{
 			Color:      utils.PickRandom(themeColors),
 			FontFamily: utils.PickRandom(themeFonts),
 		},
 	}
+	options.ApplyToObject(&theme.ObjectMeta)
 
 	if err := c.Create(ctx, theme); err != nil {
 		return err
@@ -52,8 +64,23 @@ func CreateTheme(ctx context.Context, c client.Client, labels map[string]string)
 	return nil
 }
 
-// MutateTheme mutates a random existing theme using the given client and labels.
-func MutateTheme(ctx context.Context, c client.Client, labels map[string]string) error {
+// MutateTheme mutates the given theme using the given client and labels.
+func MutateTheme(ctx context.Context, c client.Client, theme *webhostingv1alpha1.Theme) error {
+	patch := client.MergeFrom(theme.DeepCopy())
+
+	theme.Spec.Color = utils.PickRandom(themeColors)
+	theme.Spec.FontFamily = utils.PickRandom(themeFonts)
+
+	if err := c.Patch(ctx, theme, patch); err != nil {
+		return err
+	}
+
+	log.V(1).Info("Mutated theme", "themeName", theme.Name)
+	return nil
+}
+
+// MutateRandomTheme mutates a random existing theme using the given client and labels.
+func MutateRandomTheme(ctx context.Context, c client.Client, labels map[string]string) error {
 	themeList := &webhostingv1alpha1.ThemeList{}
 	if err := c.List(ctx, themeList, client.MatchingLabels(labels)); err != nil {
 		return err
@@ -65,15 +92,7 @@ func MutateTheme(ctx context.Context, c client.Client, labels map[string]string)
 	}
 
 	theme := utils.PickRandom(themeList.Items)
-	theme.Spec.Color = utils.PickRandom(themeColors)
-	theme.Spec.FontFamily = utils.PickRandom(themeFonts)
-
-	if err := c.Update(ctx, &theme); err != nil {
-		return err
-	}
-
-	log.V(1).Info("Mutated theme", "themeName", theme.Name)
-	return nil
+	return MutateTheme(ctx, c, &theme)
 }
 
 // CleanupThemes deletes all themes with the given labels.

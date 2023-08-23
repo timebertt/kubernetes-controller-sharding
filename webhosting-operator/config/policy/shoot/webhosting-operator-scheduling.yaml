@@ -1,11 +1,9 @@
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: webhosting-operator
+  name: webhosting-operator-scheduling
 spec:
-  # failurePolicy=Fail blocks hibernation because kyverno generates rules for CREATE,UPDATE,DELETE pods
-  # will be changed to CREATE,UPDATE in v1.8.1 / v1.9.0 (https://github.com/kyverno/kyverno/pull/4846)
-  failurePolicy: Ignore
+  failurePolicy: Fail
   rules:
   # schedule webhosting-operator on dedicated worker pool for better isolation in load tests
   - name: add-scheduling-constraints
@@ -16,6 +14,11 @@ spec:
           - Pod
           namespaces:
           - webhosting-system
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: webhosting-operator
+          operations:
+          - CREATE
     mutate:
       patchesJson6902: |-
         - op: add

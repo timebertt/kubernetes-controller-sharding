@@ -24,3 +24,5 @@ spec:
           value: "false"
         - name: GF_UNIFIED_ALERTING_ENABLED
           value: "false"
+        - name: GF_USERS_DEFAULT_THEME
+          value: "light"

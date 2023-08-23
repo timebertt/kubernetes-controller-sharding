@@ -86,4 +86,5 @@ jobs:
         cd ./webhosting-operator
         ko build --push=${{ github.event_name != 'pull_request' }} --sbom none --base-import-paths --platform linux/amd64,linux/arm64 \
           --tags "${{ steps.meta.outputs.tags }}" --image-label "${{ steps.meta.outputs.labels }}" \
+          ./cmd/experiment \
           ./cmd/webhosting-operator

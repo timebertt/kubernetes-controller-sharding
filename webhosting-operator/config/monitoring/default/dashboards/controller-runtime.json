@@ -24,7 +24,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "iteration": 1660131615387,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -86,7 +85,7 @@
         },
         "showUnfilled": true
       },
-      "pluginVersion": "8.5.5",
+      "pluginVersion": "9.3.2",
       "targets": [
         {
           "datasource": {
@@ -95,7 +94,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(controller_runtime_reconcile_total{job=\"$job\",controller=~\"$controller\"}[$__range])) by (controller)",
+          "expr": "sum(rate(controller_runtime_reconcile_total{job=\"$job\",pod=~\"$pod\",controller=~\"$controller\"}[$__range])) by (controller)",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -200,7 +199,7 @@
           }
         ]
       },
-      "pluginVersion": "8.5.5",
+      "pluginVersion": "9.3.2",
       "targets": [
         {
           "datasource": {
@@ -209,7 +208,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(controller_runtime_max_concurrent_reconciles{job=\"$job\",controller=~\"$controller\"}) by (controller)",
+          "expr": "sum(controller_runtime_max_concurrent_reconciles{job=\"$job\",pod=~\"$pod\",controller=~\"$controller\"}) by (controller)",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -267,6 +266,7 @@
         "legend": {
           "displayMode": "table",
           "placement": "right",
+          "showLegend": true,
           "values": [
             "percent"
           ]
@@ -293,7 +293,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(controller_runtime_reconcile_time_seconds_sum{job=\"$job\",controller=~\"$controller\"}[$__range])) by (controller)",
+          "expr": "sum(rate(controller_runtime_reconcile_time_seconds_sum{job=\"$job\",pod=~\"$pod\",controller=~\"$controller\"}[$__range])) by (controller)",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -336,6 +336,8 @@
             "seriesBy": "min"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -393,7 +395,8 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
@@ -408,7 +411,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{job=\"$job\",controller=~\"$controller\"}[$__rate_interval])) by (controller)",
+          "expr": "sum(rate(controller_runtime_reconcile_total{job=\"$job\",pod=~\"$pod\",controller=~\"$controller\"}[$__rate_interval])) by (controller)",
           "interval": "",
           "legendFormat": "{{controller}}",
           "range": true,
@@ -430,6 +433,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -544,7 +549,8 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
@@ -559,7 +565,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{job=\"$job\",controller=~\"$controller\"}[$__rate_interval])) by (result)",
+          "expr": "sum(rate(controller_runtime_reconcile_total{job=\"$job\",pod=~\"$pod\",controller=~\"$controller\"}[$__rate_interval])) by (result)",
           "interval": "",
           "legendFormat": "{{result}}",
           "range": true,
@@ -582,6 +588,8 @@
             "seriesBy": "last"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -639,7 +647,8 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
@@ -654,7 +663,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_errors_total{job=\"$job\",controller=~\"$controller\"}[$__rate_interval])) by (controller)",
+          "expr": "sum(rate(controller_runtime_reconcile_errors_total{job=\"$job\",pod=~\"$pod\",controller=~\"$controller\"}[$__rate_interval])) by (controller)",
           "interval": "",
           "legendFormat": "{{controller}}",
           "range": true,
@@ -676,6 +685,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -729,7 +740,8 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
@@ -744,7 +756,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile($percentile/100, sum(rate(controller_runtime_reconcile_time_seconds_bucket{job=\"$job\",controller=~\"$controller\"}[$__rate_interval])) by (controller,le))",
+          "expr": "histogram_quantile($percentile/100, sum(rate(controller_runtime_reconcile_time_seconds_bucket{job=\"$job\",pod=~\"$pod\",controller=~\"$controller\"}[$__rate_interval])) by (controller,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -781,6 +793,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -813,8 +827,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -833,7 +846,8 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
@@ -848,7 +862,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(controller_runtime_active_workers{job=\"$job\",controller=~\"$controller\"}) by (controller)",
+          "expr": "sum(controller_runtime_active_workers{job=\"$job\",pod=~\"$pod\",controller=~\"$controller\"}) by (controller)",
           "interval": "",
           "legendFormat": "{{controller}}",
           "range": true,
@@ -880,8 +894,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -945,7 +958,7 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "8.5.5",
+      "pluginVersion": "9.3.2",
       "targets": [
         {
           "datasource": {
@@ -954,7 +967,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(controller_runtime_max_concurrent_reconciles{job=\"$job\",controller=~\"$controller\"}) by (controller)",
+          "expr": "sum(controller_runtime_max_concurrent_reconciles{job=\"$job\",pod=~\"$pod\",controller=~\"$controller\"}) by (controller)",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -989,6 +1002,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1045,7 +1060,8 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
@@ -1060,7 +1076,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(workqueue_unfinished_work_seconds{job=\"$job\",name=~\"$controller\"}[$__rate_interval])) by (name)",
+          "expr": "sum(rate(workqueue_unfinished_work_seconds{job=\"$job\",pod=~\"$pod\",name=~\"$controller\"}[$__rate_interval])) by (name)",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -1084,6 +1100,8 @@
             "mode": "continuous-GrYlRd"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1136,7 +1154,8 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
@@ -1151,7 +1170,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "max(workqueue_longest_running_processor_seconds{job=\"$job\",name=~\"$controller\"}) by (name)",
+          "expr": "max(workqueue_longest_running_processor_seconds{job=\"$job\",pod=~\"$pod\",name=~\"$controller\"}) by (name)",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -1192,6 +1211,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1244,7 +1265,8 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
@@ -1259,7 +1281,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(workqueue_adds_total{job=\"$job\",name=~\"$controller\"}[$__rate_interval])) by (name)",
+          "expr": "sum(rate(workqueue_adds_total{job=\"$job\",pod=~\"$pod\",name=~\"$controller\"}[$__rate_interval])) by (name)",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -1283,6 +1305,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1335,7 +1359,8 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
@@ -1350,7 +1375,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(workqueue_retries_total{job=\"$job\",name=~\"$controller\"}[$__rate_interval])) by (name)",
+          "expr": "sum(rate(workqueue_retries_total{job=\"$job\",pod=~\"$pod\",name=~\"$controller\"}[$__rate_interval])) by (name)",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -1374,6 +1399,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1426,7 +1453,8 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
@@ -1441,7 +1469,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile($percentile/100, sum(rate(workqueue_queue_duration_seconds_bucket{job=\"$job\",name=~\"$controller\"}[$__rate_interval])) by (name,le))",
+          "expr": "histogram_quantile($percentile/100, sum(rate(workqueue_queue_duration_seconds_bucket{job=\"$job\",pod=~\"$pod\",name=~\"$controller\"}[$__rate_interval])) by (name,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -1465,6 +1493,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1517,7 +1547,8 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
@@ -1532,7 +1563,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile($percentile/100, sum(rate(workqueue_work_duration_seconds_bucket{job=\"$job\",name=~\"$controller\"}[$__rate_interval])) by (name,le))",
+          "expr": "histogram_quantile($percentile/100, sum(rate(workqueue_work_duration_seconds_bucket{job=\"$job\",pod=~\"$pod\",name=~\"$controller\"}[$__rate_interval])) by (name,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -1556,6 +1587,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1608,7 +1641,8 @@
         "legend": {
           "calcs": [],
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
@@ -1623,7 +1657,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(workqueue_depth{job=\"$job\",name=~\"$controller\"}) by (name)",
+          "expr": "sum(workqueue_depth{job=\"$job\",pod=~\"$pod\",name=~\"$controller\"}) by (name)",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -1637,7 +1671,7 @@
     }
   ],
   "refresh": "10s",
-  "schemaVersion": 36,
+  "schemaVersion": 37,
   "style": "dark",
   "tags": [
     "controller-runtime"
@@ -1686,11 +1720,12 @@
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 1,
         "type": "query"
       },
       {
         "allFormat": "glob",
+        "allValue": ".*",
         "current": {
           "selected": true,
           "text": [
@@ -1704,20 +1739,52 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(controller_runtime_reconcile_total, controller)",
+        "definition": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, pod)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "pod",
+        "options": [],
+        "query": {
+          "query": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, pod)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allFormat": "glob",
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, controller)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "controller",
         "options": [],
         "query": {
-          "query": "label_values(controller_runtime_reconcile_total, controller)",
+          "query": "label_values(controller_runtime_reconcile_total{job=\"$job\"}, controller)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 1,
         "type": "query"
       },
       {
@@ -1762,6 +1829,6 @@
   "timezone": "",
   "title": "Controller Runtime / Controllers",
   "uid": "PuCBL3zVz",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
