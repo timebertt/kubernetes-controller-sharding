@@ -78,7 +78,7 @@ func (s *scenario) AddToManager(mgr manager.Manager) error {
 	return mgr.Add(s)
 }
 
-func (s *scenario) Start(ctx context.Context) error {
+func (s *scenario) Start(ctx context.Context) (err error) {
 	baseLog.Info("Scenario started")
 
 	baseLog.Info("Creating owner object")
@@ -91,6 +91,27 @@ func (s *scenario) Start(ctx context.Context) error {
 	s.labels["run-id"] = string(ownerObject.GetUID())
 	log := baseLog.WithValues("runID", s.labels["run-id"])
 	log.Info("Created owner object", "object", ownerObject)
+
+	defer func() {
+		log.Info("Cleaning up")
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if cleanupErr := s.Client.Delete(cleanupCtx, ownerObject, client.PropagationPolicy(metav1.DeletePropagationForeground)); cleanupErr != nil {
+			// if another error occurred during execution, it has priority
+			// otherwise, return the cleanup error
+			if err != nil {
+				log.Error(cleanupErr, "Failed cleaning up owner object", "object", ownerObject)
+			} else {
+				err = cleanupErr
+			}
+
+			return
+		}
+
+		log.Info("Cleanup done")
+		close(s.done)
+	}()
 
 	log.Info("Preparing themes")
 	if err := generator.CreateThemes(ctx, s.Client, 50, generator.WithLabels(s.labels), generator.WithOwnerReference(ownerRef)); err != nil {
@@ -134,19 +155,11 @@ func (s *scenario) Start(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
-		log.Info("Scenario cancelled, cleaning up")
+		log.Info("Scenario cancelled")
+		return ctx.Err()
 	case <-time.After(15 * time.Minute):
-		log.Info("Scenario finished, cleaning up")
 	}
 
-	cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	if err := s.Client.Delete(cleanupCtx, ownerObject, client.PropagationPolicy(metav1.DeletePropagationForeground)); err != nil {
-		return err
-	}
-
-	log.Info("Cleanup done")
-	close(s.done)
+	log.Info("Scenario finished")
 	return nil
 }
