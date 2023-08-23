@@ -22,34 +22,28 @@ import (
 	"time"
 
 	"golang.org/x/time/rate"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/generator"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/scenario/base"
 )
 
 const ScenarioName = "reconcile"
 
-var baseLog = logf.Log.WithName("scenario").WithName(ScenarioName)
-
 func init() {
-	experiment.RegisterScenario(&scenario{})
+	s := &scenario{}
+	s.Scenario = &base.Scenario{
+		ScenarioName: ScenarioName,
+		Delegate:     s,
+	}
+
+	experiment.RegisterScenario(s)
 }
 
 type scenario struct {
-	done chan struct{}
-	mgr  manager.Manager
-	client.Client
-
-	labels map[string]string
-}
-
-func (s *scenario) Name() string {
-	return ScenarioName
+	*base.Scenario
 }
 
 func (s *scenario) Description() string {
@@ -61,83 +55,26 @@ func (s *scenario) LongDescription() string {
 Then, it reconciles each website every 10s, i.e., it generates a reconciliation frequency of 1000/s.`
 }
 
-func (s *scenario) Done() <-chan struct{} {
-	return s.done
+func (s *scenario) Prepare(ctx context.Context) error {
+	s.Log.Info("Preparing themes")
+	if err := generator.CreateThemes(ctx, s.Client, 50, generator.WithLabels(s.Labels), generator.WithOwnerReference(s.OwnerRef)); err != nil {
+		return err
+	}
+
+	s.Log.Info("Preparing projects")
+	if err := generator.CreateProjects(ctx, s.Client, 20, generator.WithLabels(s.Labels), generator.WithOwnerReference(s.OwnerRef)); err != nil {
+		return err
+	}
+
+	s.Log.Info("Preparing websites")
+	if err := generator.CreateWebsites(ctx, s.Client, 10000, generator.WithLabels(s.Labels)); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (s *scenario) AddToManager(mgr manager.Manager) error {
-	s.done = make(chan struct{})
-	s.mgr = mgr
-	s.Client = mgr.GetClient()
-
-	s.labels = map[string]string{
-		"generated-by": "experiment",
-		"scenario":     ScenarioName,
-	}
-
-	return mgr.Add(s)
-}
-
-func (s *scenario) Start(ctx context.Context) (err error) {
-	baseLog.Info("Scenario started")
-
-	baseLog.Info("Creating owner object")
-	ownerObject, ownerRef, err := generator.CreateClusterScopedOwnerObject(ctx, s.Client, generator.WithLabels(s.labels))
-	if err != nil {
-		return err
-	}
-
-	// use unique label set per scenario run
-	s.labels["run-id"] = string(ownerObject.GetUID())
-	log := baseLog.WithValues("runID", s.labels["run-id"])
-	log.Info("Created owner object", "object", ownerObject)
-
-	defer func() {
-		log.Info("Cleaning up")
-		cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		if cleanupErr := s.Client.Delete(cleanupCtx, ownerObject, client.PropagationPolicy(metav1.DeletePropagationForeground)); cleanupErr != nil {
-			// if another error occurred during execution, it has priority
-			// otherwise, return the cleanup error
-			if err != nil {
-				log.Error(cleanupErr, "Failed cleaning up owner object", "object", ownerObject)
-			} else {
-				err = cleanupErr
-			}
-
-			return
-		}
-
-		log.Info("Cleanup done")
-		close(s.done)
-	}()
-
-	log.Info("Preparing themes")
-	if err := generator.CreateThemes(ctx, s.Client, 50, generator.WithLabels(s.labels), generator.WithOwnerReference(ownerRef)); err != nil {
-		return err
-	}
-
-	log.Info("Preparing projects")
-	if err := generator.CreateProjects(ctx, s.Client, 20, generator.WithLabels(s.labels), generator.WithOwnerReference(ownerRef)); err != nil {
-		return err
-	}
-
-	log.Info("Preparing websites")
-	if err := generator.CreateWebsites(ctx, s.Client, 10000, generator.WithLabels(s.labels)); err != nil {
-		return err
-	}
-
-	log.Info("Scenario prepared")
-
-	// give monitoring stack some time to observe objects
-	select {
-	case <-ctx.Done():
-		log.Info("Scenario cancelled")
-		return ctx.Err()
-	case <-time.After(30 * time.Second):
-	}
-
+func (s *scenario) Run(ctx context.Context) error {
 	// trigger individual reconciliations for website every 10s
 	if err := (&generator.ForEach[*webhostingv1alpha1.Website]{
 		Name: "website-reconcile-trigger",
@@ -146,20 +83,10 @@ func (s *scenario) Start(ctx context.Context) (err error) {
 		},
 		Every:     10 * time.Second,
 		RateLimit: rate.Limit(1000),
-		Labels:    s.labels,
-	}).AddToManager(s.mgr); err != nil {
+		Labels:    s.Labels,
+	}).AddToManager(s.Manager); err != nil {
 		return fmt.Errorf("error adding website-reconcile-trigger: %w", err)
 	}
 
-	log.Info("Scenario running")
-
-	select {
-	case <-ctx.Done():
-		log.Info("Scenario cancelled")
-		return ctx.Err()
-	case <-time.After(15 * time.Minute):
-	}
-
-	log.Info("Scenario finished")
 	return nil
 }
