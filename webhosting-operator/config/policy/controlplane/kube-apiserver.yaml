@@ -1,0 +1,55 @@
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  name: kube-apiserver
+  namespace: shoot--fb28d21f90--sharding
+spec:
+  failurePolicy: Fail
+  rules:
+  # set static replicas on kube-apiserver to ensure similar evaluation environment between load test runs
+  # if the cluster is hibernated (spec.replicas=0), this rule is skipped
+  - name: replicas
+    match:
+      any:
+      - resources:
+          kinds:
+          - Deployment
+          selector:
+            matchLabels:
+              app: kubernetes
+              role: apiserver
+    preconditions:
+      all:
+      # Only patch spec.replicas if the control plane is not hibernated, i.e., if spec.replicas>=1.
+      # NB: gardenlet deploys kube-apiserver with spec.replicas=null which is defaulted after the policy webhook call
+      # to spec.replicas=1. Hence, treat spec.replicas=null the same way as spec.replicas=1.
+      - key: "{{ request.object.spec.replicas || `1` }}"
+        operator: GreaterThan
+        value: 0
+    mutate:
+      patchStrategicMerge:
+        spec:
+          replicas: 1
+  # set static requests/limits on kube-apiserver to ensure similar evaluation environment between load test runs
+  - name: resources
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          selector:
+            matchLabels:
+              app: kubernetes
+              role: apiserver
+    mutate:
+      patchStrategicMerge:
+        spec:
+          containers:
+          - name: kube-apiserver
+            resources:
+              requests:
+                cpu: 12000m
+                memory: 12Gi
+              limits:
+                cpu: 12000m
+                memory: 12Gi

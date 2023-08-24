@@ -1,0 +1,31 @@
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  name: etcd-main
+  namespace: shoot--fb28d21f90--sharding
+spec:
+  failurePolicy: Fail
+  rules:
+  # set static requests/limits on etcd-main to ensure similar evaluation environment between load test runs
+  - name: resources
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          selector:
+            matchLabels:
+              instance: etcd-main
+              name: etcd
+    mutate:
+      patchStrategicMerge:
+        spec:
+          containers:
+          - name: etcd
+            resources:
+              requests:
+                cpu: 12000m
+                memory: 12Gi
+              limits:
+                cpu: 12000m
+                memory: 12Gi
