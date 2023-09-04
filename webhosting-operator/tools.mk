@@ -25,7 +25,7 @@ $(CONTROLLER_GEN): $(call tool_version_file,$(CONTROLLER_GEN),$(CONTROLLER_GEN_V
 KIND := $(TOOLS_BIN_DIR)/kind
 KIND_VERSION ?= v0.20.0
 $(KIND): $(call tool_version_file,$(KIND),$(KIND_VERSION))
-	curl -L -o $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+	curl -Lo $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 	chmod +x $(KIND)
 
 KO := $(TOOLS_BIN_DIR)/ko
@@ -44,6 +44,12 @@ KUSTOMIZE_VERSION ?= v5.1.0
 $(KUSTOMIZE): $(call tool_version_file,$(KUSTOMIZE),$(KUSTOMIZE_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/kustomize/kustomize/v5@$(KUSTOMIZE_VERSION)
 
+KYVERNO := $(TOOLS_BIN_DIR)/kyverno
+KYVERNO_VERSION ?= v1.10.3
+$(KYVERNO): $(call tool_version_file,$(KYVERNO),$(KYVERNO_VERSION))
+	curl -Lo - https://github.com/kyverno/kyverno/releases/download/$(KYVERNO_VERSION)/kyverno-cli_$(KYVERNO_VERSION)_$(shell uname -s | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed 's/aarch64/arm64/').tar.gz | tar -xzmf - -C $(TOOLS_BIN_DIR) kyverno
+	chmod +x $(KYVERNO)
+
 GINKGO := $(TOOLS_BIN_DIR)/ginkgo
 $(GINKGO): go.mod
 	go build -o $(GINKGO) github.com/onsi/ginkgo/v2/ginkgo
@@ -61,5 +67,5 @@ $(SKAFFOLD): $(call tool_version_file,$(SKAFFOLD),$(SKAFFOLD_VERSION))
 YQ := $(TOOLS_BIN_DIR)/yq
 YQ_VERSION ?= v4.34.2
 $(YQ): $(call tool_version_file,$(YQ),$(YQ_VERSION))
-	curl -L -o $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(shell uname -s | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+	curl -Lo $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(shell uname -s | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 	chmod +x $(YQ)

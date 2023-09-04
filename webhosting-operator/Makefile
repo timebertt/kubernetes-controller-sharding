@@ -59,19 +59,26 @@ generate: $(CONTROLLER_GEN) ## Generate code containing DeepCopy, DeepCopyInto, 
 fmt: ## Run go fmt against code.
 	go fmt ./...
 
-.PHONY: vet
-vet: ## Run go vet against code.
-	go vet ./...
-
 .PHONY: modules
 modules: ## Runs go mod to ensure modules are up to date.
 	go mod tidy
 
 .PHONY: test
-test: $(SETUP_ENVTEST) manifests generate fmt vet ## Run tests.
+test: $(SETUP_ENVTEST) ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test -race ./...
 
+.PHONY: test-kyverno
+test-kyverno: $(KYVERNO) ## Run kyverno policy tests.
+	$(KYVERNO) test --remove-color -v 4 .
+
 ##@ Verification
+
+.PHONY: vet
+vet: ## Run go vet against code.
+	go vet ./...
+
+.PHONY: check
+check: vet test test-kyverno ## Check everything (vet + test + test-kyverno).
 
 .PHONY: verify-fmt
 verify-fmt: fmt ## Verify go code is formatted.
@@ -92,7 +99,7 @@ verify-modules: modules ## Verify go module files are up to date.
 	fi
 
 .PHONY: verify
-verify: verify-fmt verify-generate verify-modules test ## Verify everything (all verify-* rules + test).
+verify: verify-fmt verify-generate verify-modules check ## Verify everything (all verify-* rules + check).
 
 ##@ Build
 

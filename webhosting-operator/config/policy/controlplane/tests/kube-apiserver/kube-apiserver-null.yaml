@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kubernetes
+    role: apiserver
+  name: kube-apiserver-null
+  namespace: shoot--fb28d21f90--sharding
+spec:
+  template:
+    spec:
+      containers:
+      - name: kube-apiserver
+        resources:
+          requests:
+            cpu: 800m
+            memory: 800Mi

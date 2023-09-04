@@ -1,0 +1,31 @@
+name: kube-apiserver
+policies:
+- ../../kube-apiserver.yaml
+resources:
+# spec.replicas=2 -> expect spec.replicas=1
+- kube-apiserver-awake.yaml
+# spec.replicas=null -> expect spec.replicas=1
+- kube-apiserver-null.yaml
+# spec.replicas=0 -> expect skip
+- kube-apiserver-hibernated.yaml
+results:
+- policy: kube-apiserver
+  rule: replicas
+  resource: kube-apiserver-awake
+  namespace: shoot--fb28d21f90--sharding
+  kind: Deployment
+  result: pass
+  patchedResource: kube-apiserver-awake_expected.yaml
+- policy: kube-apiserver
+  rule: replicas
+  resource: kube-apiserver-null
+  namespace: shoot--fb28d21f90--sharding
+  kind: Deployment
+  result: pass
+  patchedResource: kube-apiserver-null_expected.yaml
+- policy: kube-apiserver
+  rule: replicas
+  resource: kube-apiserver-hibernated
+  namespace: shoot--fb28d21f90--sharding
+  kind: Deployment
+  result: skip
