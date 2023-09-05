@@ -488,7 +488,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
 		}).
-		Build(r)
+		Build(SilenceConflicts(r))
 	if err != nil {
 		return err
 	}

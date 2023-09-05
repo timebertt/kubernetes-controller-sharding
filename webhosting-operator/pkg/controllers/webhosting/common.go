@@ -17,7 +17,26 @@ limitations under the License.
 package webhosting
 
 import (
+	"context"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const fieldOwner = client.FieldOwner("webhosting-operator")
+
+// SilenceConflicts wraps a reconciler to not return conflict errors. The requests is requeued with exponential backoff
+// as if an error was returned but the error will not be logged.
+func SilenceConflicts(r reconcile.Reconciler) reconcile.Reconciler {
+	return reconcile.Func(func(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
+		result, err := r.Reconcile(ctx, request)
+		if apierrors.IsConflict(err) {
+			result.Requeue = true
+			// RequeueAfter takes precedence over Requeue, set it to zero in case it was returned alongside a conflict error
+			result.RequeueAfter = 0
+			err = nil
+		}
+		return result, err
+	})
+}
