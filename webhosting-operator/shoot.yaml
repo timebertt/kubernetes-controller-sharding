@@ -61,7 +61,7 @@ spec:
       machine:
         image:
           name: coreos
-        type: g1.4
+        type: g1a.8d
       maxSurge: 1
       maxUnavailable: 0
       maximum: 2
@@ -80,7 +80,7 @@ spec:
       machine:
         image:
           name: coreos
-        type: g1.3
+        type: g1a.4d
       maxSurge: 1
       maxUnavailable: 0
       maximum: 1
@@ -105,7 +105,7 @@ spec:
       machine:
         image:
           name: coreos
-        type: g1.3
+        type: g1a.4d
       maxSurge: 1
       maxUnavailable: 0
       maximum: 1
