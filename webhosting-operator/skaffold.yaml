@@ -36,7 +36,7 @@ deploy:
 profiles:
 - name: shoot
   activation:
-  - kubeContext: .*fb28d21f90-99b0e--sharding.*
+  - kubeContext: .*timebertt--sharding.*
   manifests:
     kustomize:
       paths:
@@ -91,7 +91,7 @@ profiles:
     value: config/manager/shard
 - name: shoot
   activation:
-  - kubeContext: .*fb28d21f90-99b0e--sharding.*
+  - kubeContext: .*timebertt--sharding.*
   patches:
   - op: replace
     path: /manifests/kustomize/paths/0
@@ -192,7 +192,7 @@ deploy:
 profiles:
 - name: shoot
   activation:
-  - kubeContext: .*fb28d21f90-99b0e--sharding.*
+  - kubeContext: .*timebertt--sharding.*
   manifests:
     kustomize:
       paths:

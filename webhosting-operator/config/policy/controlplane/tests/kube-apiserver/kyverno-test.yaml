@@ -12,20 +12,20 @@ results:
 - policy: kube-apiserver
   rule: replicas
   resource: kube-apiserver-awake
-  namespace: shoot--fb28d21f90--sharding
+  namespace: shoot--timebertt--sharding
   kind: Deployment
   result: pass
   patchedResource: kube-apiserver-awake_expected.yaml
 - policy: kube-apiserver
   rule: replicas
   resource: kube-apiserver-null
-  namespace: shoot--fb28d21f90--sharding
+  namespace: shoot--timebertt--sharding
   kind: Deployment
   result: pass
   patchedResource: kube-apiserver-null_expected.yaml
 - policy: kube-apiserver
   rule: replicas
   resource: kube-apiserver-hibernated
-  namespace: shoot--fb28d21f90--sharding
+  namespace: shoot--timebertt--sharding
   kind: Deployment
   result: skip

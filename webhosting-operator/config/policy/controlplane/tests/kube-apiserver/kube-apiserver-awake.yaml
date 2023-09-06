@@ -5,7 +5,7 @@ metadata:
     app: kubernetes
     role: apiserver
   name: kube-apiserver-awake
-  namespace: shoot--fb28d21f90--sharding
+  namespace: shoot--timebertt--sharding
 spec:
   replicas: 2
   template:

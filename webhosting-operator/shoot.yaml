@@ -2,7 +2,7 @@ apiVersion: core.gardener.cloud/v1beta1
 kind: Shoot
 metadata:
   name: sharding
-  namespace: garden-fb28d21f90-99b0e
+  namespace: garden-timebertt
 spec:
   addons:
     kubernetesDashboard:
@@ -19,8 +19,6 @@ spec:
       location: Europe/Berlin
   kubernetes:
     enableStaticTokenKubeconfig: false
-    kubeAPIServer:
-      enableBasicAuthentication: false
     kubeControllerManager:
       nodeCIDRMaskSize: 20
     kubeProxy:
@@ -125,4 +123,4 @@ spec:
       - eu01-2
   purpose: development
   region: RegionOne
-  secretBindingName: cq12kuc8ir
+  secretBindingName: timebertt

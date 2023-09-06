@@ -18,7 +18,7 @@ spec:
         - --google-zone-visibility=public
         - --policy=sync
         - --registry=txt
-        - --txt-owner-id=timebertt-fb28d21f90-sharding
+        - --txt-owner-id=shoot--timebertt--sharding-0e61b9e9-b7ce-4a71-a502-89f366015617-ond-460a37
         - --interval=1m
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS

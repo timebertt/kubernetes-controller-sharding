@@ -9,7 +9,7 @@ results:
 - policy: kube-apiserver-scale
   rule: replicas-scale
   resource: kube-apiserver
-  namespace: shoot--fb28d21f90--sharding
+  namespace: shoot--timebertt--sharding
   kind: Scale
   result: pass
   patchedResource: scale_expected.yaml
