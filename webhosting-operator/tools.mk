@@ -39,11 +39,6 @@ $(KUBECTL): $(call tool_version_file,$(KUBECTL),$(KUBECTL_VERSION))
 	curl -Lo $(KUBECTL) https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/$(shell uname -s | tr '[:upper:]' '[:lower:]')/$(shell uname -m | sed 's/x86_64/amd64/')/kubectl
 	chmod +x $(KUBECTL)
 
-KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
-KUSTOMIZE_VERSION ?= v5.1.0
-$(KUSTOMIZE): $(call tool_version_file,$(KUSTOMIZE),$(KUSTOMIZE_VERSION))
-	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/kustomize/kustomize/v5@$(KUSTOMIZE_VERSION)
-
 KYVERNO := $(TOOLS_BIN_DIR)/kyverno
 KYVERNO_VERSION ?= v1.10.3
 $(KYVERNO): $(call tool_version_file,$(KYVERNO),$(KYVERNO_VERSION))

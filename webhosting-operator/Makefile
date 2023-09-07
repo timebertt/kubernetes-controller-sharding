@@ -134,10 +134,10 @@ kind-down: $(KIND) ## Tear down the kind testing cluster.
 	$(KIND) delete cluster --name webhosting
 
 .PHONY: deploy-ingress-nginx
-deploy-ingress-nginx: $(KUSTOMIZE) $(KUBECTL) ## Deploy ingress-nginx to K8s cluster specified in $KUBECONFIG.
+deploy-ingress-nginx: $(KUBECTL) ## Deploy ingress-nginx to K8s cluster specified in $KUBECONFIG.
 	@# job template is immutable, delete old jobs to prepare for upgrade
 	$(KUBECTL) -n ingress-nginx delete job --ignore-not-found ingress-nginx-admission-create ingress-nginx-admission-patch
-	$(KUSTOMIZE) build config/ingress-nginx/$(OVERLAY) | $(KUBECTL) apply --server-side -f -
+	$(KUBECTL) apply --server-side -k config/ingress-nginx/$(OVERLAY)
 	$(KUBECTL) -n ingress-nginx wait deploy ingress-nginx-controller --for=condition=Available --timeout=2m
 
 # use static label for skaffold to prevent rolling all components on every skaffold invocation
