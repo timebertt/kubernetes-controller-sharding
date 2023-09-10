@@ -179,9 +179,7 @@ manifests:
     before:
     - host:
         command:
-        - bash
-        - -c
-        - '[ -f config/monitoring/default/grafana_admin_pass.secret.txt ] || cat /dev/urandom | tr -dc "a-zA-Z0-9" | head -c 32 > config/monitoring/default/grafana_admin_pass.secret.txt'
+        - config/monitoring/default/ensure-admin-password.sh
 deploy:
   kubectl:
     defaultNamespace: ""

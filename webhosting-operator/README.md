@@ -154,7 +154,7 @@ You've already deployed a customized installation of [kube-prometheus](https://g
 
 ```bash
 # get the grafana admin password
-cat config/monitoring/default/grafana_admin_pass.secret.txt
+cat config/monitoring/default/grafana_admin_password.secret.txt
 ```
 
 Now, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/webhosting?orgId=1) at http://127.0.0.1:3000.
