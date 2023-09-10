@@ -12,11 +12,6 @@ spec:
   cloudProfileName: stackit
   extensions:
   - type: shoot-yawol
-  hibernation:
-    schedules:
-    - start: '00 19 * * 1,2,3,4,5'
-      end: '30 07 * * 1,2,3,4,5'
-      location: Europe/Berlin
   kubernetes:
     enableStaticTokenKubeconfig: false
     kubeControllerManager:
