@@ -486,7 +486,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: 5,
+			MaxConcurrentReconciles: 15,
 		}).
 		Build(SilenceConflicts(r))
 	if err != nil {
