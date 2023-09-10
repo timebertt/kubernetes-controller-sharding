@@ -53,3 +53,22 @@ spec:
               limits:
                 cpu: 12000m
                 memory: 12Gi
+  # schedule kube-apiserver on high-cpu worker pool for stable performance
+  - name: add-scheduling-constraints
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          selector:
+            matchLabels:
+              app: kubernetes
+              role: apiserver
+    mutate:
+      patchesJson6902: |-
+        - op: add
+          path: "/spec/tolerations/-"
+          value: {"key":"high-cpu","operator":"Equal","value":"true","effect":"NoSchedule"}        
+        - op: add
+          path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms/-"
+          value: {"matchExpressions": [{"key":"high-cpu","operator":"In","values":["true"]}]}
