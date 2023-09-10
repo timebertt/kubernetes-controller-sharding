@@ -6,6 +6,7 @@ resources:
 # provide parca running in namespace "parca" with the permissions required for service discovery in namespace
 # "webhosting-system" and scrape the pprof endpoints of webhosting-operator
 - parca_rbac.yaml
+- parca_ingress.yaml
 
 generatorOptions:
   disableNameSuffixHash: true
@@ -20,6 +21,15 @@ configMapGenerator:
   behavior: merge
   files:
   - parca.yaml=parca_config.yaml
+
+secretGenerator:
+- name: parca-basic-auth
+  namespace: parca
+  literals:
+  - username=parca
+  files:
+  - password=parca_password.secret.txt
+  - auth=parca_auth.secret.txt
 
 patches:
 - patch: |

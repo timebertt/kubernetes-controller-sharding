@@ -211,23 +211,25 @@ apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
   name: profiling
-# profiling config disabled by default, can be enabled with profile "profiling"
-profiles:
-- name: profiling
-  manifests:
-    kustomize:
-      paths:
-      - config/profiling
-  deploy:
-    kubectl:
-      defaultNamespace: ""
-      flags:
-        apply:
-        - --server-side
-        - --force-conflicts
-  portForward:
-  - resourceType: service
-    namespace: parca
-    resourceName: parca
-    port: http
-    localPort: 7070
+manifests:
+  kustomize:
+    paths:
+    - config/profiling
+  hooks:
+    before:
+    - host:
+        command:
+        - config/profiling/ensure-admin-password.sh
+deploy:
+  kubectl:
+    defaultNamespace: ""
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
+portForward:
+- resourceType: service
+  namespace: parca
+  resourceName: parca
+  port: http
+  localPort: 7070
