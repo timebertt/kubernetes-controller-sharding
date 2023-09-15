@@ -29,7 +29,7 @@ EOF
 fi
 
 # fetch code-generator module to execute the scripts from the modcache (we don't vendor here)
-CODE_GENERATOR_DIR="$(go list -tags tools -f '{{ .Dir }}' k8s.io/code-generator)"
+CODE_GENERATOR_DIR="$(go list -m -tags tools -f '{{ .Dir }}' k8s.io/code-generator)"
 
 rm -f ${GOPATH}/bin/*-gen
 
