@@ -21,18 +21,6 @@ metadata:
 requires:
 - configs:
   - kyverno
-manifests:
-  kustomize:
-    paths:
-    - config/policy/default
-deploy:
-  kubectl:
-    defaultNamespace: ""
-    flags:
-      apply:
-      - --server-side
-      - --force-conflicts
-  statusCheck: false
 profiles:
 - name: shoot
   activation:
@@ -41,6 +29,14 @@ profiles:
     kustomize:
       paths:
       - config/policy/shoot
+  deploy:
+    kubectl:
+      defaultNamespace: ""
+      flags:
+        apply:
+        - --server-side
+        - --force-conflicts
+    statusCheck: false
 ---
 apiVersion: skaffold/v4beta6
 kind: Config
