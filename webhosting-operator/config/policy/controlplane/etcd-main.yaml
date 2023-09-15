@@ -1,0 +1,50 @@
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  name: etcd-main
+  namespace: shoot--timebertt--sharding
+spec:
+  failurePolicy: Fail
+  rules:
+  # set static requests/limits on etcd-main to ensure similar evaluation environment between load test runs
+  - name: resources
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          selector:
+            matchLabels:
+              instance: etcd-main
+              name: etcd
+    mutate:
+      patchStrategicMerge:
+        spec:
+          containers:
+          - name: etcd
+            resources:
+              requests:
+                cpu: 12000m
+                memory: 12Gi
+              limits:
+                cpu: 12000m
+                memory: 12Gi
+  # schedule etcd-main on high-cpu worker pool for stable performance
+  - name: add-scheduling-constraints
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          selector:
+            matchLabels:
+              instance: etcd-main
+              name: etcd
+    mutate:
+      patchesJson6902: |-
+        - op: add
+          path: "/spec/tolerations/-"
+          value: {"key":"high-cpu","operator":"Equal","value":"true","effect":"NoSchedule"}        
+        - op: add
+          path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms/-"
+          value: {"matchExpressions": [{"key":"high-cpu","operator":"In","values":["true"]}]}

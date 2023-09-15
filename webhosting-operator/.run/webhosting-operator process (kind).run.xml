@@ -3,10 +3,11 @@
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$/webhosting-operator" />
     <envs>
-      <env name="KUBECONFIG" value="$PROJECT_DIR$/webhosting-operator/dev/kind_kubeconfig.yaml" />
       <env name="LEADER_ELECT" value="false" />
       <env name="SHARD_ID" value="webhosting-operator-0" />
-      <env name="SHARD_MODE" value="sharder" />
+      <env name="SHARD_MODE" value="both" />
+      <env name="SHARDING_ENABLED" value="true" />
+      <env name="KUBECONFIG" value="$PROJECT_DIR$/webhosting-operator/dev/kind_kubeconfig.yaml" />
     </envs>
     <kind value="PACKAGE" />
     <package value="github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/cmd/webhosting-operator" />

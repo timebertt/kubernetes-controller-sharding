@@ -31,8 +31,10 @@ configMapGenerator:
 secretGenerator:
 - name: grafana-admin
   namespace: monitoring
+  literals:
+  - username=admin
   files:
-  - password=grafana_admin_pass.secret.txt
+  - password=grafana_admin_password.secret.txt
 
 patches:
 - path: patch_grafana_admin.yaml
@@ -57,11 +59,4 @@ patches:
     version: v1
     kind: Deployment
     name: kube-state-metrics
-    namespace: monitoring
-- path: patch_filter_nodeexporter_metrics.yaml
-  target:
-    group: monitoring.coreos.com
-    version: v1
-    kind: ServiceMonitor
-    name: node-exporter
     namespace: monitoring

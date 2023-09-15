@@ -26,11 +26,3 @@
     sourceLabels: [namespace]
     regex: project-.+
     action: drop
-# drop cadvisor network metrics for pod network interfaces on websites workers
-# (not all metrics have a namespace label, so we can't drop them granularly)
-- op: add
-  path: /spec/endpoints/1/metricRelabelings/-
-  value:
-    sourceLabels: [__name__, node, interface]
-    regex: "container_network_.+;.*fb28d21f90--sharding-websites-.+;cali.+"
-    action: drop

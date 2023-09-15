@@ -149,8 +149,8 @@ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/timebertt/controller-runtime v0.6.1-0.20230802071417-292b9ca7912e h1:t4Gy5cr8/vPUXwyAJkdrJJtchk9ze0I1L9tUA5F49jA=
-github.com/timebertt/controller-runtime v0.6.1-0.20230802071417-292b9ca7912e/go.mod h1:dC7gCD9Y6rWUT9YaaCuR/kHLZqppXydmPLCc/2KffF4=
+github.com/timebertt/controller-runtime v0.6.1-0.20230910160759-61c8e6d9a2de h1:LxfB3lU0Su0pjmdqB3NsI5oIF4835lhFqPH+RNbJ1mM=
+github.com/timebertt/controller-runtime v0.6.1-0.20230910160759-61c8e6d9a2de/go.mod h1:dC7gCD9Y6rWUT9YaaCuR/kHLZqppXydmPLCc/2KffF4=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=

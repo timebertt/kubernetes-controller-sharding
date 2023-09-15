@@ -16,6 +16,8 @@ spec:
       containers:
       - name: manager
         image: controller:latest
+        args:
+        - --zap-log-level=info
         ports:
         - name: metrics
           containerPort: 8080

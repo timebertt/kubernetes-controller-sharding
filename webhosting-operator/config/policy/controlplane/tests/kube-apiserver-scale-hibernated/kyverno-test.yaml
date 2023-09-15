@@ -1,0 +1,14 @@
+name: kube-apiserver-scale-hibernated
+policies:
+- ../../kube-apiserver-scale.yaml
+resources:
+# spec.replicas=0 -> expect skip
+- scale.yaml
+variables: variables.yaml
+results:
+- policy: kube-apiserver-scale
+  rule: replicas-scale
+  resource: kube-apiserver
+  namespace: shoot--timebertt--sharding
+  kind: Scale
+  result: skip

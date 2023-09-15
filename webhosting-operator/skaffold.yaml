@@ -36,7 +36,7 @@ deploy:
 profiles:
 - name: shoot
   activation:
-  - kubeContext: .*fb28d21f90-99b0e--sharding.*
+  - kubeContext: .*timebertt--sharding.*
   manifests:
     kustomize:
       paths:
@@ -91,7 +91,7 @@ profiles:
     value: config/manager/shard
 - name: shoot
   activation:
-  - kubeContext: .*fb28d21f90-99b0e--sharding.*
+  - kubeContext: .*timebertt--sharding.*
   patches:
   - op: replace
     path: /manifests/kustomize/paths/0
@@ -179,9 +179,7 @@ manifests:
     before:
     - host:
         command:
-        - bash
-        - -c
-        - '[ -f config/monitoring/default/grafana_admin_pass.secret.txt ] || cat /dev/urandom | tr -dc "a-zA-Z0-9" | head -c 32 > config/monitoring/default/grafana_admin_pass.secret.txt'
+        - config/monitoring/default/ensure-admin-password.sh
 deploy:
   kubectl:
     defaultNamespace: ""
@@ -192,7 +190,7 @@ deploy:
 profiles:
 - name: shoot
   activation:
-  - kubeContext: .*fb28d21f90-99b0e--sharding.*
+  - kubeContext: .*timebertt--sharding.*
   manifests:
     kustomize:
       paths:
@@ -213,23 +211,25 @@ apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
   name: profiling
-# profiling config disabled by default, can be enabled with profile "profiling"
-profiles:
-- name: profiling
-  manifests:
-    kustomize:
-      paths:
-      - config/profiling
-  deploy:
-    kubectl:
-      defaultNamespace: ""
-      flags:
-        apply:
-        - --server-side
-        - --force-conflicts
-  portForward:
-  - resourceType: service
-    namespace: parca
-    resourceName: parca
-    port: http
-    localPort: 7070
+manifests:
+  kustomize:
+    paths:
+    - config/profiling
+  hooks:
+    before:
+    - host:
+        command:
+        - config/profiling/ensure-admin-password.sh
+deploy:
+  kubectl:
+    defaultNamespace: ""
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
+portForward:
+- resourceType: service
+  namespace: parca
+  resourceName: parca
+  port: http
+  localPort: 7070

@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kubernetes
+    role: apiserver
+  name: kube-apiserver-hibernated
+  namespace: shoot--timebertt--sharding
+spec:
+  replicas: 0
+  template:
+    spec:
+      containers:
+      - name: kube-apiserver
+        resources:
+          requests:
+            cpu: 800m
+            memory: 800Mi
