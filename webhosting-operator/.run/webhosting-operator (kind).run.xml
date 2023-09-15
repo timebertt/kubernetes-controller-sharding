@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="webhosting-operator process (kind)" type="GoApplicationRunConfiguration" factoryName="Go Application">
+  <configuration default="false" name="webhosting-operator (kind)" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$/webhosting-operator" />
     <envs>
