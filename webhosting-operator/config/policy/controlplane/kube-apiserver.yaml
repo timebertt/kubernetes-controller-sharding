@@ -29,7 +29,7 @@ spec:
     mutate:
       patchStrategicMerge:
         spec:
-          replicas: 1
+          replicas: 4
   # set static requests/limits on kube-apiserver to ensure similar evaluation environment between load test runs
   - name: resources
     match:
