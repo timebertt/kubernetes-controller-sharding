@@ -4,4 +4,4 @@ metadata:
   name: kube-apiserver
   namespace: shoot--timebertt--sharding
 spec:
-  replicas: 1
+  replicas: 4

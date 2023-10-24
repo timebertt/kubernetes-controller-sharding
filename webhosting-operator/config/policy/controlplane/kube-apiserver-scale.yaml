@@ -28,4 +28,4 @@ spec:
     mutate:
       patchStrategicMerge:
         spec:
-          replicas: 1
+          replicas: 4

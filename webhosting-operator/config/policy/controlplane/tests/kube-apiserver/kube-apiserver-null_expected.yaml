@@ -7,7 +7,7 @@ metadata:
   name: kube-apiserver-null
   namespace: shoot--timebertt--sharding
 spec:
-  replicas: 1
+  replicas: 4
   template:
     spec:
       containers:

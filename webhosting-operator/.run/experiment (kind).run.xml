@@ -1,8 +1,11 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="experiment" type="GoApplicationRunConfiguration" factoryName="Go Application">
+  <configuration default="false" name="experiment (kind)" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$/webhosting-operator" />
     <parameters value="reconcile" />
+    <envs>
+      <env name="KUBECONFIG" value="$PROJECT_DIR$/webhosting-operator/dev/kind_kubeconfig.yaml" />
+    </envs>
     <kind value="PACKAGE" />
     <package value="github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/cmd/experiment" />
     <directory value="$PROJECT_DIR$" />
