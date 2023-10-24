@@ -61,6 +61,8 @@ rm -rf setup
 rm alertmanager-*.yaml
 # this will override metrics-server APIService (conflicts with gardener-resource-manager), drop it
 rm prometheusAdapter-apiService.yaml
+# PDB with minAvailable=1 for a single-replica StatefulSet blocks rolling node upgrades forever
+rm prometheus-podDisruptionBudget.yaml
 
 cat <<EOF > README.md
 The manifests in this directory were downloaded from
