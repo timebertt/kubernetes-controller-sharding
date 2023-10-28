@@ -2,11 +2,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-- https://github.com/parca-dev/parca/releases/download/v0.18.0/kubernetes-manifest.yaml
+- https://github.com/parca-dev/parca/releases/download/v0.20.0/kubernetes-manifest.yaml
 # provide parca running in namespace "parca" with the permissions required for service discovery in namespace
 # "webhosting-system" and scrape the pprof endpoints of webhosting-operator
 - parca_rbac.yaml
 - parca_ingress.yaml
+- parca-pvc.yaml
 
 generatorOptions:
   disableNameSuffixHash: true
@@ -32,9 +33,18 @@ secretGenerator:
   - auth=parca_auth.secret.txt
 
 patches:
-- patch: |
-    apiVersion: policy/v1beta1
-    kind: PodSecurityPolicy
-    metadata:
-      name: parca
-    $patch: delete
+- path: patch-deployment-pvc.yaml
+- target:
+    kind: Deployment
+    name: parca
+    namespace: parca
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --enable-persistence
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --storage-path=/var/lib/parca
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --storage-enable-wal

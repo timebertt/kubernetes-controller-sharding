@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parca
+  namespace: parca
+spec:
+  # set replicas and strategy to play nicely with PVC
+  replicas: 1
+  strategy:
+    type: Recreate
+    rollingUpdate: null
+  template:
+    spec:
+      volumes:
+      - name: data
+        emptyDir: null
+        persistentVolumeClaim:
+          claimName: parca
