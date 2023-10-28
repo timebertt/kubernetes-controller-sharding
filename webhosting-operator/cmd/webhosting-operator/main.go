@@ -250,7 +250,9 @@ func dropUnwantedMetadata(i interface{}) (interface{}, error) {
 	}
 
 	obj.SetManagedFields(nil)
-	delete(obj.GetAnnotations(), "kubectl.kubernetes.io/last-applied-configuration")
+	annotations := obj.GetAnnotations()
+	delete(annotations, "kubectl.kubernetes.io/last-applied-configuration")
+	obj.SetAnnotations(annotations)
 
 	return obj, nil
 }
