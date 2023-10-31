@@ -19,7 +19,6 @@ limitations under the License.
 package hack
 
 import (
-	_ "github.com/onsi/ginkgo/v2/ginkgo"
 	_ "k8s.io/code-generator"
 	_ "sigs.k8s.io/controller-runtime/tools/setup-envtest"
 )
