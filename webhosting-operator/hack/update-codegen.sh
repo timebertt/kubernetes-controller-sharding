@@ -44,7 +44,7 @@ config_group() {
       github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis \
       github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis \
       "config:v1alpha1" \
-      -h "${SCRIPT_DIR}/boilerplate.go.txt"
+      -h "${SCRIPT_DIR}/../../hack/boilerplate.go.txt"
 }
 
 config_group

@@ -23,7 +23,7 @@ spec:
       patchesJson6902: |-
         - op: add
           path: "/spec/tolerations/-"
-          value: {"key":"dedicated-for","operator":"Equal","value":"webhosting-operator","effect":"NoSchedule"}        
+          value: {"key":"dedicated-for","operator":"Equal","value":"sharding","effect":"NoSchedule"}        
         - op: add
           path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms/-"
-          value: {"matchExpressions": [{"key":"dedicated-for","operator":"In","values":["webhosting-operator"]}]}        
+          value: {"matchExpressions": [{"key":"dedicated-for","operator":"In","values":["sharding"]}]}        

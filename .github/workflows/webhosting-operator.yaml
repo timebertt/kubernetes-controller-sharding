@@ -1,4 +1,4 @@
-name: Verify and Build
+name: webhosting-operator
 
 on:
   release:
@@ -9,13 +9,13 @@ on:
     - '*'
     tags:
     - v*
-    paths-ignore:
-    - 'docs/**'
-    - '**/*.md'
+    paths:
+    - "webhosting-operator/**"
+    - "!**.md"
   pull_request:
-    paths-ignore:
-    - 'docs/**'
-    - '**/*.md'
+    paths:
+    - "webhosting-operator/**"
+    - "!**.md"
 
 jobs:
   verify:
@@ -84,7 +84,8 @@ jobs:
         set -ex
 
         cd ./webhosting-operator
-        ko build --push=${{ github.event_name != 'pull_request' }} --sbom none --base-import-paths --platform linux/amd64,linux/arm64 \
+        ko build --push=${{ github.event_name != 'pull_request' }} --sbom none --base-import-paths \
           --tags "${{ steps.meta.outputs.tags }}" --image-label "${{ steps.meta.outputs.labels }}" \
+          --platform linux/amd64,linux/arm64 \
           ./cmd/experiment \
           ./cmd/webhosting-operator

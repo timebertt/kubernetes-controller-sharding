@@ -41,7 +41,7 @@ All necessary steps for a quick start:
 
 ```bash
 make kind-up
-export KUBECONFIG=$PWD/dev/kind_kubeconfig.yaml
+export KUBECONFIG=$PWD/hack/kind_kubeconfig.yaml
 make up
 k apply -f config/samples
 ```
@@ -50,7 +50,7 @@ Alternatively, use pre-built images:
 
 ```bash
 make kind-up
-export KUBECONFIG=$PWD/dev/kind_kubeconfig.yaml
+export KUBECONFIG=$PWD/hack/kind_kubeconfig.yaml
 make deploy TAG=latest
 k apply -f config/samples
 ```
@@ -67,12 +67,12 @@ It already takes care of deploying the prerequisites and configuring the needed 
 
 ```bash
 make kind-up
-export KUBECONFIG=$PWD/dev/kind_kubeconfig.yaml
+export KUBECONFIG=$PWD/hack/kind_kubeconfig.yaml
 ```
 
 #### Shoot Cluster (remote)
 
-Alternatively, you can also create a cluster in the cloud. If you have a Gardener installation available, you can create a `Shoot` cluster similar to the one in the [sample manifest](./shoot.yaml) and deploy the prerequisites manually:
+Alternatively, you can also create a cluster in the cloud. If you have a Gardener installation available, you can create a `Shoot` cluster similar to the one in the [sample manifest](../hack/config/shoot.yaml) and deploy the prerequisites manually:
 
 ```bash
 k apply -f shoot.yaml

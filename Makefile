@@ -3,11 +3,12 @@ PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 # Image URL to use all building/pushing image targets
 TAG ?= latest
 GHCR_REPO ?= ghcr.io/timebertt/kubernetes-controller-sharding
-OPERATOR_IMG ?= $(GHCR_REPO)/webhosting-operator:$(TAG)
-EXPERIMENT_IMG ?= $(GHCR_REPO)/experiment:$(TAG)
+SHARDER_IMG ?= $(GHCR_REPO)/sharder:$(TAG)
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.27
+# set OVERLAY to shoot to configure ingress-nginx with public dns and a TLS certificate
+OVERLAY = default
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -36,7 +37,7 @@ help: ## Display this help.
 
 ##@ Tools
 
-include tools.mk
+include hack/tools.mk
 
 .PHONY: clean-tools-bin
 clean-tools-bin: ## Empty the tools binary directory
@@ -44,22 +45,16 @@ clean-tools-bin: ## Empty the tools binary directory
 
 ##@ Development
 
-.PHONY: manifests
-manifests: $(CONTROLLER_GEN) ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=operator crd paths="./..." output:rbac:artifacts:config=config/manager/rbac output:crd:artifacts:config=config/manager/crds
+.PHONY: modules
+modules: ## Runs go mod to ensure modules are up to date.
+	go mod tidy
 
 .PHONY: generate
-generate: $(CONTROLLER_GEN) modules ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="../hack/boilerplate.go.txt" paths="./..."
-	hack/update-codegen.sh
+generate: modules ## Run all code generators
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
-
-.PHONY: modules
-modules: ## Runs go mod to ensure modules are up to date.
-	go mod tidy
 
 .PHONY: test
 test: $(SETUP_ENVTEST) ## Run tests.
@@ -85,9 +80,9 @@ verify-fmt: fmt ## Verify go code is formatted.
 	fi
 
 .PHONY: verify-generate
-verify-generate: manifests generate ## Verify generated files are up to date.
+verify-generate: generate ## Verify generated files are up to date.
 	@if !(git diff --quiet HEAD); then \
-		echo "generated files are out of date, please run 'make manifests generate'"; exit 1; \
+		echo "generated files are out of date, please run 'make generate'"; exit 1; \
 	fi
 
 .PHONY: verify-modules
@@ -102,28 +97,48 @@ verify: verify-fmt verify-generate verify-modules check ## Verify everything (al
 ##@ Build
 
 .PHONY: build
-build: generate fmt vet ## Build manager binary.
-	go build -o bin/webhosting-operator ./cmd/webhosting-operator
+build: generate fmt vet ## Build the sharder binary.
+	go build -o bin/sharder ./cmd/sharder
 
 .PHONY: run
-run: manifests generate fmt vet ## Run the webhosting-operator from your host.
-	go run ./cmd/webhosting-operator
+run: generate fmt vet ## Run the sharder from your host.
+	go run ./cmd/sharder
 
 PUSH ?= false
 images: export KO_DOCKER_REPO = $(GHCR_REPO)
 
 .PHONY: images
 images: $(KO) ## Build and push container images using ko.
-	$(KO) build --push=$(PUSH) --sbom none --base-import-paths -t $(TAG) --platform linux/amd64,linux/arm64 ./cmd/webhosting-operator
+	$(KO) build --push=$(PUSH) --sbom none --base-import-paths -t $(TAG) --platform linux/amd64,linux/arm64 ./cmd/sharder
 
 ##@ Deployment
 
+KIND_KUBECONFIG := $(PROJECT_DIR)/hack/kind_kubeconfig.yaml
+kind-up kind-down: export KUBECONFIG = $(KIND_KUBECONFIG)
+
+.PHONY: kind-up
+kind-up: $(KIND) ## Launch a kind cluster for local development and testing.
+	$(KIND) create cluster --name sharding --config hack/config/kind-config.yaml
+	# run `export KUBECONFIG=$$PWD/hack/kind_kubeconfig.yaml` to target the created kind cluster.
+	$(MAKE) deploy-ingress-nginx OVERLAY=kind
+
+.PHONY: kind-down
+kind-down: $(KIND) ## Tear down the kind testing cluster.
+	$(KIND) delete cluster --name sharding
+
+.PHONY: deploy-ingress-nginx
+deploy-ingress-nginx: $(KUBECTL) ## Deploy ingress-nginx to K8s cluster specified in $KUBECONFIG.
+	@# job template is immutable, delete old jobs to prepare for upgrade
+	$(KUBECTL) -n ingress-nginx delete job --ignore-not-found ingress-nginx-admission-create ingress-nginx-admission-patch
+	$(KUBECTL) apply --server-side -k config/ingress-nginx/$(OVERLAY)
+	$(KUBECTL) -n ingress-nginx wait deploy ingress-nginx-controller --for=condition=Available --timeout=2m
+
 # use static label for skaffold to prevent rolling all components on every skaffold invocation
-deploy up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
+deploy up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=sharding
 
 .PHONY: deploy
 deploy: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
-	$(SKAFFOLD) deploy --port-forward=user --tail -i $(OPERATOR_IMG) -i $(EXPERIMENT_IMG)
+	$(SKAFFOLD) deploy --port-forward=user --tail -i $(SHARDER_IMG)
 
 .PHONY: up
 up: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.

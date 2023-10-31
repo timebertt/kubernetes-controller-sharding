@@ -47,7 +47,7 @@ spec:
         workers: 10.250.0.0/16
     type: openstack
     workers:
-    # runs system and monitoring components, and sample websites
+    # runs system and monitoring components (default worker pool)
     - name: system
       cri:
         name: containerd
@@ -66,8 +66,8 @@ spec:
         type: storage_premium_perf1
       zones:
       - eu01-2
-    # runs webhosting-operator
-    - name: operator
+    # runs sharding components and webhosting-operator
+    - name: sharding
       cri:
         name: containerd
       machine:
@@ -76,22 +76,22 @@ spec:
         type: g1a.4d
       maxSurge: 1
       maxUnavailable: 0
-      maximum: 1
+      maximum: 3
       minimum: 1
       systemComponents:
         allow: false
       labels:
-        dedicated-for: webhosting-operator
+        dedicated-for: sharding
       taints:
       - key: dedicated-for
-        value: webhosting-operator
+        value: sharding
         effect: NoSchedule
       volume:
         size: 50Gi
         type: storage_premium_perf1
       zones:
       - eu01-2
-    # runs experiment
+    # runs experiment (optional)
     - name: experiment
       cri:
         name: containerd
