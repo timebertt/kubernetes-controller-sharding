@@ -2,6 +2,46 @@
 apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
+  name: ingress-nginx
+manifests:
+  kustomize:
+    paths:
+    - hack/config/ingress-nginx/default
+deploy:
+  kubectl:
+    hooks:
+      before:
+      - host:
+          command:
+          - /usr/bin/env
+          - bash
+          - -c
+          # job template is immutable, delete the old job to prepare for upgrade
+          - kubectl -n ingress-nginx delete job --ignore-not-found ingress-nginx-admission-create ingress-nginx-admission-patch
+    defaultNamespace: ""
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
+profiles:
+- name: kind
+  activation:
+  - kubeContext: kind-.*
+  manifests:
+    kustomize:
+      paths:
+      - hack/config/ingress-nginx/kind
+- name: shoot
+  activation:
+  - kubeContext: .*--sharding.*
+  manifests:
+    kustomize:
+      paths:
+      - hack/config/ingress-nginx/shoot
+---
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
   name: kyverno
 manifests:
   kustomize:

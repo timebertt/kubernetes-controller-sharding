@@ -7,8 +7,6 @@ SHARDER_IMG ?= $(GHCR_REPO)/sharder:$(TAG)
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.27
-# set OVERLAY to shoot to configure ingress-nginx with public dns and a TLS certificate
-OVERLAY = default
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -120,18 +118,10 @@ kind-up kind-down: export KUBECONFIG = $(KIND_KUBECONFIG)
 kind-up: $(KIND) ## Launch a kind cluster for local development and testing.
 	$(KIND) create cluster --name sharding --config hack/config/kind-config.yaml
 	# run `export KUBECONFIG=$$PWD/hack/kind_kubeconfig.yaml` to target the created kind cluster.
-	$(MAKE) deploy-ingress-nginx OVERLAY=kind
 
 .PHONY: kind-down
 kind-down: $(KIND) ## Tear down the kind testing cluster.
 	$(KIND) delete cluster --name sharding
-
-.PHONY: deploy-ingress-nginx
-deploy-ingress-nginx: $(KUBECTL) ## Deploy ingress-nginx to K8s cluster specified in $KUBECONFIG.
-	@# job template is immutable, delete old jobs to prepare for upgrade
-	$(KUBECTL) -n ingress-nginx delete job --ignore-not-found ingress-nginx-admission-create ingress-nginx-admission-patch
-	$(KUBECTL) apply --server-side -k hack/config/ingress-nginx/$(OVERLAY)
-	$(KUBECTL) -n ingress-nginx wait deploy ingress-nginx-controller --for=condition=Available --timeout=2m
 
 export SKAFFOLD_FILENAME = hack/config/skaffold.yaml
 # use static label for skaffold to prevent rolling all components on every skaffold invocation

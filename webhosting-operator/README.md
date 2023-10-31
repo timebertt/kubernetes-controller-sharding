@@ -84,9 +84,6 @@ k -n external-dns create secret generic google-clouddns-timebertt-dev --from-lit
 
 # deploy cert-manager for managing TLS certificates
 k apply --server-side -k config/cert-manager
-
-# deploy ingress-nginx with service annotations for exposing websites via public dns and requesting a TLS certificate
-make deploy-ingress-nginx OVERLAY=shoot
 ```
 
 ### 2. Deploy the Operator
