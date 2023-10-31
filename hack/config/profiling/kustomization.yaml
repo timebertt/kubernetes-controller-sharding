@@ -3,11 +3,8 @@ kind: Kustomization
 
 resources:
 - https://github.com/parca-dev/parca/releases/download/v0.20.0/kubernetes-manifest.yaml
-# provide parca running in namespace "parca" with the permissions required for service discovery in namespace
-# "webhosting-system" and scrape the pprof endpoints of webhosting-operator
-- parca_rbac.yaml
 - parca_ingress.yaml
-- parca-pvc.yaml
+- parca_pvc.yaml
 
 generatorOptions:
   disableNameSuffixHash: true
@@ -33,7 +30,7 @@ secretGenerator:
   - auth=parca_auth.secret.txt
 
 patches:
-- path: patch-deployment-pvc.yaml
+- path: patch_deployment_pvc.yaml
 - target:
     kind: Deployment
     name: parca

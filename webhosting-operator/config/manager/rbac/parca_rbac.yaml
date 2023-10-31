@@ -2,12 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  labels:
-    app.kubernetes.io/component: observability
-    app.kubernetes.io/instance: parca
-    app.kubernetes.io/name: parca
   name: parca-service-discovery
-  namespace: webhosting-system
 rules:
 - apiGroups:
   - ""
@@ -23,12 +18,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  labels:
-    app.kubernetes.io/component: observability
-    app.kubernetes.io/instance: parca
-    app.kubernetes.io/name: parca
   name: parca-service-discovery
-  namespace: webhosting-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -37,6 +27,24 @@ subjects:
 - kind: ServiceAccount
   name: parca
   namespace: parca
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: operator-pprof-reader
+rules:
+- nonResourceURLs:
+  - "/debug/pprof/allocs"
+  - "/debug/pprof/block"
+  - "/debug/pprof/goroutine"
+  - "/debug/pprof/heap"
+  - "/debug/pprof/mutex"
+  - "/debug/pprof/profile"
+  - "/debug/pprof/symbol"
+  - "/debug/pprof/threadcreate"
+  - "/debug/pprof/trace"
+  verbs:
+  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -49,7 +57,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: webhosting-operator-pprof-reader
+  name: operator-pprof-reader
 subjects:
 - kind: ServiceAccount
   name: parca

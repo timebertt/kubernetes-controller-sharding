@@ -130,9 +130,10 @@ kind-down: $(KIND) ## Tear down the kind testing cluster.
 deploy-ingress-nginx: $(KUBECTL) ## Deploy ingress-nginx to K8s cluster specified in $KUBECONFIG.
 	@# job template is immutable, delete old jobs to prepare for upgrade
 	$(KUBECTL) -n ingress-nginx delete job --ignore-not-found ingress-nginx-admission-create ingress-nginx-admission-patch
-	$(KUBECTL) apply --server-side -k config/ingress-nginx/$(OVERLAY)
+	$(KUBECTL) apply --server-side -k hack/config/ingress-nginx/$(OVERLAY)
 	$(KUBECTL) -n ingress-nginx wait deploy ingress-nginx-controller --for=condition=Available --timeout=2m
 
+export SKAFFOLD_FILENAME = hack/config/skaffold.yaml
 # use static label for skaffold to prevent rolling all components on every skaffold invocation
 deploy up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=sharding
 
