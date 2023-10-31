@@ -4,7 +4,7 @@ metadata:
   name: letsencrypt-http01
 spec:
   acme:
-    email: timebertt@gmail.com
+    email: null@timebertt.dev
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
       name: http01-timebertt-dev

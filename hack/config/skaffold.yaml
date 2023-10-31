@@ -2,6 +2,38 @@
 apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
+  name: cert-manager
+manifests:
+  kustomize:
+    paths:
+    - hack/config/cert-manager
+deploy:
+  kubectl:
+    defaultNamespace: ""
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
+---
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: cert-manager-resources
+manifests:
+  kustomize:
+    paths:
+    - hack/config/cert-manager/resources
+deploy:
+  kubectl:
+    defaultNamespace: ""
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
+---
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
   name: ingress-nginx
 manifests:
   kustomize:

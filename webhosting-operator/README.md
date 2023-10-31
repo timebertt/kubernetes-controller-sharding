@@ -81,9 +81,6 @@ k apply -f shoot.yaml
 # deploy external-dns for managing a DNS record for our webhosting service
 k apply --server-side -k config/external-dns
 k -n external-dns create secret generic google-clouddns-timebertt-dev --from-literal project=$PROJECT_NAME --from-file service-account.json=$SERVICE_ACCOUNT_FILE
-
-# deploy cert-manager for managing TLS certificates
-k apply --server-side -k config/cert-manager
 ```
 
 ### 2. Deploy the Operator
