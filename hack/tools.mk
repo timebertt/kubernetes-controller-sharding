@@ -22,6 +22,11 @@ CONTROLLER_GEN_VERSION ?= v0.13.0
 $(CONTROLLER_GEN): $(call tool_version_file,$(CONTROLLER_GEN),$(CONTROLLER_GEN_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION)
 
+GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
+GOLANGCI_LINT_VERSION ?= v1.55.1
+$(GOLANGCI_LINT): $(call tool_version_file,$(GOLANGCI_LINT),$(GOLANGCI_LINT_VERSION))
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(TOOLS_BIN_DIR) $(GOLANGCI_LINT_VERSION)
+
 KIND := $(TOOLS_BIN_DIR)/kind
 KIND_VERSION ?= v0.20.0
 $(KIND): $(call tool_version_file,$(KIND),$(KIND_VERSION))

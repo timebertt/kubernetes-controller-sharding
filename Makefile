@@ -66,12 +66,12 @@ test-kyverno: $(KYVERNO) ## Run kyverno policy tests.
 
 ##@ Verification
 
-.PHONY: vet
-vet: ## Run go vet against code.
-	go vet ./...
+.PHONY: lint
+lint: $(GOLANGCI_LINT) ## Run golangci-lint against code.
+	$(GOLANGCI_LINT) run ./...
 
 .PHONY: check
-check: vet test test-kyverno ## Check everything (vet + test + test-kyverno).
+check: lint test test-kyverno ## Check everything (lint + test + test-kyverno).
 
 .PHONY: verify-fmt
 verify-fmt: fmt ## Verify go code is formatted.
@@ -97,11 +97,11 @@ verify: verify-fmt verify-generate verify-modules check ## Verify everything (al
 ##@ Build
 
 .PHONY: build
-build: generate fmt vet ## Build the sharder binary.
+build: ## Build the sharder binary.
 	go build -o bin/sharder ./cmd/sharder
 
 .PHONY: run
-run: generate fmt vet ## Run the sharder from your host.
+run: ## Run the sharder from your host.
 	go run ./cmd/sharder
 
 PUSH ?= false
