@@ -18,7 +18,7 @@ $(TOOLS_BIN_DIR)/.version_%:
 	@touch $@
 
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
-CONTROLLER_GEN_VERSION ?= v0.12.1
+CONTROLLER_GEN_VERSION ?= v0.13.0
 $(CONTROLLER_GEN): $(call tool_version_file,$(CONTROLLER_GEN),$(CONTROLLER_GEN_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION)
 
@@ -29,7 +29,7 @@ $(KIND): $(call tool_version_file,$(KIND),$(KIND_VERSION))
 	chmod +x $(KIND)
 
 KO := $(TOOLS_BIN_DIR)/ko
-KO_VERSION ?= v0.14.1
+KO_VERSION ?= v0.15.0
 $(KO): $(call tool_version_file,$(KO),$(KO_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install github.com/google/ko@$(KO_VERSION)
 
@@ -40,7 +40,7 @@ $(KUBECTL): $(call tool_version_file,$(KUBECTL),$(KUBECTL_VERSION))
 	chmod +x $(KUBECTL)
 
 KYVERNO := $(TOOLS_BIN_DIR)/kyverno
-KYVERNO_VERSION ?= v1.10.3
+KYVERNO_VERSION ?= v1.10.4
 $(KYVERNO): $(call tool_version_file,$(KYVERNO),$(KYVERNO_VERSION))
 	curl -Lo - https://github.com/kyverno/kyverno/releases/download/$(KYVERNO_VERSION)/kyverno-cli_$(KYVERNO_VERSION)_$(shell uname -s | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed 's/aarch64/arm64/').tar.gz | tar -xzmf - -C $(TOOLS_BIN_DIR) kyverno
 	chmod +x $(KYVERNO)
@@ -50,13 +50,13 @@ $(SETUP_ENVTEST): go.mod
 	go build -o $(SETUP_ENVTEST) sigs.k8s.io/controller-runtime/tools/setup-envtest
 
 SKAFFOLD := $(TOOLS_BIN_DIR)/skaffold
-SKAFFOLD_VERSION ?= v2.6.1
+SKAFFOLD_VERSION ?= v2.8.0
 $(SKAFFOLD): $(call tool_version_file,$(SKAFFOLD),$(SKAFFOLD_VERSION))
 	curl -Lo $(SKAFFOLD) https://storage.googleapis.com/skaffold/releases/$(SKAFFOLD_VERSION)/skaffold-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/')
 	chmod +x $(SKAFFOLD)
 
 YQ := $(TOOLS_BIN_DIR)/yq
-YQ_VERSION ?= v4.34.2
+YQ_VERSION ?= v4.35.2
 $(YQ): $(call tool_version_file,$(YQ),$(YQ_VERSION))
 	curl -Lo $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(shell uname -s | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 	chmod +x $(YQ)
