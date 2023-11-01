@@ -48,7 +48,9 @@ modules: ## Runs go mod to ensure modules are up to date.
 	go mod tidy
 
 .PHONY: generate
-generate: modules ## Run all code generators
+generate: $(CONTROLLER_GEN) modules ## Run all code generators
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/..."
+	hack/update-codegen.sh
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.

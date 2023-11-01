@@ -1,5 +1,3 @@
-//go:build tools
-
 /*
 Copyright 2023 Tim Ebert.
 
@@ -16,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package hack
+// +k8s:defaulter-gen=TypeMeta
 
-import (
-	_ "k8s.io/code-generator"
-	_ "sigs.k8s.io/controller-runtime/tools/setup-envtest"
-)
+package v1alpha1 // import "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/config/v1alpha1"
