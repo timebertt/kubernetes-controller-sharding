@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="sharder (kind)" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="kubernetes-controller-sharding" />
+    <working_directory value="$PROJECT_DIR$" />
+    <envs>
+      <env name="LEADER_ELECT" value="false" />
+      <env name="KUBECONFIG" value="$PROJECT_DIR$/hack/kind_kubeconfig.yaml" />
+    </envs>
+    <kind value="PACKAGE" />
+    <package value="github.com/timebertt/kubernetes-controller-sharding/cmd/sharder" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/webhosting-operator/cmd/experiment/main.go" />
+    <method v="2" />
+  </configuration>
+</component>
