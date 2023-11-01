@@ -90,6 +90,27 @@ deploy:
 apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
+  name: policy
+profiles:
+- name: shoot
+  activation:
+  - kubeContext: .*--sharding.*
+  manifests:
+    kustomize:
+      paths:
+      - hack/config/policy/shoot
+  deploy:
+    kubectl:
+      defaultNamespace: ""
+      flags:
+        apply:
+        - --server-side
+        - --force-conflicts
+    statusCheck: false
+---
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
   name: monitoring-crds
 manifests:
   kustomize:
@@ -172,3 +193,31 @@ portForward:
   resourceName: parca
   port: http
   localPort: 7070
+---
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: sharder
+build:
+  local:
+    concurrency: 0
+  artifacts:
+  - image: ghcr.io/timebertt/kubernetes-controller-sharding/sharder
+    ko:
+      main: ./cmd/sharder
+      dependencies:
+        paths:
+        - go.mod
+        - '**/*.go'
+manifests:
+  kustomize:
+    paths:
+    - config/default
+    - config/monitoring
+deploy:
+  kubectl:
+    defaultNamespace: ""
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts

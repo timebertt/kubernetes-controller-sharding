@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sharder
+  namespace: sharding-system
+  labels:
+    app.kubernetes.io/component: sharder
+spec:
+  replicas: 1
+  selector:
+     matchLabels:
+       app.kubernetes.io/component: sharder
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: sharder
+    spec:
+      automountServiceAccountToken: true
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - name: sharder
+        image: sharder:latest
+        args:
+        - --zap-log-level=info
+        - --config=/config.yaml
+        volumeMounts:
+        - name: config
+          mountPath: /config.yaml
+          subPath: config
+        env:
+        - name: DISABLE_HTTP2
+          value: "true"
+        ports:
+        - name: metrics
+          containerPort: 8080
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: "1"
+            memory: 1Gi
+          requests:
+            cpu: 250m
+            memory: 256Mi
+      volumes:
+      - name: config
+        configMap:
+          name: sharder-config
+      serviceAccountName: sharder
+      terminationGracePeriodSeconds: 30
