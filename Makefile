@@ -118,8 +118,10 @@ KIND_KUBECONFIG := $(PROJECT_DIR)/hack/kind_kubeconfig.yaml
 kind-up kind-down: export KUBECONFIG = $(KIND_KUBECONFIG)
 
 .PHONY: kind-up
-kind-up: $(KIND) ## Launch a kind cluster for local development and testing.
+kind-up: $(KIND) $(KUBECTL) ## Launch a kind cluster for local development and testing.
 	$(KIND) create cluster --name sharding --config hack/config/kind-config.yaml
+	# workaround https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files
+	$(KUBECTL) get nodes -o name | cut -d/ -f2 | xargs -I {} docker exec {} sh -c "sysctl fs.inotify.max_user_instances=8192"
 	# run `export KUBECONFIG=$$PWD/hack/kind_kubeconfig.yaml` to target the created kind cluster.
 
 .PHONY: kind-down
