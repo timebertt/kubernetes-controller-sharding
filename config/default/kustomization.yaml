@@ -19,6 +19,7 @@ resources:
 - deployment.yaml
 - service.yaml
 - ../rbac
+- ../crds
 
 configMapGenerator:
 - name: sharder-config
