@@ -45,10 +45,6 @@ $(KYVERNO): $(call tool_version_file,$(KYVERNO),$(KYVERNO_VERSION))
 	curl -Lo - https://github.com/kyverno/kyverno/releases/download/$(KYVERNO_VERSION)/kyverno-cli_$(KYVERNO_VERSION)_$(shell uname -s | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed 's/aarch64/arm64/').tar.gz | tar -xzmf - -C $(TOOLS_BIN_DIR) kyverno
 	chmod +x $(KYVERNO)
 
-GINKGO := $(TOOLS_BIN_DIR)/ginkgo
-$(GINKGO): go.mod
-	go build -o $(GINKGO) github.com/onsi/ginkgo/v2/ginkgo
-
 SETUP_ENVTEST := $(TOOLS_BIN_DIR)/setup-envtest
 $(SETUP_ENVTEST): go.mod
 	go build -o $(SETUP_ENVTEST) sigs.k8s.io/controller-runtime/tools/setup-envtest

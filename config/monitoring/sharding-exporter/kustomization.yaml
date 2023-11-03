@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: sharding-system
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: controller-sharding
+    app.kubernetes.io/component: sharding-exporter
+
+resources:
+- clusterrole.yaml
+- clusterrolebinding.yaml
+- rbac-proxy_clusterrole.yaml
+- rbac-proxy_clusterrolebinding.yaml
+- serviceaccount.yaml
+- service.yaml
+- deployment.yaml
+- servicemonitor.yaml
+
+configMapGenerator:
+- name: sharding-exporter-config
+  files:
+  - config.yaml

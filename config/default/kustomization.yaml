@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: sharding-system
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+commonLabels:
+  app.kubernetes.io/name: controller-sharding
+
+images:
+- name: sharder
+  newName: ghcr.io/timebertt/kubernetes-controller-sharding/sharder
+  newTag: latest
+
+resources:
+- namespace.yaml
+- deployment.yaml
+- service.yaml
+- ../rbac
+- ../crds
+
+configMapGenerator:
+- name: sharder-config
+  options:
+    labels:
+      app.kubernetes.io/component: sharder
+  files:
+  - config=config.yaml

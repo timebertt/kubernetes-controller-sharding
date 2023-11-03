@@ -1,0 +1,222 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: cert-manager
+manifests:
+  kustomize:
+    paths:
+      - hack/config/cert-manager
+deploy:
+  kubectl:
+    flags:
+      apply:
+        - --server-side
+        - --force-conflicts
+    defaultNamespace: ""
+---
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: cert-manager-resources
+manifests:
+  kustomize:
+    paths:
+      - hack/config/cert-manager/resources
+deploy:
+  kubectl:
+    flags:
+      apply:
+        - --server-side
+        - --force-conflicts
+    defaultNamespace: ""
+---
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: ingress-nginx
+manifests:
+  kustomize:
+    paths:
+      - hack/config/ingress-nginx/default
+deploy:
+  kubectl:
+    flags:
+      apply:
+        - --server-side
+        - --force-conflicts
+    defaultNamespace: ""
+    hooks:
+      before:
+        - host:
+            command:
+              - /usr/bin/env
+              - bash
+              - -c
+              # job template is immutable, delete the old job to prepare for upgrade
+              - kubectl -n ingress-nginx delete job --ignore-not-found ingress-nginx-admission-create ingress-nginx-admission-patch
+profiles:
+  - name: kind
+    activation:
+      - kubeContext: kind-.*
+    manifests:
+      kustomize:
+        paths:
+          - hack/config/ingress-nginx/kind
+  - name: shoot
+    activation:
+      - kubeContext: .*--sharding.*
+    manifests:
+      kustomize:
+        paths:
+          - hack/config/ingress-nginx/shoot
+---
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: kyverno
+manifests:
+  kustomize:
+    paths:
+      - hack/config/kyverno
+deploy:
+  kubectl:
+    flags:
+      apply:
+        - --server-side
+        - --force-conflicts
+    defaultNamespace: ""
+---
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: policy
+profiles:
+  - name: shoot
+    activation:
+      - kubeContext: .*--sharding.*
+    manifests:
+      kustomize:
+        paths:
+          - hack/config/policy/shoot
+    deploy:
+      kubectl:
+        flags:
+          apply:
+            - --server-side
+            - --force-conflicts
+        defaultNamespace: ""
+      statusCheck: false
+---
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: monitoring-crds
+manifests:
+  kustomize:
+    paths:
+      - hack/config/monitoring/crds
+deploy:
+  kubectl:
+    flags:
+      apply:
+        - --server-side
+        - --force-conflicts
+    defaultNamespace: ""
+---
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: monitoring
+requires:
+  - configs:
+      - monitoring-crds
+manifests:
+  kustomize:
+    paths:
+      - hack/config/monitoring/default
+  hooks:
+    before:
+      - host:
+          command:
+            - hack/config/monitoring/default/ensure-admin-password.sh
+deploy:
+  kubectl:
+    flags:
+      apply:
+        - --server-side
+        - --force-conflicts
+    defaultNamespace: ""
+portForward:
+  - resourceType: service
+    resourceName: grafana
+    namespace: monitoring
+    port: http
+    localPort: 3000
+  - resourceType: service
+    resourceName: prometheus-k8s
+    namespace: monitoring
+    port: web
+    localPort: 9090
+profiles:
+  - name: shoot
+    activation:
+      - kubeContext: .*--sharding.*
+    manifests:
+      kustomize:
+        paths:
+          - hack/config/monitoring/shoot
+---
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: profiling
+manifests:
+  kustomize:
+    paths:
+      - hack/config/profiling
+  hooks:
+    before:
+      - host:
+          command:
+            - hack/config/profiling/ensure-admin-password.sh
+deploy:
+  kubectl:
+    flags:
+      apply:
+        - --server-side
+        - --force-conflicts
+    defaultNamespace: ""
+portForward:
+  - resourceType: service
+    resourceName: parca
+    namespace: parca
+    port: http
+    localPort: 7070
+---
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: sharder
+build:
+  artifacts:
+    - image: ghcr.io/timebertt/kubernetes-controller-sharding/sharder
+      ko:
+        dependencies:
+          paths:
+            - go.mod
+            - '**/*.go'
+        main: ./cmd/sharder
+  local:
+    concurrency: 0
+manifests:
+  kustomize:
+    paths:
+      - config/default
+      - config/monitoring/default
+deploy:
+  kubectl:
+    flags:
+      apply:
+        - --server-side
+        - --force-conflicts
+    defaultNamespace: ""

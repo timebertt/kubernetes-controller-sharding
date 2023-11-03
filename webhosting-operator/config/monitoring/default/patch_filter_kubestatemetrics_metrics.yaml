@@ -1,5 +1,0 @@
-# drop kube-state-metrics metrics for project namespaces
-- op: add
-  path: /spec/template/spec/containers/0/args/-
-  value:
-    --namespaces=cert-manager,default,experiment,external-dns,ingress-nginx,kube-node-lease,kube-public,kube-system,kyverno,monitoring,parca,webhosting-system

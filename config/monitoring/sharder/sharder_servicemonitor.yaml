@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: sharder
+  labels:
+    app.kubernetes.io/name: controller-sharding
+    app.kubernetes.io/component: sharder
+spec:
+  jobLabel: app.kubernetes.io/component
+  endpoints:
+  - path: /metrics
+    port: metrics
+    scheme: https
+    bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    interval: 10s
+    scrapeTimeout: 10s
+    tlsConfig:
+      insecureSkipVerify: true
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: controller-sharding
+      app.kubernetes.io/component: sharder

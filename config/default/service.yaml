@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sharder
+  namespace: sharding-system
+  labels:
+    app.kubernetes.io/component: sharder
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/component: sharder
+  ports:
+  - port: 8080
+    name: metrics
+    protocol: TCP
+    targetPort: metrics

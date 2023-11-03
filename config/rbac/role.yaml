@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: sharder
+rules:
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - sharding.timebertt.dev
+  resources:
+  - clusterrings
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - sharding.timebertt.dev
+  resources:
+  - clusterrings/status
+  verbs:
+  - patch
+  - update

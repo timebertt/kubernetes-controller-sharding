@@ -7,9 +7,7 @@ OPERATOR_IMG ?= $(GHCR_REPO)/webhosting-operator:$(TAG)
 EXPERIMENT_IMG ?= $(GHCR_REPO)/experiment:$(TAG)
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.24
-# set OVERLAY to shoot to configure ingress-nginx with public dns and a TLS certificate
-OVERLAY = default
+ENVTEST_K8S_VERSION = 1.27
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -52,7 +50,7 @@ manifests: $(CONTROLLER_GEN) ## Generate WebhookConfiguration, ClusterRole and C
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) modules ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	$(CONTROLLER_GEN) object:headerFile="../hack/boilerplate.go.txt" paths="./..."
 	hack/update-codegen.sh
 
 .PHONY: fmt
@@ -119,26 +117,6 @@ images: $(KO) ## Build and push container images using ko.
 	$(KO) build --push=$(PUSH) --sbom none --base-import-paths -t $(TAG) --platform linux/amd64,linux/arm64 ./cmd/webhosting-operator
 
 ##@ Deployment
-
-KIND_KUBECONFIG := $(PROJECT_DIR)/dev/kind_kubeconfig.yaml
-kind-up kind-down: export KUBECONFIG = $(KIND_KUBECONFIG)
-
-.PHONY: kind-up
-kind-up: $(KIND) ## Launch a kind cluster for testing the operator.
-	$(KIND) create cluster --name webhosting --config hack/kind-config.yaml
-	# run `export KUBECONFIG=$$PWD/dev/kind_kubeconfig.yaml` to target the created kind cluster.
-	$(MAKE) deploy-ingress-nginx OVERLAY=kind
-
-.PHONY: kind-down
-kind-down: $(KIND) ## Tear down the kind testing cluster.
-	$(KIND) delete cluster --name webhosting
-
-.PHONY: deploy-ingress-nginx
-deploy-ingress-nginx: $(KUBECTL) ## Deploy ingress-nginx to K8s cluster specified in $KUBECONFIG.
-	@# job template is immutable, delete old jobs to prepare for upgrade
-	$(KUBECTL) -n ingress-nginx delete job --ignore-not-found ingress-nginx-admission-create ingress-nginx-admission-patch
-	$(KUBECTL) apply --server-side -k config/ingress-nginx/$(OVERLAY)
-	$(KUBECTL) -n ingress-nginx wait deploy ingress-nginx-controller --for=condition=Available --timeout=2m
 
 # use static label for skaffold to prevent rolling all components on every skaffold invocation
 deploy up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator

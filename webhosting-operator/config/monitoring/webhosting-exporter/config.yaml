@@ -25,8 +25,8 @@ spec:
         type: Info
         info:
           labelsFromPath:
-            shard: [metadata, labels, shard]
-            drain: [metadata, labels, drain]
+            shard: [metadata, labels, sharding.alpha.kubernetes.io/shard]
+            drain: [metadata, labels, sharding.alpha.kubernetes.io/drain]
     - name: metadata_generation
       help: "The generation of a Website"
       each:
@@ -70,32 +70,3 @@ spec:
         type: Gauge
         gauge:
           path: [metadata, generation]
-  # shard metrics
-  - metricNamePrefix: kube_shard
-    groupVersionKind:
-      group: coordination.k8s.io
-      version: v1
-      kind: Lease
-    labelsFromPath:
-      namespace: [metadata, namespace]
-      shard: [metadata, name]
-      app: [metadata, labels, shard]
-    metrics:
-    - name: info
-      help: "Information about a Shard"
-      each:
-        type: Info
-        info:
-          labelsFromPath:
-            uid: [metadata, uid]
-    - name: state
-      help: "The Shard's current state"
-      each:
-        type: StateSet
-        stateSet:
-          labelName: state
-          path: [metadata, labels, state]
-          list: [orphaned, dead, uncertain, expired, ready, unknown]
-      # The usual leader election leases don't have the state label making the generator log errors.
-      # Hence, decrease verbosity of such errors to reduce distraction.
-      errorLogV: 4

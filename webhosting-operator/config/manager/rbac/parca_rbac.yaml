@@ -1,0 +1,64 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: parca-service-discovery
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - services
+  - endpoints
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: parca-service-discovery
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: parca-service-discovery
+subjects:
+- kind: ServiceAccount
+  name: parca
+  namespace: parca
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: operator-pprof-reader
+rules:
+- nonResourceURLs:
+  - "/debug/pprof/allocs"
+  - "/debug/pprof/block"
+  - "/debug/pprof/goroutine"
+  - "/debug/pprof/heap"
+  - "/debug/pprof/mutex"
+  - "/debug/pprof/profile"
+  - "/debug/pprof/symbol"
+  - "/debug/pprof/threadcreate"
+  - "/debug/pprof/trace"
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: observability
+    app.kubernetes.io/instance: parca
+    app.kubernetes.io/name: parca
+  name: parca-pprof-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: operator-pprof-reader
+subjects:
+- kind: ServiceAccount
+  name: parca
+  namespace: parca

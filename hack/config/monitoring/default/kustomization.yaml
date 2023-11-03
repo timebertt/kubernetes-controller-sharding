@@ -1,0 +1,58 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+components:
+- ../grafana-sidecar
+
+resources:
+- namespace.yaml
+- rbac-proxy_clusterrole.yaml
+- ../kube-prometheus
+- grafana_ingress.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- files:
+  - dashboards/client-go.json
+  - dashboards/controller-details.json
+  - dashboards/controller-runtime.json
+  name: grafana-dashboards-controller
+  namespace: monitoring
+  options:
+    labels:
+      grafana_dashboard: "true"
+
+secretGenerator:
+- name: grafana-admin
+  namespace: monitoring
+  literals:
+  - username=admin
+  files:
+  - password=grafana_admin_password.secret.txt
+
+patches:
+- path: patch_grafana_admin.yaml
+- path: patch_prometheus_resources.yaml
+- path: patch_grafana_networkpolicy.yaml
+  target:
+    group: networking.k8s.io
+    version: v1
+    kind: NetworkPolicy
+    name: grafana
+    namespace: monitoring
+- path: patch_filter_kubelet_metrics.yaml
+  target:
+    group: monitoring.coreos.com
+    version: v1
+    kind: ServiceMonitor
+    name: kubelet
+    namespace: monitoring
+- path: patch_filter_kubestatemetrics_metrics.yaml
+  target:
+    group: apps
+    version: v1
+    kind: Deployment
+    name: kube-state-metrics
+    namespace: monitoring

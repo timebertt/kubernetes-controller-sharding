@@ -1,34 +1,16 @@
-apiVersion: skaffold/v4beta6
-kind: Config
-metadata:
-  name: kyverno
-manifests:
-  kustomize:
-    paths:
-    - config/kyverno
-deploy:
-  kubectl:
-    defaultNamespace: ""
-    flags:
-      apply:
-      - --server-side
-      - --force-conflicts
 ---
 apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
   name: policy
-requires:
-- configs:
-  - kyverno
 profiles:
 - name: shoot
   activation:
-  - kubeContext: .*timebertt--sharding.*
+  - kubeContext: .*--sharding.*
   manifests:
     kustomize:
       paths:
-      - config/policy/shoot
+      - config/policy
   deploy:
     kubectl:
       defaultNamespace: ""
@@ -87,7 +69,7 @@ profiles:
     value: config/manager/shard
 - name: shoot
   activation:
-  - kubeContext: .*timebertt--sharding.*
+  - kubeContext: .*--sharding.*
   patches:
   - op: replace
     path: /manifests/kustomize/paths/0
@@ -97,6 +79,30 @@ profiles:
   - op: replace
     path: /manifests/kustomize/paths/0
     value: config/manager/shoot-non-sharded
+---
+# This is an optional module that activates the external sharding implementation by deploying the ClusterRing object.
+# Set the USE_CLUSTERRING env var to true to activate this module.
+# We keep this optional for now until the external sharding implementation is fully implemented so that we don't break
+# trying out the existing implementation.
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: clusterring
+profiles:
+- name: clusterring
+  activation:
+  - command: USE_CLUSTERRING=true
+  manifests:
+    kustomize:
+      paths:
+      - config/manager/clusterring
+  deploy:
+    kubectl:
+      defaultNamespace: ""
+      flags:
+        apply:
+        - --server-side
+        - --force-conflicts
 ---
 apiVersion: skaffold/v4beta6
 kind: Config
@@ -147,35 +153,11 @@ profiles:
 apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
-  name: monitoring-crds
-manifests:
-  kustomize:
-    paths:
-    - config/monitoring/crds
-deploy:
-  kubectl:
-    defaultNamespace: ""
-    flags:
-      apply:
-      - --server-side
-      - --force-conflicts
----
-apiVersion: skaffold/v4beta6
-kind: Config
-metadata:
   name: monitoring
-requires:
-- configs:
-  - monitoring-crds
 manifests:
   kustomize:
     paths:
     - config/monitoring/default
-  hooks:
-    before:
-    - host:
-        command:
-        - config/monitoring/default/ensure-admin-password.sh
 deploy:
   kubectl:
     defaultNamespace: ""
@@ -183,49 +165,3 @@ deploy:
       apply:
       - --server-side
       - --force-conflicts
-profiles:
-- name: shoot
-  activation:
-  - kubeContext: .*timebertt--sharding.*
-  manifests:
-    kustomize:
-      paths:
-      - config/monitoring/shoot
-portForward:
-- resourceType: service
-  namespace: monitoring
-  resourceName: grafana
-  port: http
-  localPort: 3000
-- resourceType: service
-  namespace: monitoring
-  resourceName: prometheus-k8s
-  port: web
-  localPort: 9090
----
-apiVersion: skaffold/v4beta6
-kind: Config
-metadata:
-  name: profiling
-manifests:
-  kustomize:
-    paths:
-    - config/profiling
-  hooks:
-    before:
-    - host:
-        command:
-        - config/profiling/ensure-admin-password.sh
-deploy:
-  kubectl:
-    defaultNamespace: ""
-    flags:
-      apply:
-      - --server-side
-      - --force-conflicts
-portForward:
-- resourceType: service
-  namespace: parca
-  resourceName: parca
-  port: http
-  localPort: 7070

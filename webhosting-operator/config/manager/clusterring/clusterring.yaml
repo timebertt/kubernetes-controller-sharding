@@ -1,0 +1,15 @@
+apiVersion: sharding.timebertt.dev/v1alpha1
+kind: ClusterRing
+metadata:
+  name: operator
+spec:
+  kinds:
+  - apiGroup: webhosting.timebertt.dev
+    kind: Website
+    controlledKinds:
+    - apiGroup: apps
+      kind: Deployment
+    - kind: ConfigMap
+    - kind: Service
+    - apiGroup: networking.k8s.io
+      kind: Ingress

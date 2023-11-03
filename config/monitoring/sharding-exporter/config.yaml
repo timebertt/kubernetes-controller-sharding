@@ -1,0 +1,71 @@
+kind: CustomResourceStateMetrics
+spec:
+  resources:
+  # shard metrics
+  - metricNamePrefix: kube_shard
+    groupVersionKind:
+      group: coordination.k8s.io
+      version: v1
+      kind: Lease
+    labelsFromPath:
+      namespace: [metadata, namespace]
+      shard: [metadata, name]
+      clusterring: [metadata, labels, sharding.alpha.kubernetes.io/clusterring]
+    metrics:
+    - name: info
+      help: "Information about a Shard"
+      each:
+        type: Info
+        info:
+          labelsFromPath:
+            uid: [metadata, uid]
+    - name: state
+      help: "The Shard's current state"
+      each:
+        type: StateSet
+        stateSet:
+          labelName: state
+          path: [metadata, labels, sharding.alpha.kubernetes.io/state]
+          list: [orphaned, dead, uncertain, expired, ready, unknown]
+      # The usual leader election leases don't have the state label making the generator log errors.
+      # Hence, decrease verbosity of such errors to reduce distraction.
+      errorLogV: 4
+  # clusterring metrics
+  - metricNamePrefix: kube_clusterring
+    groupVersionKind:
+      group: sharding.timebertt.dev
+      version: v1alpha1
+      kind: ClusterRing
+    labelsFromPath:
+      clusterring: [metadata, name]
+      uid: [metadata, uid]
+    metrics:
+    - name: info
+      help: "Information about a ClusterRing"
+      each:
+        type: Info
+        info: {}
+    - name: metadata_generation
+      help: "The generation of a ClusterRing"
+      each:
+        type: Gauge
+        gauge:
+          path: [metadata, generation]
+    - name: observed_generation
+      help: "The latest generation observed by the ClusterRing controller"
+      each:
+        type: Gauge
+        gauge:
+          path: [status, observedGeneration]
+    - name: status_shards
+      help: "The ClusterRing's total number of shards"
+      each:
+        type: Gauge
+        gauge:
+          path: [status, shards]
+    - name: status_shards
+      help: "The ClusterRing's total number of available shards"
+      each:
+        type: Gauge
+        gauge:
+          path: [status, availableShards]
