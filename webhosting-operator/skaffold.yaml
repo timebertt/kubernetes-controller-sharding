@@ -80,6 +80,30 @@ profiles:
     path: /manifests/kustomize/paths/0
     value: config/manager/shoot-non-sharded
 ---
+# This is an optional module that activates the external sharding implementation by deploying the ClusterRing object.
+# Set the USE_CLUSTERRING env var to true to activate this module.
+# We keep this optional for now until the external sharding implementation is fully implemented so that we don't break
+# trying out the existing implementation.
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: clusterring
+profiles:
+- name: clusterring
+  activation:
+  - command: USE_CLUSTERRING=true
+  manifests:
+    kustomize:
+      paths:
+      - config/manager/clusterring
+  deploy:
+    kubectl:
+      defaultNamespace: ""
+      flags:
+        apply:
+        - --server-side
+        - --force-conflicts
+---
 apiVersion: skaffold/v4beta6
 kind: Config
 metadata:

@@ -8,6 +8,11 @@ To experience how they work, the webhosting-operator is deployed in the followin
 While webhosting-operator is developed in the same repository, it only serves as an example.
 Sharding support can be implemented in any other controller and programming language as well, so that it works well with the sharding components from this project.
 
+> [!NOTE]
+> The external sharding components are work in progress.
+> While the following steps also deploy the new sharding components, they are not activated for now (no `ClusterRing` object is created).
+> Instead, the existing sharding implementation in controller-runtime embedded in webhosting-operator is used.
+
 ## Quick Start
 
 ```bash
