@@ -212,7 +212,7 @@ manifests:
   kustomize:
     paths:
       - config/default
-      - config/monitoring
+      - config/monitoring/default
 deploy:
   kubectl:
     flags:

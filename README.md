@@ -64,7 +64,8 @@ Read chapter 4 of the full [thesis](https://github.com/timebertt/thesis-controll
 - [samples-generator](webhosting-operator/cmd/samples-generator): a tool for generating a given amount of random `Website` objects
 - [monitoring setup](hack/config/monitoring): a setup for monitoring and measuring load test experiments for the sample operator
   - includes [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus)
-  - [webhosting-exporter](webhosting-operator/config/monitoring/webhosting-exporter) (based on the [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) [custom resource metrics feature](https://github.com/kubernetes/kube-state-metrics/blob/main/docs/customresourcestate-metrics.md)) for metrics on the state of the webhosting-operator's API objects
+  - [sharding-exporter](config/monitoring/sharding-exporter): (based on the [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) [custom resource metrics feature](https://github.com/kubernetes/kube-state-metrics/blob/main/docs/customresourcestate-metrics.md)) for metrics on the state of shards
+  - [webhosting-exporter](webhosting-operator/config/monitoring/webhosting-exporter) for metrics on the state of the webhosting-operator's API objects (similar to above)
   - [grafana](https://github.com/grafana/grafana) along with some dashboards for [controller-runtime](hack/config/monitoring/default/dashboards) and [webhosting-operator and sharding](webhosting-operator/config/monitoring/default/dashboards)
 - [experiment](webhosting-operator/cmd/experiment): a tool (based on controller-runtime) for executing load test scenarios for the webhosting-operator
 - [measure](webhosting-operator/cmd/measure): a tool for retrieving configurable measurements from prometheus and storing them in csv-formatted files for further analysis (with `numpy`) and visualization (with `matplotlib`)
