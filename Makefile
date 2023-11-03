@@ -49,6 +49,7 @@ modules: ## Runs go mod to ensure modules are up to date.
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) modules ## Run all code generators
+	$(CONTROLLER_GEN) rbac:roleName=sharder paths="./pkg/..." output:rbac:artifacts:config=config/rbac
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/..."
 	hack/update-codegen.sh
 

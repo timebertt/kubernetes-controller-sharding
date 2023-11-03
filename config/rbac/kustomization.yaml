@@ -5,3 +5,15 @@ resources:
 - serviceaccount.yaml
 - leader_election.yaml
 - metrics_auth.yaml
+- role.yaml
+- rolebinding.yaml
+
+patches:
+# This is a workaround for controller-gen not being able to handle colons in the role name option.
+- target:
+    kind: ClusterRole
+    name: sharder
+  patch: |
+    - op: replace
+      path: /metadata/name
+      value: sharding:sharder

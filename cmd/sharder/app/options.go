@@ -22,11 +22,15 @@ import (
 	"net/http"
 	"os"
 	goruntime "runtime"
+	"strconv"
 
 	"github.com/spf13/pflag"
 	"go.uber.org/zap/zapcore"
+	coordinationv1 "k8s.io/api/coordination/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/selection"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -41,6 +45,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/config/v1alpha1"
+	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/routes"
 )
 
@@ -110,14 +115,13 @@ func (o *options) complete() error {
 		Scheme: scheme,
 		// allows us to quickly handover leadership on restarts
 		LeaderElectionReleaseOnCancel: true,
-		Cache: cache.Options{
-			DefaultTransform: dropUnwantedMetadata,
-		},
 		Controller: controllerconfig.Controller{
 			RecoverPanic: ptr.To(true),
 		},
 	}
 	o.applyConfigToManagerOptions()
+	o.applyCacheOptions()
+
 	if err := o.applyOptionsOverrides(); err != nil {
 		return err
 	}
@@ -167,6 +171,26 @@ func (o *options) applyConfigToManagerOptions() {
 	}
 
 	o.managerOptions.GracefulShutdownTimeout = ptr.To(o.config.GracefulShutdownTimeout.Duration)
+}
+
+func (o *options) applyCacheOptions() {
+	// filter lease cache for shard leases to avoid watching all leases in cluster
+	leaseSelector := labels.NewSelector()
+	{
+		ringRequirement, err := labels.NewRequirement(shardingv1alpha1.LabelClusterRing, selection.Exists, nil)
+		utilruntime.Must(err)
+		leaseSelector.Add(*ringRequirement)
+	}
+
+	o.managerOptions.Cache = cache.Options{
+		DefaultTransform: dropUnwantedMetadata,
+
+		ByObject: map[client.Object]cache.ByObject{
+			&coordinationv1.Lease{}: {
+				Label: leaseSelector,
+			},
+		},
+	}
 }
 
 func (o *options) applyOptionsOverrides() error {
