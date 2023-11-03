@@ -54,6 +54,7 @@ var scheme = runtime.NewScheme()
 func init() {
 	schemeBuilder := runtime.NewSchemeBuilder(
 		clientgoscheme.AddToScheme,
+		shardingv1alpha1.AddToScheme,
 		configv1alpha1.AddToScheme,
 	)
 	utilruntime.Must(schemeBuilder.AddToScheme(scheme))
