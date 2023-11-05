@@ -1,0 +1,11 @@
+apiVersion: sharding.timebertt.dev/v1alpha1
+kind: ClusterRing
+metadata:
+  name: dummy
+spec:
+  resources:
+  - group: ""
+    resource: configmaps
+    controlledResources:
+    - group: ""
+      resource: secrets

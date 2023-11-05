@@ -60,8 +60,10 @@ Read chapter 4 of the full [thesis](https://github.com/timebertt/thesis-controll
 
 - [docs](docs):
   - [getting started with controller sharding](docs/getting-started.md)
+- [sharder](cmd/sharder): the main sharding component orchestrating sharding
+- [shard](hack/cmd/shard): a simple dummy controller that implements the requirements for sharded controllers (used for development and testing purposes) 
 - [webhosting-operator](webhosting-operator): a sample operator for demonstrating and evaluating the implemented sharding design for Kubernetes controllers
-- [samples-generator](webhosting-operator/cmd/samples-generator): a tool for generating a given amount of random `Website` objects
+- [samples-generator](webhosting-operator/cmd/samples-generator): a tool for generating a given number of random `Website` objects
 - [monitoring setup](hack/config/monitoring): a setup for monitoring and measuring load test experiments for the sample operator
   - includes [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus)
   - [sharding-exporter](config/monitoring/sharding-exporter): (based on the [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) [custom resource metrics feature](https://github.com/kubernetes/kube-state-metrics/blob/main/docs/customresourcestate-metrics.md)) for metrics on the state of shards
