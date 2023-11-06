@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
 )
@@ -76,6 +77,9 @@ type Webhook struct {
 	// Server configures the sharder's webhook server.
 	// +optional
 	Server *WebhookServer `json:"server,omitempty"`
+	// Config configures the sharder's MutatingWebhookConfiguration objects.
+	// +optional
+	Config *WebhookConfig `json:"config,omitempty"`
 }
 
 // WebhookServer configures the webhook server.
@@ -92,4 +96,18 @@ type WebhookServer struct {
 	// Defaults to tls.key
 	// +optional
 	KeyName *string `json:"keyName,omitempty"`
+}
+
+// WebhookConfig configures the sharder's MutatingWebhookConfiguration objects.
+type WebhookConfig struct {
+	// Annotations are additional annotations that should be added to all webhook configs.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+	// ClientConfig configures the webhook configs' target.
+	// +optional
+	ClientConfig *admissionregistrationv1.WebhookClientConfig `json:"clientConfig,omitempty"`
+	// NamespaceSelector overwrites the webhook configs' default namespaceSelector.
+	// Defaults to excluding the kube-system and sharding-system namespaces
+	// +optional
+	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
 }

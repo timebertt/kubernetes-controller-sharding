@@ -5,6 +5,20 @@ metadata:
   name: sharder
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - mutatingwebhookconfigurations
+  verbs:
+  - create
+  - patch
+- apiGroups:
   - coordination.k8s.io
   resources:
   - leases

@@ -26,13 +26,19 @@ import (
 // This file contains API-related constants for the sharding implementation, e.g. well-known annotations and labels.
 
 const (
+	// NamespaceSystem is the namespace where the sharding system components run.
+	NamespaceSystem = "sharding-system"
+	// AppControllerSharding is the value for the "app.kubernetes.io/name" label used for objects related to controller
+	// sharding.
+	AppControllerSharding = "controller-sharding"
+
 	// alphaPrefix is a common prefix for all well-known annotations and labels.
 	// We use the kubernetes.io domain here for interoperability with other approaches evaluated in the thesis.
 	// If we want to make the approach implemented in this repository production-ready, this should eventually be changed
 	// to "alpha.sharding.timebertt.dev".
 	alphaPrefix = "sharding.alpha.kubernetes.io/"
 
-	// LabelClusterRing is the label on Lease objects that identifies the ClusterRing that the shard belongs to.
+	// LabelClusterRing is the label on objects that identifies the ClusterRing that the object belongs to.
 	LabelClusterRing = alphaPrefix + "clusterring"
 	// LabelState is the label on Lease objects that reflects the state of a shard for observability purposes.
 	// This label is maintained by the shardlease controller.

@@ -42,6 +42,9 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 	if r.Client == nil {
 		r.Client = mgr.GetClient()
 	}
+	if r.Recorder == nil {
+		r.Recorder = mgr.GetEventRecorderFor(ControllerName + "-controller")
+	}
 	if r.Clock == nil {
 		r.Clock = clock.RealClock{}
 	}
