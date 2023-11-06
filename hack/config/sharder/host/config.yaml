@@ -1,0 +1,7 @@
+apiVersion: config.sharding.timebertt.dev/v1alpha1
+kind: SharderConfig
+webhook:
+  server:
+    certDir: hack/config/certificates/host
+    certName: webhook-server.pem
+    keyName: webhook-server-key.pem

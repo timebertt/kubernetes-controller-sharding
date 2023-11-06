@@ -41,6 +41,8 @@ type SharderConfig struct {
 	Health HealthEndpoint `json:"health"`
 	// Metrics contains the controller metrics configuration
 	Metrics MetricsEndpoint `json:"metrics"`
+	// Webhook configures webhooks and the webhook server.
+	Webhook Webhook `json:"webhook"`
 	// GracefulShutdownTimeout is the duration given to runnable to stop before the manager actually returns on stop.
 	// To disable graceful shutdown, set it to 0s.
 	// To use graceful shutdown without timeout, set to a negative duration, e.G. -1s.
@@ -67,4 +69,27 @@ type MetricsEndpoint struct {
 	// Defaults to 127.0.0.1:8080
 	// +optional
 	BindAddress string `json:"bindAddress,omitempty"`
+}
+
+// Webhook configures webhooks and the webhook server.
+type Webhook struct {
+	// Server configures the sharder's webhook server.
+	// +optional
+	Server *WebhookServer `json:"server,omitempty"`
+}
+
+// WebhookServer configures the webhook server.
+type WebhookServer struct {
+	// CertDir is the directory that contains the server key and certificate.
+	// Defaults to /tmp/k8s-webhook-server/serving-certs
+	// +optional
+	CertDir *string `json:"certDir,omitempty"`
+	// CertName is the server certificate name.
+	// Defaults to tls.crt
+	// +optional
+	CertName *string `json:"certName,omitempty"`
+	// KeyName is the server key name.
+	// Defaults to tls.key
+	// +optional
+	KeyName *string `json:"keyName,omitempty"`
 }

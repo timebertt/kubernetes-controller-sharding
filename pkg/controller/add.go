@@ -27,6 +27,7 @@ import (
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller/shardlease"
 )
 
+// AddToManager adds all controllers to the manager.
 func AddToManager(ctx context.Context, mgr manager.Manager, cfg *configv1alpha1.SharderConfig) error {
 	if err := (&clusterring.Reconciler{}).AddToManager(mgr); err != nil {
 		return fmt.Errorf("failed adding clusterring controller: %w", err)

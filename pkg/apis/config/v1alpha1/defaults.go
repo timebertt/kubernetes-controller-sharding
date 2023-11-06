@@ -91,3 +91,9 @@ func SetDefaults_MetricsEndpoint(obj *MetricsEndpoint) {
 		obj.BindAddress = ":8080"
 	}
 }
+
+func SetDefaults_Webhook(obj *Webhook) {
+	if obj.Server == nil {
+		obj.Server = &WebhookServer{}
+	}
+}

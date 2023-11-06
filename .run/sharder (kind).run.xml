@@ -2,6 +2,7 @@
   <configuration default="false" name="sharder (kind)" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$" />
+    <parameters value="--config=hack/config/sharder/host/config.yaml" />
     <envs>
       <env name="LEADER_ELECT" value="false" />
       <env name="KUBECONFIG" value="$PROJECT_DIR$/hack/kind_kubeconfig.yaml" />

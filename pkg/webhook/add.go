@@ -18,12 +18,22 @@ package webhook
 
 import (
 	"context"
+	"fmt"
 
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/config/v1alpha1"
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/ring"
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/webhook/sharder"
 )
 
-func AddToManager(ctx context.Context, mgr manager.Manager, cfg *configv1alpha1.SharderConfig) error {
+// AddToManager adds all webhooks to the manager.
+func AddToManager(ctx context.Context, mgr manager.Manager, ringCache ring.Cache, config *configv1alpha1.SharderConfig) error {
+	if err := (&sharder.Handler{
+		Cache: ringCache,
+	}).AddToManager(mgr); err != nil {
+		return fmt.Errorf("failed adding sharder webhook: %w", err)
+	}
+
 	return nil
 }

@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/config/v1alpha1"
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
@@ -170,6 +171,14 @@ func (o *options) applyConfigToManagerOptions() {
 			ExtraHandlers:  extraHandlers,
 		}
 	}
+
+	webhookOptions := webhook.Options{}
+	if serverConfig := o.config.Webhook.Server; serverConfig != nil {
+		webhookOptions.CertDir = ptr.Deref(serverConfig.CertDir, "")
+		webhookOptions.CertName = ptr.Deref(serverConfig.CertName, "")
+		webhookOptions.KeyName = ptr.Deref(serverConfig.KeyName, "")
+	}
+	o.managerOptions.WebhookServer = webhook.NewServer(webhookOptions)
 
 	o.managerOptions.GracefulShutdownTimeout = ptr.To(o.config.GracefulShutdownTimeout.Duration)
 }
