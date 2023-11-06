@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 //+kubebuilder:object:root=true
@@ -56,31 +57,30 @@ type ClusterRingList struct {
 
 // ClusterRingSpec defines the desired state of a ClusterRing.
 type ClusterRingSpec struct {
-	// Kinds specifies the list of object kinds that are distributed across shards in this ClusterRing.
+	// Resources specifies the list of resources that are distributed across shards in this ClusterRing.
 	// +optional
-	Kinds []ClusterRingKind `json:"kinds,omitempty"`
+	// +listType=map
+	// +listMapKey=group
+	// +listMapKey=resource
+	Resources []RingResource `json:"resources,omitempty"`
 }
 
-// ClusterRingKind specifies an object kind that is distributed across shards in the ClusterRing.
-// This kind is the controller's main kind, i.e., the kind of which it updates the object status.
-type ClusterRingKind struct {
-	ObjectKind `json:",inline"`
+// RingResource specifies a resource along with controlled resources that is distributed across shards in a ring.
+type RingResource struct {
+	// GroupResource specifies the resource that is distributed across shards in a ring.
+	// This resource is the controller's main resource, i.e., the resource of which it updates the object status.
+	metav1.GroupResource `json:",inline"`
 
-	// ControlledKinds are additional object kinds that are distributed across shards in the ClusterRing.
-	// These kinds are controlled by the controller's main kind, i.e., they have an owner reference with controller=true
-	// back to the object kind of this ClusterRingKind. Typically, the controller also watches objects of this kind and
-	// enqueues the owning object (of the main kind) whenever the status of a controlled object changes.
+	// ControlledResources are additional resources that are distributed across shards in the ClusterRing.
+	// These resources are controlled by the controller's main resource, i.e., they have an owner reference with
+	// controller=true back to the GroupResource of this RingResource.
+	// Typically, the controller also watches objects of this resource and enqueues the owning object (of the main
+	// resource) whenever the status of a controlled object changes.
 	// +optional
-	ControlledKinds []ObjectKind `json:"controlledKinds,omitempty"`
-}
-
-// ObjectKind specifies an object kind that is distributed across shards in the ClusterRing.
-type ObjectKind struct {
-	// APIGroup is the API group of the object. Specify "" for the core API group.
-	// +optional
-	APIGroup string `json:"apiGroup,omitempty"`
-	// Kind is the kind of the object.
-	Kind string `json:"kind"`
+	// +listType=map
+	// +listMapKey=group
+	// +listMapKey=resource
+	ControlledResources []metav1.GroupResource `json:"controlledResources,omitempty"`
 }
 
 // ClusterRingStatus defines the observed state of a ClusterRing.
@@ -92,4 +92,19 @@ type ClusterRingStatus struct {
 	Shards int32 `json:"shards"`
 	// AvailableShards is the total number of available shards of this ring.
 	AvailableShards int32 `json:"availableShards"`
+}
+
+// LeaseSelector returns a label selector for selecting shard Lease objects belonging to this ClusterRing.
+func (c *ClusterRing) LeaseSelector() labels.Selector {
+	return labels.SelectorFromSet(labels.Set{LabelClusterRing: c.Name})
+}
+
+// LabelShard returns the label on sharded objects that holds the name of the responsible shard within this ClusterRing.
+func (c *ClusterRing) LabelShard() string {
+	return LabelShard(KindClusterRing, "", c.Name)
+}
+
+// RingResources returns the the list of resources that are distributed across shards in this ClusterRing.
+func (c *ClusterRing) RingResources() []RingResource {
+	return c.Spec.Resources
 }

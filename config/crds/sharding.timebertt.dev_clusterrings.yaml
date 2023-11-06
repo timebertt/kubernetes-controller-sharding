@@ -47,49 +47,54 @@ spec:
             description: Spec contains the specification of the desired behavior of
               the ClusterRing.
             properties:
-              kinds:
-                description: Kinds specifies the list of object kinds that are distributed
+              resources:
+                description: Resources specifies the list of resources that are distributed
                   across shards in this ClusterRing.
                 items:
-                  description: ClusterRingKind specifies an object kind that is distributed
-                    across shards in the ClusterRing. This kind is the controller's
-                    main kind, i.e., the kind of which it updates the object status.
+                  description: RingResource specifies a resource along with controlled
+                    resources that is distributed across shards in a ring.
                   properties:
-                    apiGroup:
-                      description: APIGroup is the API group of the object. Specify
-                        "" for the core API group.
-                      type: string
-                    controlledKinds:
-                      description: ControlledKinds are additional object kinds that
-                        are distributed across shards in the ClusterRing. These kinds
-                        are controlled by the controller's main kind, i.e., they have
-                        an owner reference with controller=true back to the object
-                        kind of this ClusterRingKind. Typically, the controller also
-                        watches objects of this kind and enqueues the owning object
-                        (of the main kind) whenever the status of a controlled object
+                    controlledResources:
+                      description: ControlledResources are additional resources that
+                        are distributed across shards in the ClusterRing. These resources
+                        are controlled by the controller's main resource, i.e., they
+                        have an owner reference with controller=true back to the GroupResource
+                        of this RingResource. Typically, the controller also watches
+                        objects of this resource and enqueues the owning object (of
+                        the main resource) whenever the status of a controlled object
                         changes.
                       items:
-                        description: ObjectKind specifies an object kind that is distributed
-                          across shards in the ClusterRing.
+                        description: GroupResource specifies a Group and a Resource,
+                          but does not force a version.  This is useful for identifying
+                          concepts during lookup stages without having partially valid
+                          types
                         properties:
-                          apiGroup:
-                            description: APIGroup is the API group of the object.
-                              Specify "" for the core API group.
+                          group:
                             type: string
-                          kind:
-                            description: Kind is the kind of the object.
+                          resource:
                             type: string
                         required:
-                        - kind
+                        - group
+                        - resource
                         type: object
                       type: array
-                    kind:
-                      description: Kind is the kind of the object.
+                      x-kubernetes-list-map-keys:
+                      - group
+                      - resource
+                      x-kubernetes-list-type: map
+                    group:
+                      type: string
+                    resource:
                       type: string
                   required:
-                  - kind
+                  - group
+                  - resource
                   type: object
                 type: array
+                x-kubernetes-list-map-keys:
+                - group
+                - resource
+                x-kubernetes-list-type: map
             type: object
           status:
             description: Status contains the most recently observed status of the

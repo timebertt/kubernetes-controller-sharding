@@ -3,13 +3,15 @@ kind: ClusterRing
 metadata:
   name: operator
 spec:
-  kinds:
-  - apiGroup: webhosting.timebertt.dev
-    kind: Website
-    controlledKinds:
-    - apiGroup: apps
-      kind: Deployment
-    - kind: ConfigMap
-    - kind: Service
-    - apiGroup: networking.k8s.io
-      kind: Ingress
+  resources:
+  - group: webhosting.timebertt.dev
+    resource: websites
+    controlledResources:
+    - group: apps
+      resource: deployments
+    - group: ""
+      resource: configmaps
+    - group: ""
+      resource: services
+    - group: networking.k8s.io
+      resource: ingresses
