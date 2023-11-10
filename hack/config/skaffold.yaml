@@ -213,6 +213,13 @@ manifests:
     paths:
       - config/default
       - config/monitoring/default
+  hooks:
+    before:
+    - host:
+        command:
+        # ensure deepcopy, CRDs, and RBAC are up-to-date
+        - make
+        - generate-fast
 deploy:
   kubectl:
     flags:

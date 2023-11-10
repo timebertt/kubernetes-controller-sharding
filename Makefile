@@ -47,10 +47,13 @@ clean-tools-bin: ## Empty the tools binary directory
 modules: ## Runs go mod to ensure modules are up to date.
 	go mod tidy
 
-.PHONY: generate
-generate: $(CONTROLLER_GEN) modules ## Run all code generators
+.PHONY: generate-fast
+generate-fast: $(CONTROLLER_GEN) modules ## Run all fast code generators
 	$(CONTROLLER_GEN) rbac:roleName=sharder crd paths="./pkg/..." output:rbac:artifacts:config=config/rbac output:crd:artifacts:config=config/crds
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/..."
+
+.PHONY: generate
+generate: generate-fast modules ## Run all code generators
 	hack/update-codegen.sh
 
 .PHONY: fmt
