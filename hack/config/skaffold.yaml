@@ -227,3 +227,11 @@ deploy:
         - --server-side
         - --force-conflicts
     defaultNamespace: ""
+profiles:
+- name: kind
+  activation:
+  - kubeContext: kind-.*
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: hack/config/sharder/local
