@@ -4,7 +4,7 @@ kind: Kustomization
 namespace: ingress-nginx
 
 resources:
-- https://github.com/kubernetes/ingress-nginx//deploy/static/provider/cloud?ref=controller-v1.8.1
+- https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.4/deploy/static/provider/cloud/deploy.yaml
 
 patches:
 - path: patch_default_ingress_class.yaml
