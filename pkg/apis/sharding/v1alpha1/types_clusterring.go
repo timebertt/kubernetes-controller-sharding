@@ -24,9 +24,10 @@ import (
 //+kubebuilder:object:root=true
 //+kubebuilder:resource:scope=Cluster
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type == "Ready")].status`
 //+kubebuilder:printcolumn:name="Available",type=string,JSONPath=`.status.availableShards`
 //+kubebuilder:printcolumn:name="Shards",type=string,JSONPath=`.status.shards`
-//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`
 
 // ClusterRing declares a virtual ring of sharded controller instances. The specified objects are distributed across
 // shards of this ring on the cluster-scope (i.e., objects in all namespaces). Hence, the "Cluster" prefix.
@@ -83,6 +84,11 @@ type RingResource struct {
 	ControlledResources []metav1.GroupResource `json:"controlledResources,omitempty"`
 }
 
+const (
+	// ClusterRingReady is the condition type for the "Ready" condition on ClusterRings.
+	ClusterRingReady = "Ready"
+)
+
 // ClusterRingStatus defines the observed state of a ClusterRing.
 type ClusterRingStatus struct {
 	// The generation observed by the ClusterRing controller.
@@ -92,6 +98,12 @@ type ClusterRingStatus struct {
 	Shards int32 `json:"shards"`
 	// AvailableShards is the total number of available shards of this ring.
 	AvailableShards int32 `json:"availableShards"`
+	// Conditions represents the observations of a foo's current state.
+	// Known .status.conditions.type are: "Available", "Progressing", and "Degraded"
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // LeaseSelector returns a label selector for selecting shard Lease objects belonging to this ClusterRing.
