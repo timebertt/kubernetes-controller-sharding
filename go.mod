@@ -5,6 +5,7 @@ go 1.21
 require (
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/go-logr/logr v1.3.0
+	github.com/hashicorp/go-multierror v1.1.1
 	github.com/prometheus/client_golang v1.17.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
@@ -52,6 +53,7 @@ require (
 	github.com/google/uuid v1.4.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0 // indirect
+	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
