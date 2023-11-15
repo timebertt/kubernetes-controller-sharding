@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
+	"gomodules.xyz/jsonpatch/v2"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -86,15 +88,16 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 	shard := hashRing.Hash(key)
 
 	log.V(1).Info("Assigning object for ring", "ring", client.ObjectKeyFromObject(ring), "shard", shard)
-	metav1.SetMetaDataLabel(&obj.ObjectMeta, labelShard, shard)
 
-	newRaw, err := json.Marshal(obj)
-	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("error marshaling object: %w", err))
+	patches := make([]jsonpatch.JsonPatchOperation, 0, 2)
+	if obj.Labels == nil {
+		patches = append(patches, jsonpatch.NewOperation("add", "/metadata/labels", map[string]string{}))
 	}
+	// If we reach here, the shard label is always missing. Otherwise, we would have exited early.
+	patches = append(patches, jsonpatch.NewOperation("add", "/metadata/labels/"+rfc6901Encoder.Replace(labelShard), shard))
 
 	shardingmetrics.AssignmentsTotal.WithLabelValues(req.Resource.Group, req.Resource.Resource).Inc()
-	return admission.PatchResponseFromRaw(req.Object.Raw, newRaw)
+	return admission.Patched("assigning object", patches...)
 }
 
 // RingForRequest returns the Ring object matching the requests' path.
@@ -115,3 +118,6 @@ func RingForRequest(ctx context.Context, c client.Reader) (sharding.Ring, error)
 
 	return ring, nil
 }
+
+// rfc6901Encoder can escape / characters in label keys for inclusion in JSON patch paths.
+var rfc6901Encoder = strings.NewReplacer("~", "~0", "/", "~1")
