@@ -23,7 +23,6 @@ import (
 
 	coordinationv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/json"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -62,7 +61,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 		return admission.Allowed("object is already assigned")
 	}
 
-	keyFunc, err := sharding.KeyFuncForResource(schema.GroupResource{
+	keyFunc, err := sharding.KeyFuncForResource(metav1.GroupResource{
 		Group:    req.Resource.Group,
 		Resource: req.Resource.Resource,
 	}, ring)
@@ -82,8 +81,8 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 	}
 
 	// get ring from cache and hash the object onto the ring
-	r, _ := h.Cache.Get(ring, leaseList)
-	shard := r.Hash(key)
+	hashRing, _ := h.Cache.Get(ring, leaseList)
+	shard := hashRing.Hash(key)
 
 	log.V(1).Info("Assigning object for ring", "ring", client.ObjectKeyFromObject(ring), "shard", shard)
 	metav1.SetMetaDataLabel(&obj.ObjectMeta, labelShard, shard)
