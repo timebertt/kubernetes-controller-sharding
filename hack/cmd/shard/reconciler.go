@@ -21,14 +21,17 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
@@ -56,12 +59,37 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 
 	return builder.ControllerManagedBy(mgr).
 		Named("configmap").
-		For(&corev1.ConfigMap{}).
-		Owns(&corev1.Secret{}).
+		For(&corev1.ConfigMap{}, builder.WithPredicates(ConfigMapDataChanged())).
+		Owns(&corev1.Secret{}, builder.WithPredicates(ObjectDeleted())).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
 		}).
 		Complete(r)
+}
+
+func ConfigMapDataChanged() predicate.Predicate {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			switch objNew := e.ObjectNew.(type) {
+			case *corev1.ConfigMap:
+				objOld := e.ObjectOld.(*corev1.ConfigMap)
+				return apiequality.Semantic.DeepEqual(objOld.Data, objNew.Data)
+			case *corev1.Secret:
+				objOld := e.ObjectOld.(*corev1.Secret)
+				return apiequality.Semantic.DeepEqual(objOld.Data, objNew.Data)
+			}
+
+			return false
+		},
+	}
+}
+
+func ObjectDeleted() predicate.Predicate {
+	return predicate.Funcs{
+		CreateFunc: func(_ event.CreateEvent) bool { return false },
+		UpdateFunc: func(_ event.UpdateEvent) bool { return false },
+		DeleteFunc: func(_ event.DeleteEvent) bool { return true },
+	}
 }
 
 // Reconcile reconciles a ClusterRing object.
@@ -106,23 +134,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	log.V(1).Info("Reconciling object")
 
 	secret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: corev1.SchemeGroupVersion.String(),
-			Kind:       "Secret",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "dummy-" + configMap.Name,
 			Namespace: configMap.Namespace,
 		},
-		Data: make(map[string][]byte, len(configMap.Data)),
-	}
-	for k, v := range configMap.Data {
-		secret.Data[k] = []byte(v)
 	}
 
 	if err := controllerutil.SetControllerReference(configMap, secret, r.Client.Scheme()); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, r.Client.Patch(ctx, secret, client.Apply, client.FieldOwner("dummy"))
+	return reconcile.Result{}, client.IgnoreAlreadyExists(r.Client.Create(ctx, secret))
 }
