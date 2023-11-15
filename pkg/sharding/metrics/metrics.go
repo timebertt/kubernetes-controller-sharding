@@ -24,35 +24,42 @@ import (
 
 var (
 	// AssignmentsTotal is a prometheus counter metric which holds the total
-	// number of shard assignments per GroupKind.
-	// It has two labels which refer to the object's GroupKind and two labels
-	// which refer to the controller's GroupKind.
+	// number of shard assignments by the sharder webhook per GroupResource.
+	// It has two labels which refer to the object's GroupResource.
 	AssignmentsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "sharding_assignments_total",
-		Help: "Total number of shard assignments per GroupKind",
-	}, []string{"group", "kind", "controllerGroup", "controllerKind"})
+		Help: "Total number of shard assignments by the sharder webhook per GroupResource",
+	}, []string{"group", "resource"})
+
+	// MovementsTotal is a prometheus counter metric which holds the total
+	// number of shard movements triggered by the sharder controller per GroupResource.
+	// It has two labels which refer to the object's GroupResource.
+	MovementsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "sharding_movements_total",
+		Help: "Total number of shard movements triggered by the sharder controller per GroupResource",
+	}, []string{"group", "resource"})
 
 	// DrainsTotal is a prometheus counter metric which holds the total
-	// number of shard drains per GroupKind.
-	// It has two labels which refer to the object's GroupKind and two labels
-	// which refer to the controller's GroupKind.
+	// number of shard drains triggered by the sharder controller per GroupResource.
+	// It has two labels which refer to the object's GroupResource.
 	DrainsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "sharding_drains_total",
-		Help: "Total number of shard drains per GroupKind",
-	}, []string{"group", "kind", "controllerGroup", "controllerKind"})
+		Help: "Total number of shard drains triggered by the sharder controller per GroupResource",
+	}, []string{"group", "resource"})
 
 	// RingCalculationsTotal is a prometheus counter metric which holds the total
 	// number of shard ring calculations per ring kind.
 	// It has three labels which refer to the ring's kind, name, and namespace.
 	RingCalculationsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "sharding_ring_calculations_total",
-		Help: "Total number of shard ring calculations per GroupKind",
+		Help: "Total number of shard ring calculations per ring kind",
 	}, []string{"kind", "namespace", "name"})
 )
 
 func init() {
 	metrics.Registry.MustRegister(
 		AssignmentsTotal,
+		MovementsTotal,
 		DrainsTotal,
 		RingCalculationsTotal,
 	)

@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding"
+	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/metrics"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/ring"
 )
 
@@ -92,7 +93,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("error marshaling object: %w", err))
 	}
 
-	// increment metrics counter
+	shardingmetrics.AssignmentsTotal.WithLabelValues(req.Resource.Group, req.Resource.Resource).Inc()
 	return admission.PatchResponseFromRaw(req.Object.Raw, newRaw)
 }
 
