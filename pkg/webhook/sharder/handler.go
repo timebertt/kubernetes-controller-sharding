@@ -26,6 +26,7 @@ import (
 	coordinationv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -96,7 +97,10 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 	// If we reach here, the shard label is always missing. Otherwise, we would have exited early.
 	patches = append(patches, jsonpatch.NewOperation("add", "/metadata/labels/"+rfc6901Encoder.Replace(labelShard), shard))
 
-	shardingmetrics.AssignmentsTotal.WithLabelValues(req.Resource.Group, req.Resource.Resource).Inc()
+	if !ptr.Deref(req.DryRun, false) {
+		shardingmetrics.AssignmentsTotal.WithLabelValues(req.Resource.Group, req.Resource.Resource).Inc()
+	}
+
 	return admission.Patched("assigning object", patches...)
 }
 
