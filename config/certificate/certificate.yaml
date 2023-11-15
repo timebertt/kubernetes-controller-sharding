@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: webhook-server
+spec:
+  issuerRef:
+    name: selfsigned
+  commonName: sharding:sharder:webhook
+  dnsNames:
+  - sharder.sharding-system
+  - sharder.sharding-system.svc
+  - sharder.sharding-system.svc.cluster.local
+  secretName: webhook-server

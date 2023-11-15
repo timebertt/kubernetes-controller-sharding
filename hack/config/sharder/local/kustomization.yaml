@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../../../config/default
+
+patches:
+- target:
+    group: apps
+    kind: Deployment
+    name: sharder
+    namespace: sharding-system
+  patch: |
+    - op: test
+      path: /spec/template/spec/containers/0/args/0
+      value: --zap-log-level=info
+    - op: replace
+      path: /spec/template/spec/containers/0/args/0
+      value: --zap-log-level=debug

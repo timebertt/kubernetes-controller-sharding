@@ -15,6 +15,9 @@ spec:
   scope: Cluster
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type == "Ready")].status
+      name: Ready
+      type: string
     - jsonPath: .status.availableShards
       name: Available
       type: string
@@ -47,49 +50,54 @@ spec:
             description: Spec contains the specification of the desired behavior of
               the ClusterRing.
             properties:
-              kinds:
-                description: Kinds specifies the list of object kinds that are distributed
+              resources:
+                description: Resources specifies the list of resources that are distributed
                   across shards in this ClusterRing.
                 items:
-                  description: ClusterRingKind specifies an object kind that is distributed
-                    across shards in the ClusterRing. This kind is the controller's
-                    main kind, i.e., the kind of which it updates the object status.
+                  description: RingResource specifies a resource along with controlled
+                    resources that is distributed across shards in a ring.
                   properties:
-                    apiGroup:
-                      description: APIGroup is the API group of the object. Specify
-                        "" for the core API group.
-                      type: string
-                    controlledKinds:
-                      description: ControlledKinds are additional object kinds that
-                        are distributed across shards in the ClusterRing. These kinds
-                        are controlled by the controller's main kind, i.e., they have
-                        an owner reference with controller=true back to the object
-                        kind of this ClusterRingKind. Typically, the controller also
-                        watches objects of this kind and enqueues the owning object
-                        (of the main kind) whenever the status of a controlled object
+                    controlledResources:
+                      description: ControlledResources are additional resources that
+                        are distributed across shards in the ClusterRing. These resources
+                        are controlled by the controller's main resource, i.e., they
+                        have an owner reference with controller=true back to the GroupResource
+                        of this RingResource. Typically, the controller also watches
+                        objects of this resource and enqueues the owning object (of
+                        the main resource) whenever the status of a controlled object
                         changes.
                       items:
-                        description: ObjectKind specifies an object kind that is distributed
-                          across shards in the ClusterRing.
+                        description: GroupResource specifies a Group and a Resource,
+                          but does not force a version.  This is useful for identifying
+                          concepts during lookup stages without having partially valid
+                          types
                         properties:
-                          apiGroup:
-                            description: APIGroup is the API group of the object.
-                              Specify "" for the core API group.
+                          group:
                             type: string
-                          kind:
-                            description: Kind is the kind of the object.
+                          resource:
                             type: string
                         required:
-                        - kind
+                        - group
+                        - resource
                         type: object
                       type: array
-                    kind:
-                      description: Kind is the kind of the object.
+                      x-kubernetes-list-map-keys:
+                      - group
+                      - resource
+                      x-kubernetes-list-type: map
+                    group:
+                      type: string
+                    resource:
                       type: string
                   required:
-                  - kind
+                  - group
+                  - resource
                   type: object
                 type: array
+                x-kubernetes-list-map-keys:
+                - group
+                - resource
+                x-kubernetes-list-type: map
             type: object
           status:
             description: Status contains the most recently observed status of the
@@ -100,6 +108,80 @@ spec:
                   of this ring.
                 format: int32
                 type: integer
+              conditions:
+                description: 'Conditions represents the observations of a foo''s current
+                  state. Known .status.conditions.type are: "Available", "Progressing",
+                  and "Degraded"'
+                items:
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    \n type FooStatus struct{ // Represents the observations of a
+                    foo's current state. // Known .status.conditions.type are: \"Available\",
+                    \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
+                    // +listType=map // +listMapKey=type Conditions []metav1.Condition
+                    `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
+                    protobuf:\"bytes,1,rep,name=conditions\"` \n // other fields }"
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
               observedGeneration:
                 description: The generation observed by the ClusterRing controller.
                 format: int64

@@ -21,6 +21,9 @@ resources:
 - ../rbac
 - ../crds
 
+components:
+- ../certificate
+
 configMapGenerator:
 - name: sharder-config
   options:

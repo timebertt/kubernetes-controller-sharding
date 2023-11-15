@@ -1,6 +1,7 @@
 *.secret*
 .envrc
 hack/kind_kubeconfig.yaml
+.gitguardian.yaml
 
 # Binaries for programs and plugins
 *.exe

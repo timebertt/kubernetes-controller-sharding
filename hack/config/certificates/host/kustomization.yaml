@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: sharding-system
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+secretGenerator:
+- name: webhook-ca
+  options:
+    annotations:
+      cert-manager.io/allow-direct-injection: "true"
+  files:
+  - ca.crt=webhook-ca.pem

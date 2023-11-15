@@ -10,6 +10,10 @@ spec:
   selector:
     app.kubernetes.io/component: sharder
   ports:
+  - port: 443
+    name: webhook
+    protocol: TCP
+    targetPort: webhook
   - port: 8080
     name: metrics
     protocol: TCP

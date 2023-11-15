@@ -1,0 +1,14 @@
+{
+  "CN": "sharding:sharder:webhook",
+  "key": {
+    "algo": "rsa",
+    "size": 4096
+  },
+  "hosts": [
+    "localhost",
+    "host.docker.internal",
+    "sharder.sharding-system",
+    "sharder.sharding-system.svc",
+    "sharder.sharding-system.svc.cluster.local"
+  ]
+}

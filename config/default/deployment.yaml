@@ -32,6 +32,9 @@ spec:
         - name: DISABLE_HTTP2
           value: "true"
         ports:
+        - name: webhook
+          containerPort: 9443
+          protocol: TCP
         - name: metrics
           containerPort: 8080
           protocol: TCP

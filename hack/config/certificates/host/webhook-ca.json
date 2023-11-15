@@ -1,0 +1,7 @@
+{
+  "CN": "sharding:sharder",
+  "key": {
+    "algo": "rsa",
+    "size": 4096
+  }
+}

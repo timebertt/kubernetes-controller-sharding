@@ -19,11 +19,15 @@ package v1alpha1
 import (
 	"time"
 
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
 	"k8s.io/utils/ptr"
+
+	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -68,7 +72,7 @@ func SetDefaults_LeaderElectionConfiguration(obj *componentbaseconfigv1alpha1.Le
 		obj.ResourceName = "sharder"
 	}
 	if obj.ResourceNamespace == "" {
-		obj.ResourceNamespace = "sharding-system"
+		obj.ResourceNamespace = shardingv1alpha1.NamespaceSystem
 	}
 }
 
@@ -89,5 +93,46 @@ func SetDefaults_HealthEndpoint(obj *HealthEndpoint) {
 func SetDefaults_MetricsEndpoint(obj *MetricsEndpoint) {
 	if obj.BindAddress == "" {
 		obj.BindAddress = ":8080"
+	}
+}
+
+func SetDefaults_Webhook(obj *Webhook) {
+	if obj.Server == nil {
+		obj.Server = &WebhookServer{}
+	}
+
+	if obj.Config == nil {
+		obj.Config = &WebhookConfig{}
+	}
+}
+
+func SetDefaults_WebhookConfig(obj *WebhookConfig) {
+	if obj.ClientConfig == nil {
+		obj.ClientConfig = &admissionregistrationv1.WebhookClientConfig{}
+	}
+
+	if obj.NamespaceSelector == nil {
+		obj.NamespaceSelector = &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{{
+				Key:      corev1.LabelMetadataName,
+				Operator: metav1.LabelSelectorOpNotIn,
+				Values:   []string{metav1.NamespaceSystem, shardingv1alpha1.NamespaceSystem},
+			}},
+		}
+	}
+}
+
+func SetDefaults_WebhookClientConfig(obj *admissionregistrationv1.WebhookClientConfig) {
+	if obj.URL == nil && obj.Service == nil {
+		obj.Service = &admissionregistrationv1.ServiceReference{}
+	}
+}
+
+func SetDefaults_ServiceReference(obj *admissionregistrationv1.ServiceReference) {
+	if obj.Namespace == "" {
+		obj.Namespace = shardingv1alpha1.NamespaceSystem
+	}
+	if obj.Name == "" {
+		obj.Name = "sharder"
 	}
 }

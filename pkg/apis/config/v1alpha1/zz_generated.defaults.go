@@ -46,4 +46,14 @@ func SetObjectDefaults_SharderConfig(in *SharderConfig) {
 	}
 	SetDefaults_HealthEndpoint(&in.Health)
 	SetDefaults_MetricsEndpoint(&in.Metrics)
+	SetDefaults_Webhook(&in.Webhook)
+	if in.Webhook.Config != nil {
+		SetDefaults_WebhookConfig(in.Webhook.Config)
+		if in.Webhook.Config.ClientConfig != nil {
+			SetDefaults_WebhookClientConfig(in.Webhook.Config.ClientConfig)
+			if in.Webhook.Config.ClientConfig.Service != nil {
+				SetDefaults_ServiceReference(in.Webhook.Config.ClientConfig.Service)
+			}
+		}
+	}
 }
