@@ -64,6 +64,13 @@ type ClusterRingSpec struct {
 	// +listMapKey=group
 	// +listMapKey=resource
 	Resources []RingResource `json:"resources,omitempty"`
+	// NamespaceSelector overwrites the webhook configs' namespaceSelector.
+	// If set, this selector should exclude the kube-system and sharding-system namespaces.
+	// If omitted, the default namespaceSelector from the SharderConfig is used.
+	// Note: changing/unsetting this selector will not remove labels from objects in namespaces that were previously
+	// included.
+	// +optional
+	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
 }
 
 // RingResource specifies a resource along with controlled resources that is distributed across shards in a ring.

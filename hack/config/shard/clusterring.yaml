@@ -9,3 +9,6 @@ spec:
     controlledResources:
     - group: ""
       resource: secrets
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: default

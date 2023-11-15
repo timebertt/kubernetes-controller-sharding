@@ -107,6 +107,8 @@ type WebhookConfig struct {
 	// +optional
 	ClientConfig *admissionregistrationv1.WebhookClientConfig `json:"clientConfig,omitempty"`
 	// NamespaceSelector overwrites the webhook configs' default namespaceSelector.
+	// Note: changing/unsetting this selector will not remove labels from objects in namespaces that were previously
+	// included.
 	// Defaults to excluding the kube-system and sharding-system namespaces
 	// +optional
 	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`

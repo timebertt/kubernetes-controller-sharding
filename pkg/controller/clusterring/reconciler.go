@@ -182,6 +182,11 @@ func (r *Reconciler) reconcileWebhooks(ctx context.Context, clusterRing *shardin
 		AdmissionReviewVersions: []string{"v1"},
 	}
 
+	// overwrite namespaceSelector with ring-specific namespaceSelector if specified
+	if clusterRing.Spec.NamespaceSelector != nil {
+		webhook.NamespaceSelector = clusterRing.Spec.NamespaceSelector.DeepCopy()
+	}
+
 	// add ring-specific path to webhook client config
 	webhookPath, err := sharder.WebhookPathFor(clusterRing)
 	if err != nil {
