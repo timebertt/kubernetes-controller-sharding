@@ -28,5 +28,6 @@ type Ring interface {
 	client.Object
 	LeaseSelector() labels.Selector
 	LabelShard() string
+	LabelDrain() string
 	RingResources() []shardingv1alpha1.RingResource
 }

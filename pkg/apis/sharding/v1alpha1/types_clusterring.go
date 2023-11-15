@@ -116,6 +116,12 @@ func (c *ClusterRing) LabelShard() string {
 	return LabelShard(KindClusterRing, "", c.Name)
 }
 
+// LabelDrain returns the label on sharded objects that instructs the responsible shard within this ClusterRing to stop
+// reconciling the object and remove both the shard and drain label.
+func (c *ClusterRing) LabelDrain() string {
+	return LabelDrain(KindClusterRing, "", c.Name)
+}
+
 // RingResources returns the the list of resources that are distributed across shards in this ClusterRing.
 func (c *ClusterRing) RingResources() []RingResource {
 	return c.Spec.Resources
