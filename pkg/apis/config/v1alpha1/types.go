@@ -42,6 +42,8 @@ type SharderConfig struct {
 	Health HealthEndpoint `json:"health"`
 	// Metrics contains the controller metrics configuration
 	Metrics MetricsEndpoint `json:"metrics"`
+	// Controller configures the sharder's controllers.
+	Controller Controller `json:"controller"`
 	// Webhook configures webhooks and the webhook server.
 	Webhook Webhook `json:"webhook"`
 	// GracefulShutdownTimeout is the duration given to runnable to stop before the manager actually returns on stop.
@@ -70,6 +72,21 @@ type MetricsEndpoint struct {
 	// Defaults to 127.0.0.1:8080
 	// +optional
 	BindAddress string `json:"bindAddress,omitempty"`
+}
+
+// Controller configures the sharder's controllers.
+type Controller struct {
+	// Sharder configures the sharder controller.
+	// +optional
+	Sharder *SharderController `json:"sharder,omitempty"`
+}
+
+// SharderController configures the sharder controller.
+type SharderController struct {
+	// SyncPeriod configures how often a periodic resync of all object assignments in a ring in performed.
+	// Defaults to 5m
+	// +optional
+	SyncPeriod *metav1.Duration `json:"syncPeriod,omitempty"`
 }
 
 // Webhook configures webhooks and the webhook server.
