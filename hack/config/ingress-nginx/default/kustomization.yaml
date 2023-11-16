@@ -18,3 +18,13 @@ patches:
     metadata:
       name: ingress-nginx-admission
     $patch: delete
+# This job fails if the ValidatingWebhookConfiguration does not exist. Drop it as well.
+# Note: we can't drop the ingress-nginx-admission-create job, which creates the webhook certificate. Without this,
+# the ingress-nginx-controller won't start.
+- patch: |
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: ingress-nginx-admission-patch
+      namespace: ingress-nginx
+    $patch: delete
