@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
 - clusterring.yaml
+- sharder_rbac.yaml
