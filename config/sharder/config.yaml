@@ -1,0 +1,8 @@
+apiVersion: config.sharding.timebertt.dev/v1alpha1
+kind: SharderConfig
+webhook:
+  config:
+    annotations:
+      # Technically, this belongs to the certificate component. It doesn't hurt to add this by default though.
+      # Kustomize doesn't allow merging config files in ConfigMaps. Hence, keep the full default config here.
+      cert-manager.io/inject-ca-from: sharding-system/webhook-server

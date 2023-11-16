@@ -1,6 +1,0 @@
-apiVersion: config.sharding.timebertt.dev/v1alpha1
-kind: SharderConfig
-webhook:
-  config:
-    annotations:
-      cert-manager.io/inject-ca-from: sharding-system/webhook-server

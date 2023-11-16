@@ -212,7 +212,7 @@ manifests:
   kustomize:
     paths:
       - config/default
-      - config/monitoring/default
+      - config/monitoring
   hooks:
     before:
     - host:

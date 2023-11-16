@@ -157,7 +157,7 @@ metadata:
 manifests:
   kustomize:
     paths:
-    - config/monitoring/default
+    - config/monitoring
 deploy:
   kubectl:
     defaultNamespace: ""
