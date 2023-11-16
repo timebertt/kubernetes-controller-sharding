@@ -56,14 +56,6 @@ For this, it creates a shard Lease object and renews it periodically.
 It also starts a controller for ConfigMaps that are assigned to the shard and handles the drain operation as expected.
 This is basically a lightweight example controller which is useful for developing the sharding components without actually
 running a full controller that complies with the sharding requirements.`,
-		Example: `
-# create the "dummy" ClusterRing object
-k apply -k hack/config/shard
-# run the sharder
-LEADER_ELECT=false go run ./cmd/sharder
-# run one or more shards belonging to the "dummy" ClusterRing
-go run ./hack/cmd/shard
-`,
 
 		Args:          cobra.NoArgs,
 		SilenceErrors: true,

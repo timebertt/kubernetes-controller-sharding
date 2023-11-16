@@ -105,8 +105,16 @@ build: ## Build the sharder binary.
 	go build -o bin/sharder ./cmd/sharder
 
 .PHONY: run
-run: ## Run the sharder from your host.
-	go run ./cmd/sharder
+run: $(KUBECTL) generate-fast ## Run the sharder from your host and deploy prerequisites.
+	$(MAKE) deploy SKAFFOLD_MODULE=cert-manager
+	$(KUBECTL) apply --server-side --force-conflicts -k config/crds
+	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/certificates/host
+	go run ./cmd/sharder --config=hack/config/sharder/host/config.yaml --zap-log-level=debug
+
+.PHONY: run-shard
+run-shard: $(KUBECTL) ## Run a shard from your host and deploy prerequisites.
+	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/shard
+	go run ./hack/cmd/shard --zap-log-level=debug
 
 PUSH ?= false
 images: export KO_DOCKER_REPO = $(GHCR_REPO)
@@ -137,7 +145,7 @@ deploy up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=sharding
 
 .PHONY: deploy
 deploy: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
-	$(SKAFFOLD) deploy --port-forward=user --tail -i $(SHARDER_IMG)
+	$(SKAFFOLD) deploy -i $(SHARDER_IMG)
 
 .PHONY: up
 up: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.

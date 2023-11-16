@@ -4,7 +4,6 @@
     <working_directory value="$PROJECT_DIR$" />
     <parameters value="--zap-log-level=debug --shard=shard-host" />
     <envs>
-      <env name="LEADER_ELECT" value="false" />
       <env name="KUBECONFIG" value="$PROJECT_DIR$/hack/kind_kubeconfig.yaml" />
     </envs>
     <kind value="PACKAGE" />
