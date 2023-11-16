@@ -168,8 +168,9 @@ func (o *options) run(ctx context.Context) error {
 		LeaderElectionResourceLockInterface: shardLease,
 		LeaderElectionReleaseOnCancel:       true,
 
-		// Configure cache to watch only objects that are assigned to this shard.
+		// Configure cache to watch only objects in the default namespace and that are assigned to this shard.
 		Cache: cache.Options{
+			DefaultNamespaces:    map[string]cache.Config{metav1.NamespaceDefault: {}},
 			DefaultLabelSelector: shardLabelSelector,
 		},
 	})
