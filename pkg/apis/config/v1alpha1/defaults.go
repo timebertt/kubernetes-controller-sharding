@@ -96,6 +96,18 @@ func SetDefaults_MetricsEndpoint(obj *MetricsEndpoint) {
 	}
 }
 
+func SetDefaults_Controller(obj *Controller) {
+	if obj.Sharder == nil {
+		obj.Sharder = &SharderController{}
+	}
+}
+
+func SetDefaults_SharderController(obj *SharderController) {
+	if obj.SyncPeriod == nil {
+		obj.SyncPeriod = &metav1.Duration{Duration: 5 * time.Minute}
+	}
+}
+
 func SetDefaults_Webhook(obj *Webhook) {
 	if obj.Server == nil {
 		obj.Server = &WebhookServer{}

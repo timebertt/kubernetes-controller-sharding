@@ -64,6 +64,13 @@ type ClusterRingSpec struct {
 	// +listMapKey=group
 	// +listMapKey=resource
 	Resources []RingResource `json:"resources,omitempty"`
+	// NamespaceSelector overwrites the webhook configs' namespaceSelector.
+	// If set, this selector should exclude the kube-system and sharding-system namespaces.
+	// If omitted, the default namespaceSelector from the SharderConfig is used.
+	// Note: changing/unsetting this selector will not remove labels from objects in namespaces that were previously
+	// included.
+	// +optional
+	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
 }
 
 // RingResource specifies a resource along with controlled resources that is distributed across shards in a ring.
@@ -114,6 +121,12 @@ func (c *ClusterRing) LeaseSelector() labels.Selector {
 // LabelShard returns the label on sharded objects that holds the name of the responsible shard within this ClusterRing.
 func (c *ClusterRing) LabelShard() string {
 	return LabelShard(KindClusterRing, "", c.Name)
+}
+
+// LabelDrain returns the label on sharded objects that instructs the responsible shard within this ClusterRing to stop
+// reconciling the object and remove both the shard and drain label.
+func (c *ClusterRing) LabelDrain() string {
+	return LabelDrain(KindClusterRing, "", c.Name)
 }
 
 // RingResources returns the the list of resources that are distributed across shards in this ClusterRing.

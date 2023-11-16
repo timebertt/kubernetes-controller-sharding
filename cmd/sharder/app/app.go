@@ -108,7 +108,7 @@ func run(ctx context.Context, log logr.Logger, opts *options) error {
 	ringCache := ring.NewCache()
 
 	log.Info("Adding controllers to manager")
-	if err := controller.AddToManager(ctx, mgr, opts.config); err != nil {
+	if err := controller.AddToManager(ctx, mgr, ringCache, opts.config); err != nil {
 		return fmt.Errorf("failed adding controllers to manager: %w", err)
 	}
 

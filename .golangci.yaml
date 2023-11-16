@@ -60,8 +60,6 @@ linters-settings:
     - name: early-return
     - name: exported
     - name: unreachable-code
-  whitespace:
-    multi-func: true
 
 issues:
   exclude-rules:

@@ -14,20 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package sharding
+package errors
 
 import (
-	"k8s.io/apimachinery/pkg/labels"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
+	"fmt"
+	"strings"
 )
 
-// Ring is the interface that is implemented by all ring objects that the sharder can handle.
-type Ring interface {
-	client.Object
-	LeaseSelector() labels.Selector
-	LabelShard() string
-	LabelDrain() string
-	RingResources() []shardingv1alpha1.RingResource
+// FormatErrors is like multierror.ListFormatFunc without the noisy newlines and tabs.
+// It also simplies the format for a single error.
+func FormatErrors(es []error) string {
+	if len(es) == 1 {
+		return es[0].Error()
+	}
+
+	errs := make([]string, len(es))
+	for i, err := range es {
+		errs[i] = err.Error()
+	}
+
+	return fmt.Sprintf("%d errors occurred: %s", len(es), strings.Join(errs, ", "))
 }

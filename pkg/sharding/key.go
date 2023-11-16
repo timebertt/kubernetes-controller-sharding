@@ -20,22 +20,21 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // KeyFuncForResource returns the key function that maps the given resource or its controller dependening on whether
 // the resource is listed as a resource or controlled resource in the given ring.
-func KeyFuncForResource(gr schema.GroupResource, ring Ring) (KeyFunc, error) {
-	ringResources := sets.New[schema.GroupResource]()
-	controlledResources := sets.New[schema.GroupResource]()
+func KeyFuncForResource(gr metav1.GroupResource, ring Ring) (KeyFunc, error) {
+	ringResources := sets.New[metav1.GroupResource]()
+	controlledResources := sets.New[metav1.GroupResource]()
 
 	for _, ringResource := range ring.RingResources() {
-		ringResources.Insert(toSchemaGroupResource(ringResource.GroupResource))
+		ringResources.Insert(ringResource.GroupResource)
 
 		for _, controlledResource := range ringResource.ControlledResources {
-			controlledResources.Insert(toSchemaGroupResource(controlledResource))
+			controlledResources.Insert(controlledResource)
 		}
 	}
 
@@ -47,10 +46,6 @@ func KeyFuncForResource(gr schema.GroupResource, ring Ring) (KeyFunc, error) {
 	}
 
 	return nil, fmt.Errorf("object's resource %q was not found in Ring", gr.String())
-}
-
-func toSchemaGroupResource(gr metav1.GroupResource) schema.GroupResource {
-	return schema.GroupResource{Group: gr.Group, Resource: gr.Resource}
 }
 
 // KeyFunc maps objects to hash keys.

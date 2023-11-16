@@ -10,3 +10,6 @@ webhook:
       cert-manager.io/inject-ca-from-secret: sharding-system/webhook-ca
     clientConfig:
       url: https://host.docker.internal:9443/
+controller:
+  sharder:
+    syncPeriod: 30s

@@ -112,15 +112,13 @@ func (c *cache) Get(ringObj client.Object, leaseList *coordinationv1.LeaseList) 
 }
 
 // leaseListChecksum calculates a fast checksum for the given LeaseList. It avoids expensive checksum calculation of all
-// fields by only including uid and state of the leases. When the hash ring needs to be rebuild the checksum is
-// guaranteed to change.
-// This trades consistency for performance: it relies on the state label maintained by the shardlease controller to be
-// up-to-date. If it is outdated, additional resyncs will need to be performed for returning assignments to a consistent
-// state.
+// fields by only including uid and resourceVersion of the leases. When the hash ring needs to be rebuild the checksum
+// is guaranteed to change. The checksum changes much more frequently though.
+// TODO: reduce the rate of ring calculation when this becomes a performance/resource panalty
 func leaseListChecksum(leaseList *coordinationv1.LeaseList) uint64 {
 	ll := make([]string, len(leaseList.Items))
 	for i, l := range leaseList.Items {
-		ll[i] = string(l.UID) + ";" + l.Labels[shardingv1alpha1.LabelState] + ";"
+		ll[i] = string(l.UID) + ";" + l.ResourceVersion + ";"
 	}
 
 	// ensure stable checksum
