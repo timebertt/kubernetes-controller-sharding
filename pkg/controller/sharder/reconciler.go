@@ -207,6 +207,10 @@ func (r *Reconciler) resyncObject(
 	if err != nil {
 		return err
 	}
+	if key == "" {
+		// object should not be assigned
+		return nil
+	}
 
 	var (
 		desiredShard = hashRing.Hash(key)

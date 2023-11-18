@@ -50,6 +50,7 @@ func KeyFuncForResource(gr metav1.GroupResource, ring Ring) (KeyFunc, error) {
 
 // KeyFunc maps objects to hash keys.
 // It returns an error if the prequisities for sharding the given object are not fulfilled.
+// If the returned key is empty, the object should not be assigned.
 type KeyFunc func(client.Object) (string, error)
 
 // KeyForObject returns a ring key for the given object itself.
@@ -91,10 +92,11 @@ func KeyForObject(obj client.Object) (string, error) {
 }
 
 // KeyForController returns a ring key for the controller of the given object.
+// It returns an empty key if the object doesn't have an ownerReference with controller=true".
 func KeyForController(obj client.Object) (string, error) {
 	ref := metav1.GetControllerOf(obj)
 	if ref == nil {
-		return "", fmt.Errorf("object has no ownerReference with controller=true")
+		return "", nil
 	}
 
 	if ref.APIVersion == "" {

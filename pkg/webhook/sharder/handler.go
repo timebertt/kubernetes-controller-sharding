@@ -77,6 +77,9 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("error calculating hash key for object: %w", err))
 	}
+	if key == "" {
+		return admission.Allowed("object should not be assigned")
+	}
 
 	// collect list of shards in the ring
 	leaseList := &coordinationv1.LeaseList{}
