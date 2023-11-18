@@ -23,6 +23,8 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 )
 
 // CreateProjects creates n random project namespaces.
@@ -41,6 +43,9 @@ func CreateProject(ctx context.Context, c client.Client, opts ...GenerateOption)
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "project-",
+			Labels: map[string]string{
+				webhostingv1alpha1.LabelKeyProject: webhostingv1alpha1.LabelValueProject,
+			},
 		},
 	}
 	options.ApplyToObject(&namespace.ObjectMeta)

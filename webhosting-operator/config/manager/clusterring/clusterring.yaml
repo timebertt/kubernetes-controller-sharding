@@ -15,3 +15,6 @@ spec:
       resource: services
     - group: networking.k8s.io
       resource: ingresses
+  namespaceSelector:
+    matchLabels:
+      webhosting.timebertt.dev/project: "true"

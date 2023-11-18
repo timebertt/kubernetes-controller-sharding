@@ -24,7 +24,7 @@ make up
 # deploy the webhosting-operator
 make -C webhosting-operator up
 # create some sample websites
-k apply -f webhosting-operator/config/samples
+k apply -k webhosting-operator/config/samples
 # access the grafana dashboards
 k -n monitoring port-forward svc/grafana 3000
 ```
@@ -103,7 +103,7 @@ make -C webhosting-operator deploy TAG=latest
 Create a sample project namespace as well as two websites using two different themes:
 
 ```bash
-k apply -f webhosting-operator/config/samples
+k apply -k webhosting-operator/config/samples
 ```
 
 Checkout the created websites in the project namespace:
@@ -132,13 +132,10 @@ Navigate to http://localhost:8088/project-foo/homepage and http://localhost:8088
 Optionally, generate some more websites using the [samples-generator](../webhosting-operator/cmd/samples-generator):
 
 ```bash
-$ k create ns project-bar && k create ns project-baz
 # create a random number of websites per project namespace (up to 50 each)
 $ cd webhosting-operator
 $ go run ./cmd/samples-generator
 created 32 Websites in project "project-foo"
-created 25 Websites in project "project-bar"
-created 23 Websites in project "project-baz"
 ```
 
 ## 5. Access Monitoring Components
