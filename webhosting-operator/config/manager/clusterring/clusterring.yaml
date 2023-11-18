@@ -1,7 +1,7 @@
 apiVersion: sharding.timebertt.dev/v1alpha1
 kind: ClusterRing
 metadata:
-  name: operator
+  name: webhosting-operator
 spec:
   resources:
   - group: webhosting.timebertt.dev
