@@ -54,8 +54,8 @@ func CreateWebsite(ctx context.Context, c client.Client, opts ...GenerateOption)
 
 	website := &webhostingv1alpha1.Website{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "experiment-",
-			Namespace:    utils.PickRandom(namespaceList.Items).Name,
+			Name:      "experiment-" + utils.RandomName(8),
+			Namespace: utils.PickRandom(namespaceList.Items).Name,
 		},
 		Spec: webhostingv1alpha1.WebsiteSpec{
 			Theme: utils.PickRandom(themeList.Items).Name,

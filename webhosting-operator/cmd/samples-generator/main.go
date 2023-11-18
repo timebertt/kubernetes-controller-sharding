@@ -112,8 +112,8 @@ func generateSamples(ctx context.Context, c client.Client) error {
 		for i := 0; i < websiteCount; i++ {
 			if err := c.Create(ctx, &webhostingv1alpha1.Website{
 				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "sample-",
-					Namespace:    project,
+					Name:      "sample-" + utils.RandomName(8),
+					Namespace: project,
 					Labels: map[string]string{
 						"generated-by": "sample-generator",
 					},
