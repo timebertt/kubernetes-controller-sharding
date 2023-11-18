@@ -54,7 +54,7 @@ k apply -f hack/config/shoot.yaml
 # gardenctl target ...
 
 # deploy external-dns for managing DNS records for monitoring and our webhosting service
-k apply --server-side -k config/external-dns
+k apply --server-side -k hack/config/external-dns
 k -n external-dns create secret generic google-clouddns-timebertt-dev --from-literal project=$PROJECT_NAME --from-file service-account.json=$SERVICE_ACCOUNT_FILE
 ```
 
