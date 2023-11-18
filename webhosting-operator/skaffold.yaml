@@ -39,7 +39,8 @@ build:
 manifests:
   kustomize:
     paths:
-    - config/manager/default
+    # default configuration: only run operator shards and use external sharding implementation via ClusterRing
+    - config/manager/overlays/default
 deploy:
   kubectl:
     defaultNamespace: ""
@@ -61,48 +62,40 @@ profiles:
   patches:
   - op: replace
     path: /manifests/kustomize/paths/0
-    value: config/manager/debug
-- name: shard
+    value: config/manager/overlays/debug
+- name: sharder
   patches:
   - op: replace
     path: /manifests/kustomize/paths/0
-    value: config/manager/shard
+    # legacy implementation for comparision: don't use external sharding implementation, run shards and sharder in operator
+    value: config/manager/overlays/sharder
+- name: non-sharded
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    # singleton controller without sharding for comparison
+    value: config/manager/overlays/non-sharded
+# The following profiles are variants of the default, sharder, and non-sharded profiles for running on the shoot cluster
+# with dns for websites enabled.
 - name: shoot
   activation:
   - kubeContext: .*--sharding.*
   patches:
   - op: replace
     path: /manifests/kustomize/paths/0
-    value: config/manager/shoot
+    # default configuration: only run operator shards and use external sharding implementation via ClusterRing
+    value: config/manager/overlays/shoot/default
+- name: shoot-sharder
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: config/manager/overlays/shoot/sharder
 - name: shoot-non-sharded
   patches:
   - op: replace
     path: /manifests/kustomize/paths/0
-    value: config/manager/shoot-non-sharded
----
-# This is an optional module that activates the external sharding implementation by deploying the ClusterRing object.
-# Set the USE_CLUSTERRING env var to true to activate this module.
-# We keep this optional for now until the external sharding implementation is fully implemented so that we don't break
-# trying out the existing implementation.
-apiVersion: skaffold/v4beta6
-kind: Config
-metadata:
-  name: clusterring
-profiles:
-- name: clusterring
-  activation:
-  - command: USE_CLUSTERRING=true
-  manifests:
-    kustomize:
-      paths:
-      - config/manager/clusterring
-  deploy:
-    kubectl:
-      defaultNamespace: ""
-      flags:
-        apply:
-        - --server-side
-        - --force-conflicts
+    # singleton controller without sharding for comparison
+    value: config/manager/overlays/shoot/non-sharded
 ---
 apiVersion: skaffold/v4beta6
 kind: Config
@@ -157,7 +150,7 @@ metadata:
 manifests:
   kustomize:
     paths:
-    - config/monitoring
+    - config/monitoring/default
 deploy:
   kubectl:
     defaultNamespace: ""
