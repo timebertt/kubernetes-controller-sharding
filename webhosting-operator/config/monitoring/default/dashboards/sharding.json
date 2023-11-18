@@ -51,6 +51,7 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "max": 10,
           "min": 0,
           "thresholds": {
             "mode": "absolute",
@@ -96,7 +97,76 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "editorMode": "code",
+          "expr": "sum(kube_shard_state{clusterring=\"$clusterring\", state=~\"ready|expired|uncertain\"}) or vector(0)",
+          "hide": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Available Shards",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 10,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 3,
+        "x": 3,
+        "y": 1
+      },
+      "id": 21,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.3.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
           "expr": "sum(kube_shard_info{clusterring=\"$clusterring\"}) or vector(0)",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -258,8 +328,8 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 11,
-        "x": 3,
+        "w": 8,
+        "x": 6,
         "y": 1
       },
       "id": 12,
@@ -432,7 +502,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\"} or 0*sum(kube_shard_info{clusterring=\"clusterring\"}) by (shard)) by (shard) / ignoring(shard) group_left sum(kube_website_shard{namespace=~\"$project\"}) or vector(0)",
+          "expr": "sum(kube_website_shard{namespace=~\"$project\",shard!=\"\"} or 0*sum(kube_shard_info{clusterring=\"$clusterring\"}) by (shard)) by (shard) / ignoring(shard) group_left sum(kube_website_shard{namespace=~\"$project\"}) or vector(0)",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
@@ -890,6 +960,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -925,7 +997,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           }
@@ -959,7 +1032,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(increase(controller_runtime_sharding_assignments_total{controllerGroup=\"webhosting.timebertt.dev\",controllerKind=\"Website\",kind=~\"$kind\"}[$__rate_interval]))",
+          "expr": "sum(rate(controller_sharding_assignments_total{ringKind=\"clusterring\", ringName=\"$clusterring\", group=~\"$group\", resource=~\"$resource\"}[$__rate_interval]))",
           "hide": false,
           "interval": "",
           "legendFormat": "Assignments",
@@ -973,12 +1046,26 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(increase(controller_runtime_sharding_drains_total{controllerGroup=\"webhosting.timebertt.dev\",controllerKind=\"Website\",kind=~\"$kind\"}[$__rate_interval]))",
+          "expr": "sum(rate(controller_sharding_movements_total{ringKind=\"clusterring\", ringName=\"$clusterring\", group=~\"$group\", resource=~\"$resource\"}[$__rate_interval]))",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Movements",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "sum(rate(controller_sharding_drains_total{ringKind=\"clusterring\", ringName=\"$clusterring\", group=~\"$group\", resource=~\"$resource\"}[$__rate_interval]))",
           "hide": false,
           "interval": "",
           "legendFormat": "Drains",
           "range": true,
-          "refId": "B"
+          "refId": "C"
         }
       ],
       "title": "Sharder Actions",
@@ -996,6 +1083,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1031,7 +1120,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           }
@@ -1053,8 +1143,8 @@
           "showLegend": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
@@ -1065,7 +1155,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(increase(controller_runtime_sharding_assignments_total{controllerGroup=\"webhosting.timebertt.dev\",controllerKind=\"Website\",kind=~\"$kind\"}[$__rate_interval])) by (kind)",
+          "expr": "sum(rate(controller_sharding_assignments_total{ringKind=\"clusterring\", ringName=\"$clusterring\", group=~\"$group\", resource=~\"$resource\"}[$__rate_interval])) by (resource)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{kind}}",
@@ -1073,7 +1163,7 @@
           "refId": "A"
         }
       ],
-      "title": "Sharder Assignments by kind",
+      "title": "Sharder Assignments by resource",
       "type": "timeseries"
     },
     {
@@ -1088,6 +1178,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1123,7 +1215,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -1158,7 +1251,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(controller_runtime_sharding_ring_calculations_total{controllerGroup=\"webhosting.timebertt.dev\",controllerKind=\"Website\"}[$__rate_interval]))",
+          "expr": "sum(rate(controller_sharding_ring_calculations_total{kind=\"clusterring\", name=\"$clusterring\"}[$__rate_interval]))",
           "hide": false,
           "interval": "",
           "legendFormat": "Ring Calculations",
@@ -1199,26 +1292,22 @@
       {
         "allValue": ".*",
         "current": {
-          "selected": true,
-          "text": [
-            "webhosting-operator"
-          ],
-          "value": [
-            "webhosting-operator"
-          ]
+          "selected": false,
+          "text": "webhosting-operator",
+          "value": "webhosting-operator"
         },
         "datasource": {
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(kube_shard_info, clusterring)",
+        "definition": "label_values(kube_clusterring_metadata_generation, clusterring)",
         "hide": 0,
-        "includeAll": true,
-        "multi": true,
+        "includeAll": false,
+        "multi": false,
         "name": "clusterring",
         "options": [],
         "query": {
-          "query": "label_values(kube_shard_info, clusterring)",
+          "query": "label_values(kube_clusterring_metadata_generation, clusterring)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
@@ -1242,14 +1331,45 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(controller_runtime_sharding_assignments_total, kind)",
+        "definition": "label_values(controller_sharding_assignments_total, group)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
-        "name": "kind",
+        "name": "group",
         "options": [],
         "query": {
-          "query": "label_values(controller_runtime_sharding_assignments_total, kind)",
+          "query": "label_values(controller_sharding_assignments_total, group)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(controller_sharding_assignments_total{group=~\"$group\"}, resource)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "resource",
+        "options": [],
+        "query": {
+          "query": "label_values(controller_sharding_assignments_total{group=~\"$group\"}, resource)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
@@ -1299,6 +1419,6 @@
   "timezone": "",
   "title": "Sharding",
   "uid": "7liIybkVk",
-  "version": 1,
+  "version": 24,
   "weekStart": ""
 }
