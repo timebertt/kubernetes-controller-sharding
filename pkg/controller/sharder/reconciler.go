@@ -239,7 +239,10 @@ func (r *Reconciler) resyncObject(
 			return fmt.Errorf("error draining %s %q: %w", gr.String(), client.ObjectKeyFromObject(obj), err)
 		}
 
-		shardingmetrics.DrainsTotal.WithLabelValues(gr.Group, gr.Resource).Inc()
+		shardingmetrics.DrainsTotal.WithLabelValues(
+			shardingv1alpha1.KindClusterRing, ring.GetNamespace(), ring.GetName(),
+			gr.Group, gr.Resource,
+		).Inc()
 
 		// object will go through the sharder webhook when shard removes the drain label, which will perform the assignment
 		return nil
@@ -258,7 +261,10 @@ func (r *Reconciler) resyncObject(
 		return fmt.Errorf("error triggering assignment for %s %q: %w", gr.String(), client.ObjectKeyFromObject(obj), err)
 	}
 
-	shardingmetrics.MovementsTotal.WithLabelValues(gr.Group, gr.Resource).Inc()
+	shardingmetrics.MovementsTotal.WithLabelValues(
+		shardingv1alpha1.KindClusterRing, ring.GetNamespace(), ring.GetName(),
+		gr.Group, gr.Resource,
+	).Inc()
 
 	return nil
 }
