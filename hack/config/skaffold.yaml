@@ -133,6 +133,7 @@ requires:
 manifests:
   kustomize:
     paths:
+      - config/monitoring
       - hack/config/monitoring/default
   hooks:
     before:
@@ -161,10 +162,10 @@ profiles:
   - name: shoot
     activation:
       - kubeContext: .*--sharding.*
-    manifests:
-      kustomize:
-        paths:
-          - hack/config/monitoring/shoot
+    patches:
+    - op: replace
+      path: /manifests/kustomize/paths/1
+      value: hack/config/monitoring/shoot
 ---
 apiVersion: skaffold/v4beta7
 kind: Config
@@ -212,7 +213,6 @@ manifests:
   kustomize:
     paths:
       - config/default
-      - config/monitoring
   hooks:
     before:
     - host:
