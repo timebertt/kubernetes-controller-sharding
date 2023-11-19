@@ -1,0 +1,48 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: parca-service-discovery
+  namespace: sharding-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - services
+  - endpoints
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: parca-service-discovery
+  namespace: sharding-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: parca-service-discovery
+subjects:
+- kind: ServiceAccount
+  name: parca
+  namespace: parca
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: observability
+    app.kubernetes.io/instance: parca
+    app.kubernetes.io/name: parca
+  name: parca-sharder-pprof-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sharding:sharder:pprof-reader
+subjects:
+- kind: ServiceAccount
+  name: parca
+  namespace: parca

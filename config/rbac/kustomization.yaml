@@ -7,6 +7,7 @@ resources:
 - metrics_auth.yaml
 - role.yaml
 - rolebinding.yaml
+- pprof_reader.yaml
 
 patches:
 # This is a workaround for controller-gen not being able to handle colons in the role name option.
