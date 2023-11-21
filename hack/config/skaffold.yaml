@@ -197,7 +197,7 @@ profiles:
         dependencies:
           paths:
           - go.mod
-          - '**/*.go'
+          - './hack/cmd/shard/**/*.go'
         main: ./hack/cmd/shard
     local:
       concurrency: 0
@@ -278,6 +278,17 @@ apiVersion: skaffold/v4beta7
 kind: Config
 metadata:
   name: profiling
+build:
+  artifacts:
+  - image: ghcr.io/timebertt/kubernetes-controller-sharding/janitor
+    ko:
+      dependencies:
+        paths:
+        - go.mod
+        - './hack/cmd/janitor/**/*.go'
+      main: ./hack/cmd/janitor
+  local:
+    concurrency: 0
 manifests:
   kustomize:
     paths:
