@@ -18,7 +18,7 @@ package consistenthash
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/cespare/xxhash/v2"
 )
@@ -76,9 +76,7 @@ func (r *Ring) AddNodes(nodes ...string) {
 	}
 
 	// sort all tokens on the ring for binary searches
-	sort.Slice(r.tokens, func(i, j int) bool {
-		return r.tokens[i] < r.tokens[j]
-	})
+	slices.Sort(r.tokens)
 }
 
 func (r *Ring) Hash(key string) string {
@@ -86,15 +84,11 @@ func (r *Ring) Hash(key string) string {
 		return ""
 	}
 
-	// Hash key and walk the ring until we find the next virtual node
+	// Hash key and find the next virtual node on the ring
 	h := r.hash([]byte(key))
+	i, _ := slices.BinarySearch(r.tokens, h)
 
-	// binary search
-	i := sort.Search(len(r.tokens), func(i int) bool {
-		return r.tokens[i] >= h
-	})
-
-	// walked the whole ring
+	// walked the whole ring, next virtual node is the first one
 	if i == len(r.tokens) {
 		i = 0
 	}
