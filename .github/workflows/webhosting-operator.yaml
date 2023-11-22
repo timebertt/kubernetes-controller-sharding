@@ -66,7 +66,7 @@ jobs:
           sha-$( echo ${{ github.sha }} | head -c7 )
         )
 
-        if ${{ github.ref_name == 'master' }} ; then
+        if ${{ github.ref_name == 'main' }} ; then
           tags+=( latest )
         fi
 
