@@ -25,7 +25,7 @@ require (
 )
 
 // https://github.com/timebertt/controller-runtime/tree/sharding-0.15
-replace sigs.k8s.io/controller-runtime => github.com/timebertt/controller-runtime v0.6.1-0.20231103173444-c2f2d2ddd36b
+replace sigs.k8s.io/controller-runtime => github.com/timebertt/controller-runtime v0.6.1-0.20231118171909-d9812cbd5880
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

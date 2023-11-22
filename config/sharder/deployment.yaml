@@ -6,7 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/component: sharder
 spec:
-  replicas: 1
+  replicas: 2
   selector:
      matchLabels:
        app.kubernetes.io/component: sharder
@@ -65,3 +65,16 @@ spec:
           name: sharder-config
       serviceAccountName: sharder
       terminationGracePeriodSeconds: 30
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: sharder
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: sharder

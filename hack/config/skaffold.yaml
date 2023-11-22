@@ -13,6 +13,22 @@ deploy:
         - --server-side
         - --force-conflicts
     defaultNamespace: ""
+    hooks:
+      after:
+      - host:
+          command:
+          - /usr/bin/env
+          - bash
+          - -c
+          - |
+            for i in $(seq 1 20); do
+              if [ "$(kubectl get validatingwebhookconfiguration cert-manager-webhook -oyaml 2>/dev/null | yq '.webhooks[].clientConfig.caBundle')" != "null" ] ; then
+                exit 0
+              fi
+              echo "Waiting until CA has been injected into cert-manager webhook"
+              sleep 5
+            done
+            exit 1
 ---
 apiVersion: skaffold/v4beta7
 kind: Config
@@ -85,11 +101,31 @@ deploy:
         - --server-side
         - --force-conflicts
     defaultNamespace: ""
+    hooks:
+      after:
+      - host:
+          command:
+          - /usr/bin/env
+          - bash
+          - -c
+          - |
+            for i in $(seq 1 20); do
+              # create dummy policy with dry-run enabled to test availability of webhook
+              if kubectl create --raw "/apis/kyverno.io/v1/clusterpolicies?dryRun=All" -f <(echo '{"apiVersion": "kyverno.io/v1", "kind": "ClusterPolicy", "metadata": {"name": "test"}, "spec": {}}') >/dev/null ; then
+                exit 0
+              fi
+              echo "Waiting until kyverno webhook is ready to handle policy creation"
+              sleep 5
+            done
+            exit 1
 ---
 apiVersion: skaffold/v4beta7
 kind: Config
 metadata:
   name: policy
+requires:
+- configs:
+  - kyverno
 profiles:
   - name: shoot
     activation:
@@ -105,7 +141,78 @@ profiles:
             - --server-side
             - --force-conflicts
         defaultNamespace: ""
-      statusCheck: false
+---
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: sharder
+build:
+  artifacts:
+  - image: ghcr.io/timebertt/kubernetes-controller-sharding/sharder
+    ko:
+      dependencies:
+        paths:
+        - go.mod
+        - '**/*.go'
+      main: ./cmd/sharder
+  local:
+    concurrency: 0
+manifests:
+  kustomize:
+    paths:
+    - config/default
+  hooks:
+    before:
+    - host:
+        command:
+        # ensure deepcopy, CRDs, and RBAC are up-to-date
+        - make
+        - generate-fast
+deploy:
+  kubectl:
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
+    defaultNamespace: ""
+profiles:
+- name: kind
+  activation:
+  - kubeContext: kind-.*
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: hack/config/sharder/local
+---
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: shard
+profiles:
+- name: shard
+  build:
+    artifacts:
+    - image: ghcr.io/timebertt/kubernetes-controller-sharding/shard
+      ko:
+        dependencies:
+          paths:
+          - go.mod
+          - './hack/cmd/shard/**/*.go'
+        main: ./hack/cmd/shard
+    local:
+      concurrency: 0
+  manifests:
+    kustomize:
+      paths:
+      - hack/config/shard/clusterring
+      - hack/config/shard/shard
+  deploy:
+    kubectl:
+      flags:
+        apply:
+        - --server-side
+        - --force-conflicts
+      defaultNamespace: ""
 ---
 apiVersion: skaffold/v4beta7
 kind: Config
@@ -134,6 +241,7 @@ manifests:
   kustomize:
     paths:
       - hack/config/monitoring/default
+      - config/monitoring
   hooks:
     before:
       - host:
@@ -161,15 +269,26 @@ profiles:
   - name: shoot
     activation:
       - kubeContext: .*--sharding.*
-    manifests:
-      kustomize:
-        paths:
-          - hack/config/monitoring/shoot
+    patches:
+    - op: replace
+      path: /manifests/kustomize/paths/0
+      value: hack/config/monitoring/shoot
 ---
 apiVersion: skaffold/v4beta7
 kind: Config
 metadata:
   name: profiling
+build:
+  artifacts:
+  - image: ghcr.io/timebertt/kubernetes-controller-sharding/janitor
+    ko:
+      dependencies:
+        paths:
+        - go.mod
+        - './hack/cmd/janitor/**/*.go'
+      main: ./hack/cmd/janitor
+  local:
+    concurrency: 0
 manifests:
   kustomize:
     paths:
@@ -192,46 +311,3 @@ portForward:
     namespace: parca
     port: http
     localPort: 7070
----
-apiVersion: skaffold/v4beta7
-kind: Config
-metadata:
-  name: sharder
-build:
-  artifacts:
-    - image: ghcr.io/timebertt/kubernetes-controller-sharding/sharder
-      ko:
-        dependencies:
-          paths:
-            - go.mod
-            - '**/*.go'
-        main: ./cmd/sharder
-  local:
-    concurrency: 0
-manifests:
-  kustomize:
-    paths:
-      - config/default
-      - config/monitoring/default
-  hooks:
-    before:
-    - host:
-        command:
-        # ensure deepcopy, CRDs, and RBAC are up-to-date
-        - make
-        - generate-fast
-deploy:
-  kubectl:
-    flags:
-      apply:
-        - --server-side
-        - --force-conflicts
-    defaultNamespace: ""
-profiles:
-- name: kind
-  activation:
-  - kubeContext: kind-.*
-  patches:
-  - op: replace
-    path: /manifests/kustomize/paths/0
-    value: hack/config/sharder/local

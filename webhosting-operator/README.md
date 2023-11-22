@@ -23,6 +23,7 @@ There are three resources involved:
 
 - `Namespace`
   - each customer project gets its own namespace
+  - a project namespace is identified by the `webhosting.timebertt.dev/project=true` label
 - `Theme` (`webhosting.timebertt.dev`, cluster-scoped)
   - represents an offered theme for customer websites (managed by service admin)
   - configures a font family and color for websites

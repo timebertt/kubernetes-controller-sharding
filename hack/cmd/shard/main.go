@@ -56,14 +56,6 @@ For this, it creates a shard Lease object and renews it periodically.
 It also starts a controller for ConfigMaps that are assigned to the shard and handles the drain operation as expected.
 This is basically a lightweight example controller which is useful for developing the sharding components without actually
 running a full controller that complies with the sharding requirements.`,
-		Example: `
-# create the "dummy" ClusterRing object
-k apply -k hack/config/shard
-# run the sharder
-LEADER_ELECT=false go run ./cmd/sharder
-# run one or more shards belonging to the "dummy" ClusterRing
-go run ./hack/cmd/shard
-`,
 
 		Args:          cobra.NoArgs,
 		SilenceErrors: true,
@@ -176,8 +168,9 @@ func (o *options) run(ctx context.Context) error {
 		LeaderElectionResourceLockInterface: shardLease,
 		LeaderElectionReleaseOnCancel:       true,
 
-		// Configure cache to watch only objects that are assigned to this shard.
+		// Configure cache to watch only objects in the default namespace and that are assigned to this shard.
 		Cache: cache.Options{
+			DefaultNamespaces:    map[string]cache.Config{metav1.NamespaceDefault: {}},
 			DefaultLabelSelector: shardLabelSelector,
 		},
 	})

@@ -31,6 +31,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding"
 	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/metrics"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/ring"
@@ -77,6 +78,9 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("error calculating hash key for object: %w", err))
 	}
+	if key == "" {
+		return admission.Allowed("object should not be assigned")
+	}
 
 	// collect list of shards in the ring
 	leaseList := &coordinationv1.LeaseList{}
@@ -98,7 +102,10 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 	patches = append(patches, jsonpatch.NewOperation("add", "/metadata/labels/"+rfc6901Encoder.Replace(labelShard), shard))
 
 	if !ptr.Deref(req.DryRun, false) {
-		shardingmetrics.AssignmentsTotal.WithLabelValues(req.Resource.Group, req.Resource.Resource).Inc()
+		shardingmetrics.AssignmentsTotal.WithLabelValues(
+			shardingv1alpha1.KindClusterRing, ring.GetNamespace(), ring.GetName(),
+			req.Resource.Group, req.Resource.Resource,
+		).Inc()
 	}
 
 	return admission.Patched("assigning object", patches...)

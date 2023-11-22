@@ -21,14 +21,12 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -41,8 +39,6 @@ import (
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
 )
-
-const projectPrefix = "project-"
 
 var (
 	scheme = runtime.NewScheme()
@@ -97,23 +93,17 @@ func generateSamples(ctx context.Context, c client.Client) error {
 	}
 
 	namespaceList := &corev1.NamespaceList{}
-	if err := c.List(ctx, namespaceList); err != nil {
+	if err := c.List(ctx, namespaceList, client.MatchingLabelsSelector{Selector: webhostingv1alpha1.LabelSelectorProject}); err != nil {
 		return err
 	}
 
-	var projects []string
+	if len(namespaceList.Items) == 0 {
+		return fmt.Errorf("no project namespaces found, create namespaces with the %q label first", webhostingv1alpha1.LabelKeyProject)
+	}
+
 	for _, namespace := range namespaceList.Items {
-		if strings.HasPrefix(namespace.Name, projectPrefix) {
-			projects = append(projects, namespace.Name)
-		}
-	}
-	projects = filterProjects(projects)
+		project := namespace.Name
 
-	if len(projects) == 0 {
-		return fmt.Errorf("no project namespaces found, create namespaces with prefix %q first", projectPrefix)
-	}
-
-	for _, project := range projects {
 		websiteCount := rand.Intn(50) + 1
 		if count > 0 {
 			websiteCount = count
@@ -122,8 +112,8 @@ func generateSamples(ctx context.Context, c client.Client) error {
 		for i := 0; i < websiteCount; i++ {
 			if err := c.Create(ctx, &webhostingv1alpha1.Website{
 				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "sample-",
-					Namespace:    project,
+					Name:      "sample-" + utils.RandomName(8),
+					Namespace: project,
 					Labels: map[string]string{
 						"generated-by": "sample-generator",
 					},
@@ -139,21 +129,4 @@ func generateSamples(ctx context.Context, c client.Client) error {
 	}
 
 	return nil
-}
-
-func filterProjects(in []string) []string {
-	if len(namespaces) == 0 {
-		return in
-	}
-
-	selected := sets.NewString(namespaces...)
-
-	var out []string
-	for _, project := range in {
-		if !selected.Has(project) {
-			continue
-		}
-		out = append(out, project)
-	}
-	return out
 }

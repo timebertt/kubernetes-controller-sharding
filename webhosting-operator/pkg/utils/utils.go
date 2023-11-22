@@ -49,3 +49,13 @@ func PickNRandom[T any](in []T, n int) []T {
 
 	return in[:n]
 }
+
+// RandomName generates a random string with n characters that can be used as part of API object names.
+func RandomName(n int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyz"
+	result := make([]byte, n)
+	for i := range result {
+		result[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(result)
+}

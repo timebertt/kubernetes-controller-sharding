@@ -32,11 +32,8 @@ const (
 	// sharding.
 	AppControllerSharding = "controller-sharding"
 
-	// alphaPrefix is a common prefix for all well-known annotations and labels.
-	// We use the kubernetes.io domain here for interoperability with other approaches evaluated in the thesis.
-	// If we want to make the approach implemented in this repository production-ready, this should eventually be changed
-	// to "alpha.sharding.timebertt.dev".
-	alphaPrefix = "sharding.alpha.kubernetes.io/"
+	// alphaPrefix is a common prefix for all well-known annotations and labels in this API version package.
+	alphaPrefix = "alpha.sharding.timebertt.dev/"
 
 	// LabelClusterRing is the label on objects that identifies the ClusterRing that the object belongs to.
 	LabelClusterRing = alphaPrefix + "clusterring"

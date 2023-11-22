@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shard
+spec:
+  replicas: 3
+  template:
+    spec:
+      automountServiceAccountToken: true
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - name: shard
+        image: shard:latest
+        args:
+        - --zap-log-level=debug
+        env:
+        - name: DISABLE_HTTP2
+          value: "true"
+        securityContext:
+          allowPrivilegeEscalation: false
+        resources:
+          requests:
+            cpu: 25m
+            memory: 50Mi
+      serviceAccountName: shard
+      terminationGracePeriodSeconds: 10

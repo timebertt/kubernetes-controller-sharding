@@ -5,6 +5,15 @@ resources:
 - https://github.com/parca-dev/parca/releases/download/v0.20.0/kubernetes-manifest.yaml
 - parca_ingress.yaml
 - parca_pvc.yaml
+# grant parca running in namespace "parca" permissions required for service discovery in namespace
+# "sharding-system" and scrape the pprof endpoints of sharder
+- rbac_sharder.yaml
+- janitor_cronjob.yaml
+
+images:
+- name: janitor
+  newName: ghcr.io/timebertt/kubernetes-controller-sharding/janitor
+  newTag: latest
 
 generatorOptions:
   disableNameSuffixHash: true

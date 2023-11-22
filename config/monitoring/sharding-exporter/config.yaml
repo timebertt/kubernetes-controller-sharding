@@ -10,7 +10,7 @@ spec:
     labelsFromPath:
       namespace: [metadata, namespace]
       shard: [metadata, name]
-      clusterring: [metadata, labels, sharding.alpha.kubernetes.io/clusterring]
+      clusterring: [metadata, labels, alpha.sharding.timebertt.dev/clusterring]
     metrics:
     - name: info
       help: "Information about a Shard"
@@ -25,7 +25,7 @@ spec:
         type: StateSet
         stateSet:
           labelName: state
-          path: [metadata, labels, sharding.alpha.kubernetes.io/state]
+          path: [metadata, labels, alpha.sharding.timebertt.dev/state]
           list: [orphaned, dead, uncertain, expired, ready, unknown]
       # The usual leader election leases don't have the state label making the generator log errors.
       # Hence, decrease verbosity of such errors to reduce distraction.

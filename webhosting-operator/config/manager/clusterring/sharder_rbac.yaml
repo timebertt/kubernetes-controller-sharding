@@ -5,13 +5,34 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: sharding:clusterring:dummy
+  name: sharding:clusterring:webhosting-operator
 rules:
+- apiGroups:
+  - webhosting.timebertt.dev
+  resources:
+  - websites
+  verbs:
+  - list
+  - patch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - list
+  - patch
 - apiGroups:
   - ""
   resources:
   - configmaps
-  - secrets
+  - services
+  verbs:
+  - list
+  - patch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses
   verbs:
   - list
   - patch
@@ -19,11 +40,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: sharding:clusterring:dummy
+  name: sharding:clusterring:webhosting-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: sharding:clusterring:dummy
+  name: sharding:clusterring:webhosting-operator
 subjects:
 - kind: ServiceAccount
   name: sharder
