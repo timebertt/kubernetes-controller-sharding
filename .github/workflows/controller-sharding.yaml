@@ -97,7 +97,7 @@ jobs:
           sha-$( echo $revision | head -c7 )
         )
 
-        if [[ $short_ref = master ]] ; then
+        if [[ $short_ref = main ]] ; then
           tags+=( latest )
         fi
 
