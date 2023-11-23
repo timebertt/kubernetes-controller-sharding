@@ -188,31 +188,29 @@ apiVersion: skaffold/v4beta7
 kind: Config
 metadata:
   name: shard
-profiles:
-- name: shard
-  build:
-    artifacts:
-    - image: ghcr.io/timebertt/kubernetes-controller-sharding/shard
-      ko:
-        dependencies:
-          paths:
-          - go.mod
-          - './hack/cmd/shard/**/*.go'
-        main: ./hack/cmd/shard
-    local:
-      concurrency: 0
-  manifests:
-    kustomize:
-      paths:
-      - hack/config/shard/clusterring
-      - hack/config/shard/shard
-  deploy:
-    kubectl:
-      flags:
-        apply:
-        - --server-side
-        - --force-conflicts
-      defaultNamespace: ""
+build:
+  artifacts:
+  - image: ghcr.io/timebertt/kubernetes-controller-sharding/shard
+    ko:
+      dependencies:
+        paths:
+        - go.mod
+        - './hack/cmd/shard/**/*.go'
+      main: ./hack/cmd/shard
+  local:
+    concurrency: 0
+manifests:
+  kustomize:
+    paths:
+    - hack/config/shard/clusterring
+    - hack/config/shard/shard
+deploy:
+  kubectl:
+    flags:
+      apply:
+      - --server-side
+      - --force-conflicts
+    defaultNamespace: ""
 ---
 apiVersion: skaffold/v4beta7
 kind: Config

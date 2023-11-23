@@ -50,8 +50,8 @@ func main() {
 
 	cmd := &cobra.Command{
 		Use:   "shard",
-		Short: "Run a dummy shard",
-		Long: `The shard command runs a dummy shard that fulfills the requirements of a controller that supports sharding.
+		Short: "Run an example shard",
+		Long: `The shard command runs an example shard that fulfills the requirements of a controller that supports sharding.
 For this, it creates a shard Lease object and renews it periodically.
 It also starts a controller for ConfigMaps that are assigned to the shard and handles the drain operation as expected.
 This is basically a lightweight example controller which is useful for developing the sharding components without actually
@@ -91,14 +91,14 @@ func newOptions() *options {
 			TimeEncoder: zapcore.ISO8601TimeEncoder,
 		},
 
-		clusterRingName: "dummy",
+		clusterRingName: "example",
 		shardName:       "shard-" + rand.String(8),
 	}
 }
 
 func (o *options) AddFlags(fs *pflag.FlagSet) {
-	fs.StringVar(&o.clusterRingName, "clusterring", o.clusterRingName, "Name of the ClusterRing the dummy shard belongs to.")
-	fs.StringVar(&o.shardName, "shard", o.shardName, "Name of the dummy shard. Defaults to shard-<random-suffix>.")
+	fs.StringVar(&o.clusterRingName, "clusterring", o.clusterRingName, "Name of the ClusterRing the shard belongs to.")
+	fs.StringVar(&o.shardName, "shard", o.shardName, "Name of the shard. Defaults to shard-<random-suffix>.")
 
 	zapFlagSet := flag.NewFlagSet("zap", flag.ContinueOnError)
 	o.zapOptions.BindFlags(zapFlagSet)

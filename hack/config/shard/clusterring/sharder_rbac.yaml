@@ -5,7 +5,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: sharding:clusterring:dummy
+  name: sharding:clusterring:example
 rules:
 - apiGroups:
   - ""
@@ -19,11 +19,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: sharding:clusterring:dummy
+  name: sharding:clusterring:example
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: sharding:clusterring:dummy
+  name: sharding:clusterring:example
 subjects:
 - kind: ServiceAccount
   name: sharder
