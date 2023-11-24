@@ -195,8 +195,8 @@ build:
       dependencies:
         paths:
         - go.mod
-        - './hack/cmd/shard/**/*.go'
-      main: ./hack/cmd/shard
+        - '**/*.go'
+      main: ./cmd/shard
   local:
     concurrency: 0
 manifests:

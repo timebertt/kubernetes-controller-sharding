@@ -116,7 +116,7 @@ run: $(KUBECTL) generate-fast ## Run the sharder from your host and deploy prere
 .PHONY: run-shard
 run-shard: $(KUBECTL) ## Run a shard from your host and deploy prerequisites.
 	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/shard/clusterring
-	go run ./hack/cmd/shard --zap-log-level=debug
+	go run ./cmd/shard --zap-log-level=debug
 
 PUSH ?= false
 images: export KO_DOCKER_REPO = $(GHCR_REPO)
