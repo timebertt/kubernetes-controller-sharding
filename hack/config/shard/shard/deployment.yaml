@@ -14,13 +14,8 @@ spec:
         image: shard:latest
         args:
         - --clusterring=example
-        - --shard=$(POD_NAME)
         - --zap-log-level=debug
         env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
         - name: DISABLE_HTTP2
           value: "true"
         securityContext:

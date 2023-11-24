@@ -2,7 +2,7 @@
   <configuration default="false" name="shard (kind)" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$" />
-    <parameters value="--zap-log-level=debug --shard=shard-host" />
+    <parameters value="--zap-log-level=debug --shard=shard-host --lease-namespace=default" />
     <envs>
       <env name="KUBECONFIG" value="$PROJECT_DIR$/hack/kind_kubeconfig.yaml" />
     </envs>

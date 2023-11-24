@@ -29,11 +29,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -42,6 +40,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
+	shardlease "github.com/timebertt/kubernetes-controller-sharding/pkg/shard/lease"
 )
 
 func main() {
@@ -81,6 +80,7 @@ running a full controller that complies with the sharding requirements.`,
 type options struct {
 	zapOptions      *zap.Options
 	clusterRingName string
+	leaseNamespace  string
 	shardName       string
 }
 
@@ -92,13 +92,13 @@ func newOptions() *options {
 		},
 
 		clusterRingName: "example",
-		shardName:       "shard-" + rand.String(8),
 	}
 }
 
 func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.clusterRingName, "clusterring", o.clusterRingName, "Name of the ClusterRing the shard belongs to.")
-	fs.StringVar(&o.shardName, "shard", o.shardName, "Name of the shard. Defaults to shard-<random-suffix>.")
+	fs.StringVar(&o.leaseNamespace, "lease-namespace", o.leaseNamespace, "Namespace to use for the shard lease. Defaults to the pod's namespace if running in-cluster.")
+	fs.StringVar(&o.shardName, "shard", o.shardName, "Name of the shard. Defaults to the instance's hostname.")
 
 	zapFlagSet := flag.NewFlagSet("zap", flag.ContinueOnError)
 	o.zapOptions.BindFlags(zapFlagSet)
@@ -106,10 +106,6 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (o *options) validate() error {
-	if o.shardName == "" {
-		return fmt.Errorf("--shard must not be empty")
-	}
-
 	if o.clusterRingName == "" {
 		return fmt.Errorf("--clusterring must not be empty")
 	}
@@ -129,23 +125,13 @@ func (o *options) run(ctx context.Context) error {
 	}
 
 	log.Info("Setting up shard lease")
-	leaseClient, err := client.New(restConfig, client.Options{})
+	shardLease, err := shardlease.NewResourceLock(restConfig, nil, shardlease.Options{
+		ClusterRingName: o.clusterRingName,
+		LeaseNamespace:  o.leaseNamespace, // optional, can be empty
+		ShardName:       o.shardName,      // optional, can be empty
+	})
 	if err != nil {
-		return fmt.Errorf("failed creating client for shard lease: %w", err)
-	}
-
-	shardLease := &LeaseLock{
-		LeaseKey: client.ObjectKey{
-			Namespace: metav1.NamespaceDefault,
-			Name:      o.shardName,
-		},
-		Client: leaseClient,
-		LockConfig: resourcelock.ResourceLockConfig{
-			Identity: o.shardName,
-		},
-		Labels: map[string]string{
-			shardingv1alpha1.LabelClusterRing: o.clusterRingName,
-		},
+		return fmt.Errorf("failed creating shard lease: %w", err)
 	}
 
 	log.Info("Setting up manager")
@@ -163,7 +149,7 @@ func (o *options) run(ctx context.Context) error {
 
 		// Use manager's leader election mechanism for maintaining the shard lease.
 		// With this, controllers will only run as long as manager holds the shard lease.
-		// After graceful termination, the lease will be released.
+		// After graceful termination, the shard lease will be released.
 		LeaderElection:                      true,
 		LeaderElectionResourceLockInterface: shardLease,
 		LeaderElectionReleaseOnCancel:       true,

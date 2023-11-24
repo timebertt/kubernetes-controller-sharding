@@ -113,10 +113,12 @@ run: $(KUBECTL) generate-fast ## Run the sharder from your host and deploy prere
 	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/certificates/host
 	go run ./cmd/sharder --config=hack/config/sharder/host/config.yaml --zap-log-level=debug
 
+SHARD_NAME ?= shard-$(shell tr -dc bcdfghjklmnpqrstvwxz2456789 </dev/urandom | head -c 8)
+
 .PHONY: run-shard
 run-shard: $(KUBECTL) ## Run a shard from your host and deploy prerequisites.
 	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/shard/clusterring
-	go run ./cmd/shard --zap-log-level=debug
+	go run ./cmd/shard --shard=$(SHARD_NAME) --lease-namespace=default --zap-log-level=debug
 
 PUSH ?= false
 images: export KO_DOCKER_REPO = $(GHCR_REPO)
