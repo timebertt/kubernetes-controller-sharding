@@ -166,10 +166,7 @@ func (o *options) run(ctx context.Context) error {
 	log.V(1).Info("Cache filtered with label selector", "selector", shardLabelSelector.String())
 
 	log.Info("Setting up controller")
-	if err := (&Reconciler{
-		ClusterRingName: o.clusterRingName,
-		ShardName:       o.shardName,
-	}).AddToManager(mgr); err != nil {
+	if err := (&Reconciler{}).AddToManager(mgr, o.clusterRingName, shardLease.Identity()); err != nil {
 		return fmt.Errorf("failed adding controller: %w", err)
 	}
 
