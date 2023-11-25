@@ -49,6 +49,10 @@ func (r *Reconciler) AddToManager(mgr manager.Manager, clusterRingName, shardNam
 		r.Client = mgr.GetClient()
 	}
 
+	// ACKNOWLEDGE DRAIN OPERATIONS
+	// Use the shardcontroller package as helpers for:
+	// - a predicate that triggers when the drain label is present (even if the actual predicates don't trigger)
+	// - wrapping the actual reconciler a reconciler that handles the drain operation for us
 	return builder.ControllerManagedBy(mgr).
 		Named("configmap").
 		For(&corev1.ConfigMap{}, builder.WithPredicates(shardcontroller.Predicate(clusterRingName, shardName, ConfigMapDataChanged()))).

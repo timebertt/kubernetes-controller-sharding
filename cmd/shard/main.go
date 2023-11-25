@@ -53,6 +53,7 @@ func main() {
 		Long: `The shard command runs an example shard that fulfills the requirements of a controller that supports sharding.
 For this, it creates a shard Lease object and renews it periodically.
 It also starts a controller for ConfigMaps that are assigned to the shard and handles the drain operation as expected.
+See https://github.com/timebertt/kubernetes-controller-sharding/blob/main/docs/implement-sharding.md for more details.
 This is basically a lightweight example controller which is useful for developing the sharding components without actually
 running a full controller that complies with the sharding requirements.`,
 
@@ -135,10 +136,6 @@ func (o *options) run(ctx context.Context) error {
 	}
 
 	log.Info("Setting up manager")
-	shardLabelSelector := labels.SelectorFromSet(labels.Set{
-		shardingv1alpha1.LabelShard(shardingv1alpha1.KindClusterRing, "", o.clusterRingName): o.shardName,
-	})
-
 	mgr, err := manager.New(restConfig, manager.Options{
 		Metrics: metricsserver.Options{
 			BindAddress: "0",
@@ -147,6 +144,7 @@ func (o *options) run(ctx context.Context) error {
 
 		GracefulShutdownTimeout: ptr.To(5 * time.Second),
 
+		// SHARD LEASE
 		// Use manager's leader election mechanism for maintaining the shard lease.
 		// With this, controllers will only run as long as manager holds the shard lease.
 		// After graceful termination, the shard lease will be released.
@@ -154,16 +152,22 @@ func (o *options) run(ctx context.Context) error {
 		LeaderElectionResourceLockInterface: shardLease,
 		LeaderElectionReleaseOnCancel:       true,
 
-		// Configure cache to watch only objects in the default namespace and that are assigned to this shard.
+		// FILTERED WATCH CACHE
 		Cache: cache.Options{
-			DefaultNamespaces:    map[string]cache.Config{metav1.NamespaceDefault: {}},
-			DefaultLabelSelector: shardLabelSelector,
+			// This shard only acts on objects in the default namespace.
+			DefaultNamespaces: map[string]cache.Config{metav1.NamespaceDefault: {}},
+			// Configure cache to only watch objects that are assigned to this shard.
+			// This shard only watches sharded objects, so we can configure the label selector on the cache's global level.
+			// If your shard watches sharded objects as well as non-sharded objects, use cache.Options.ByObject to configure
+			// the label selector on object level.
+			DefaultLabelSelector: labels.SelectorFromSet(labels.Set{
+				shardingv1alpha1.LabelShard(shardingv1alpha1.KindClusterRing, "", o.clusterRingName): shardLease.Identity(),
+			}),
 		},
 	})
 	if err != nil {
 		return fmt.Errorf("failed setting up manager: %w", err)
 	}
-	log.V(1).Info("Cache filtered with label selector", "selector", shardLabelSelector.String())
 
 	log.Info("Setting up controller")
 	if err := (&Reconciler{}).AddToManager(mgr, o.clusterRingName, shardLease.Identity()); err != nil {
@@ -181,7 +185,7 @@ func (o *options) run(ctx context.Context) error {
 	// Usually, SIGINT and SIGTERM trigger graceful termination immediately.
 	// For development purposes, we allow simulating non-graceful termination by delaying cancellation of the manager.
 	<-ctx.Done()
-	log.Info("Shutting down gracefully in 2 seconds, send another SIGINT or SIGTERM to shutdown non-gracefully")
+	log.Info("Shutting down gracefully in 2 seconds, send another SIGINT or SIGTERM to shut down non-gracefully")
 
 	<-time.After(2 * time.Second)
 
