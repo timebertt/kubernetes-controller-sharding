@@ -20,7 +20,7 @@ spec:
           labelsFromPath:
             uid: [metadata, uid]
     - name: state
-      help: "The Shard's current state"
+      help: "The Shard's current state observed by the shardlease controller"
       each:
         type: StateSet
         stateSet:
@@ -40,11 +40,6 @@ spec:
       clusterring: [metadata, name]
       uid: [metadata, uid]
     metrics:
-    - name: info
-      help: "Information about a ClusterRing"
-      each:
-        type: Info
-        info: {}
     - name: metadata_generation
       help: "The generation of a ClusterRing"
       each:
@@ -58,13 +53,13 @@ spec:
         gauge:
           path: [status, observedGeneration]
     - name: status_shards
-      help: "The ClusterRing's total number of shards"
+      help: "The ClusterRing's total number of shards observed by the ClusterRing controller"
       each:
         type: Gauge
         gauge:
           path: [status, shards]
-    - name: status_shards
-      help: "The ClusterRing's total number of available shards"
+    - name: status_available_shards
+      help: "The ClusterRing's number of available shards observed by the ClusterRing controller"
       each:
         type: Gauge
         gauge:

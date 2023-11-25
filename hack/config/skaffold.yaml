@@ -257,12 +257,12 @@ portForward:
     resourceName: grafana
     namespace: monitoring
     port: http
-    localPort: 3000
+    localPort: 3001
   - resourceType: service
     resourceName: prometheus-k8s
     namespace: monitoring
     port: web
-    localPort: 9090
+    localPort: 9091
 profiles:
   - name: shoot
     activation:
@@ -308,4 +308,4 @@ portForward:
     resourceName: parca
     namespace: parca
     port: http
-    localPort: 7070
+    localPort: 7071
