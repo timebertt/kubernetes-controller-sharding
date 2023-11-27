@@ -133,7 +133,7 @@ jobs:
         # prepare .ko.yaml to inject build settings into all images
         entrypoints=(
           ./cmd/sharder
-          ./hack/cmd/shard
+          ./cmd/shard
           ./hack/cmd/janitor
         )
         

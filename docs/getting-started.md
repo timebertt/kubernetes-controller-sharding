@@ -1,186 +1,311 @@
 # Getting Started With Controller Sharding
 
-This guide walks you through setting up sharding for Kubernetes controllers and deploying the [webhosting-operator](../webhosting-operator/README.md) as an example controller that supports sharding.
+This guide walks you through getting started with controller sharding in a local cluster.
 
-The first steps deploy the sharding components along with a few system components for monitoring, profiling, and so on.
-However, without a controller, the sharding components don't do anything.
-To experience how they work, the webhosting-operator is deployed in the following steps.
-While webhosting-operator is developed in the same repository, it only serves as an example.
-Sharding support can be implemented in any other controller and programming language as well, so that it works well with the sharding components from this project.
+It sets up the sharder and an example sharded controller so that you can see the components in action.
+This is great for trying out the project for the first time and learning about the basic concepts.
 
-> [!NOTE]
-> The external sharding components are work in progress.
-> While the following steps also deploy the new sharding components, they are not activated for now (no `ClusterRing` object is created).
-> Instead, the existing sharding implementation in controller-runtime embedded in webhosting-operator is used.
+## Set Up
 
-## Quick Start
-
-```bash
-# create a local cluster
-make kind-up
-export KUBECONFIG=$PWD/hack/kind_kubeconfig.yaml
-# deploy sharding, monitoring, and system components
-make up
-# deploy the webhosting-operator
-make -C webhosting-operator up
-# create some sample websites
-k apply -k webhosting-operator/config/samples
-# access the grafana dashboards
-k -n monitoring port-forward svc/grafana 3000
-```
-
-Now, visit the sample websites: http://localhost:8088/project-foo/homepage and http://localhost:8088/project-foo/official.
-Also, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/webhosting?orgId=1).
-
-## 1. Create a Kubernetes Cluster
-
-### kind (local)
-
-Create a local cluster in docker containers via [kind](https://kind.sigs.k8s.io/) using a provided make target.
-It already takes care of configuring the needed port mappings.
+Create a local cluster using [kind](https://kind.sigs.k8s.io/) and deploy all components:
 
 ```bash
 make kind-up
 export KUBECONFIG=$PWD/hack/kind_kubeconfig.yaml
-```
-
-### Shoot Cluster (remote)
-
-Alternatively, you can also create a cluster in the cloud.
-If you have a Gardener installation available, you can create a `Shoot` cluster similar to the one in the [sample manifest](../hack/config/shoot.yaml):
-
-```bash
-k apply -f hack/config/shoot.yaml
-# gardenctl target ...
-
-# deploy external-dns for managing DNS records for monitoring and our webhosting service
-k apply --server-side -k hack/config/external-dns
-k -n external-dns create secret generic google-clouddns-timebertt-dev --from-literal project=$PROJECT_NAME --from-file service-account.json=$SERVICE_ACCOUNT_FILE
-```
-
-## 2. Deploy the Sharding Components
-
-Now it's time to deploy the sharding components along with a few system components for monitoring, profiling, and so on.
-
-Build a fresh image and deploy it using [skaffold](https://skaffold.dev/):
-
-```bash
-# one-time build and deploy including port forwarding and log tailing
-make up
-
-# or: dev loop (rebuild on trigger after code changes)
-make dev
-```
-
-Alternatively, deploy pre-built images:
-
-```bash
 make deploy TAG=latest
 ```
 
-## 3. Deploy the webhosting-operator
-
-To experience how controller sharding works, deploy the webhosting-operator as an example controller.
-
-Build a fresh image and deploy it using [skaffold](https://skaffold.dev/):
+The sharder is running in the `sharding-system` namespace and the example shard is deployed to the `default` namespace:
 
 ```bash
-# one-time build and deploy including port forwarding and log tailing
-make -C webhosting-operator up
-
-# or: dev loop (rebuild on trigger after code changes)
-make -C webhosting-operator dev
+$ kubectl -n sharding-system get po
+NAME                       READY   STATUS    RESTARTS   AGE
+sharder-57889fcd8c-p2wxf   1/1     Running   0          44s
+sharder-57889fcd8c-z6bm5   1/1     Running   0          44s
+$ kubectl get po
+NAME                     READY   STATUS    RESTARTS   AGE
+shard-7997b8d9b7-9c2db   1/1     Running   0          45s
+shard-7997b8d9b7-9nvr2   1/1     Running   0          45s
+shard-7997b8d9b7-f9gtd   1/1     Running   0          45s
 ```
 
-Alternatively, deploy pre-built images:
+## The `ClusterRing` and `Lease` Objects
+
+We can see that the `ClusterRing` object is ready and reports 3 available shards out of 3 total shards:
 
 ```bash
-make -C webhosting-operator deploy TAG=latest
+$ kubectl get clusterring
+NAME      READY   AVAILABLE   SHARDS   AGE
+example   True    3           3        64s
 ```
 
-## 4. Create Sample Objects
-
-Create a sample project namespace as well as two websites using two different themes:
+All shards announce themselves to the sharder by maintaining an individual `Lease` object with the `alpha.sharding.timebertt.dev/clusterring` label.
+We can observe that the sharder recognizes all shards as available by looking at the `alpha.sharding.timebertt.dev/state` label:
 
 ```bash
-k apply -k webhosting-operator/config/samples
+$ kubectl get lease -L alpha.sharding.timebertt.dev/clusterring,alpha.sharding.timebertt.dev/state
+NAME                     HOLDER                   AGE   CLUSTERRING   STATE
+shard-7997b8d9b7-9c2db   shard-7997b8d9b7-9c2db   75s   example       ready
+shard-7997b8d9b7-9nvr2   shard-7997b8d9b7-9nvr2   75s   example       ready
+shard-7997b8d9b7-f9gtd   shard-7997b8d9b7-f9gtd   76s   example       ready
 ```
 
-Checkout the created websites in the project namespace:
+The `ClusterRing` object specifies which API resources should be sharded.
+Optionally, it allows selecting the namespaces in which API resources are sharded:
+
+```yaml
+apiVersion: sharding.timebertt.dev/v1alpha1
+kind: ClusterRing
+metadata:
+  name: example
+spec:
+  resources:
+  - group: ""
+    resource: configmaps
+    controlledResources:
+    - group: ""
+      resource: secrets
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: default
+```
+
+In our case, the sharded controller reconciles `ConfigMaps` in the `default` namespace and creates a `Secret` including the configmap's name prefixed with `dummy-`.
+The created `Secrets` are controlled by the respective `ConfigMap`, i.e., there they have an `ownerReference` with `controller=true` to the `ConfigMap`.
+
+## The Sharder Webhook
+
+The sharder created a `MutatingWebhookConfiguration` for the resources listed in our `ClusterRing` specification:
 
 ```bash
-$ k -n project-foo get website,deploy,svc,ing
-NAME                                        THEME      PHASE   AGE
-website.webhosting.timebertt.dev/homepage   exciting   Ready   10s
-website.webhosting.timebertt.dev/official   lame       Ready   10s
-
-NAME                              READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/homepage-72833b   1/1     1            1           10s
-deployment.apps/official-698696   1/1     1            1           10s
-
-NAME                      TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
-service/homepage-72833b   ClusterIP   10.43.119.71   <none>        8080/TCP   10s
-service/official-698696   ClusterIP   10.43.22.107   <none>        8080/TCP   10s
-
-NAME                                        CLASS   HOSTS   ADDRESS      PORTS   AGE
-ingress.networking.k8s.io/homepage-72833b   nginx   *       172.19.0.2   80      10s
-ingress.networking.k8s.io/official-698696   nginx   *       172.19.0.2   80      10s
+$ kubectl get mutatingwebhookconfiguration -l app.kubernetes.io/name=controller-sharding
+NAME                                    WEBHOOKS   AGE
+sharding-clusterring-50d858e0-example   1          2m50s
 ```
 
-Navigate to http://localhost:8088/project-foo/homepage and http://localhost:8088/project-foo/official in your browser to visit the websites.
+Let's examine the webhook configuration for more details.
+We can see that the webhook targets a ring-specific path served by the `sharder`.
+It reacts on `CREATE` and `UPDATE` requests of the configured resources, where the object doesn't have the ring-specific shard label.
+I.e., it gets called for unassigned objects and adds the shard assignment label during admission.
 
-Optionally, generate some more websites using the [samples-generator](../webhosting-operator/cmd/samples-generator):
+```yaml
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: sharding-clusterring-50d858e0-example
+webhooks:
+- clientConfig:
+    service:
+      name: sharder
+      namespace: sharding-system
+      path: /webhooks/sharder/clusterring/example
+      port: 443
+  name: sharder.sharding.timebertt.dev
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: default
+  objectSelector:
+    matchExpressions:
+    - key: shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example
+      operator: DoesNotExist
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - '*'
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - configmaps
+    scope: '*'
+  - apiGroups:
+    - ""
+    apiVersions:
+    - '*'
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - secrets
+    scope: '*'
+```
+
+## Creating Sharded Objects
+
+We can observe the behavior of the webhook by creating a first example object.
+When we create a `ConfigMap`, the webhook assigns it to one of the available controller instances by adding the ring-specific shard label.
+It performs a consistent hashing algorithm, where it hashes both the object's key (consisting of `apiVersion`, `kind`, `namespace`, and `name`) and the shards' names onto a virtual ring.
+It picks the shard with the hash value that is next to the object's hash clock-wise.
 
 ```bash
-# create a random number of websites per project namespace (up to 50 each)
-$ cd webhosting-operator
-$ go run ./cmd/samples-generator
-created 32 Websites in project "project-foo"
+$ kubectl create cm foo -oyaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example: shard-7997b8d9b7-9c2db
+  name: foo
+  namespace: default
 ```
 
-## 5. Access Monitoring Components
-
-You've already deployed a customized installation of [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) including `webhosting-exporter` for observing the operator and its objects created in the previous steps.
-To access grafana, get the password and forward the port:
+We can see that the responsible shard reconciled the `ConfigMap` and created a `Secret` for it.
+Similar to the `ConfigMap`, the `Secret` was also assigned by the webhook.
+In this case however, the sharder uses the information about the owning `ConfigMap` for calculating the object's hash key.
+With this, owned objects are always assigned to the same shard as their owner.
+This is done because the controller typically needs to reconcile the owning object whenever the status of an owned object changes.
+E.g., the `Deployment` controller watches `ReplicaSets` and continues rolling updates of the owning `Deployment` as soon as the owned `ReplicaSet` has the number of wanted replicas.
 
 ```bash
-# get the generated grafana admin password
-cat hack/config/monitoring/default/grafana_admin_password.secret.txt
-
-k -n monitoring port-forward svc/grafana 3000
+$ kubectl get secret dummy-foo -oyaml
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example: shard-7997b8d9b7-9c2db
+  name: dummy-foo
+  namespace: default
+  ownerReferences:
+  - apiVersion: v1
+    controller: true
+    kind: ConfigMap
+    name: foo
 ```
 
-Now, visit your [local webhosting dashboard](http://127.0.0.1:3000/d/NbmNpqEnk/webhosting?orgId=1) at http://127.0.0.1:3000.
-Also, explore the controller-runtime and related dashboards!
-
-## 6. Run Load Test Experiments
-
-The [experiment](./cmd/experiment) tool allows executing different load test scenarios for evaluation purposes.
-
-```text
-$ cd webhosting-operator
-$ go run ./cmd/experiment -h
-Usage:
-  experiment [command]
-
-Available Scenarios
-  basic       Basic load test scenario (15m) that creates roughly 8k websites over 10m
-  reconcile   High frequency reconciliation load test scenario (15m) with a static number of websites (10k)
-...
-```
-
-Run a load test scenario using one of these commands:
+Let's create a few more `ConfigMaps` and observe the distribution of objects across shards:
 
 ```bash
-# run the basic scenario from your development machine
-go run ./cmd/experiment basic
+$ for i in $(seq 1 9); do k create cm foo$i ; done
+$ kubectl get cm,secret -L shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example
+NAME                         DATA   AGE     CLUSTERRING-50D858E0-EXAMPLE
+configmap/foo                0      52s     shard-7997b8d9b7-9c2db
+configmap/foo1               0      7s      shard-7997b8d9b7-9nvr2
+configmap/foo10              0      6s      shard-7997b8d9b7-9nvr2
+configmap/foo2               0      6s      shard-7997b8d9b7-9nvr2
+configmap/foo3               0      6s      shard-7997b8d9b7-f9gtd
+configmap/foo4               0      6s      shard-7997b8d9b7-9c2db
+configmap/foo5               0      6s      shard-7997b8d9b7-f9gtd
+configmap/foo6               0      6s      shard-7997b8d9b7-f9gtd
+configmap/foo7               0      6s      shard-7997b8d9b7-9c2db
+configmap/foo8               0      6s      shard-7997b8d9b7-9c2db
+configmap/foo9               0      6s      shard-7997b8d9b7-9nvr2
 
-# build the experiment image and run the basic scenario as a Job on the cluster
-make up SKAFFOLD_MODULE=experiment EXPERIMENT_SCENARIO=basic
-
-# use a pre-built experiment image to run the basic scenario as a Job on the cluster
-make deploy SKAFFOLD_MODULE=experiment EXPERIMENT_SCENARIO=basic TAG=latest
+NAME                            TYPE     DATA   AGE     CLUSTERRING-50D858E0-EXAMPLE
+secret/dummy-foo                Opaque   0      52s     shard-7997b8d9b7-9c2db
+secret/dummy-foo1               Opaque   0      7s      shard-7997b8d9b7-9nvr2
+secret/dummy-foo10              Opaque   0      6s      shard-7997b8d9b7-9nvr2
+secret/dummy-foo2               Opaque   0      6s      shard-7997b8d9b7-9nvr2
+secret/dummy-foo3               Opaque   0      6s      shard-7997b8d9b7-f9gtd
+secret/dummy-foo4               Opaque   0      6s      shard-7997b8d9b7-9c2db
+secret/dummy-foo5               Opaque   0      6s      shard-7997b8d9b7-f9gtd
+secret/dummy-foo6               Opaque   0      6s      shard-7997b8d9b7-f9gtd
+secret/dummy-foo7               Opaque   0      6s      shard-7997b8d9b7-9c2db
+secret/dummy-foo8               Opaque   0      6s      shard-7997b8d9b7-9c2db
+secret/dummy-foo9               Opaque   0      6s      shard-7997b8d9b7-9nvr2
 ```
 
-When running load test experiments on the cluster, a `ServiceMonitor` is created to instruct prometheus to scrape `experiment`.
-As the tool is based on controller-runtime as well, the controller-runtime dashboards can be used for visualizing the load test scenario and verifying that the tool is able to generate the desired load.
+## Removing Shards From the Ring
+
+Let's see what happens when the set of available shards changes.
+We can observe the actions that the sharder takes using `kubectl get cm --show-labels -w --output-watch-events --watch-only` in a new terminal session.
+
+First, let's scale down the sharded controller to remove one shard from the ring:
+
+```bash
+$ kubectl scale deployment shard --replicas 2
+deployment.apps/shard scaled
+```
+
+The shard releases its `Lease` by setting the `holderIdentity` field to the empty string.
+The sharder recognizes that the shard was removed from the ring and sets its state to `dead`.
+With this, the shard is no longer considered for object assignments.
+The orphaned `Lease` is cleaned up after 1 minute.
+
+```bash
+$ kubectl get lease -L alpha.sharding.timebertt.dev/clusterring,alpha.sharding.timebertt.dev/state
+NAME                     HOLDER                   AGE     CLUSTERRING   STATE
+shard-7997b8d9b7-9c2db                            3m25s   example       dead
+shard-7997b8d9b7-9nvr2   shard-7997b8d9b7-9nvr2   3m25s   example       ready
+shard-7997b8d9b7-f9gtd   shard-7997b8d9b7-f9gtd   3m26s   example       ready
+```
+
+We can observe that the sharder immediately moved objects that were assigned to the removed shard to the remaining available shards.
+For this, the sharder controller simply removes the shard label on all affected objects and lets the webhook reassign them.
+As the original shard is not available anymore, moving the objects doesn't need to be coordinated and the sharder can immediately move objects.
+
+```bash
+$ kubectl get cm --show-labels -w --output-watch-events --watch-only
+EVENT      NAME   DATA   AGE   LABELS
+MODIFIED   foo    0      85s   shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-f9gtd
+MODIFIED   foo4   0      39s   shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
+MODIFIED   foo7   0      39s   shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
+MODIFIED   foo8   0      39s   shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
+```
+
+## Adding Shards to the Ring
+
+Now, let's scale up our sharded controller to add a new shard to the ring.
+
+```bash
+$ kubectl scale deployment shard --replicas 3
+deployment.apps/shard scaled
+```
+
+We can observe that the new `Lease` object is in state `ready`.
+With this, the new shard is immediately considered for assignment of new objects.
+
+```bash
+$ kubectl get lease -L alpha.sharding.timebertt.dev/clusterring,alpha.sharding.timebertt.dev/state
+NAME                     HOLDER                   AGE     CLUSTERRING   STATE
+shard-7997b8d9b7-9nvr2   shard-7997b8d9b7-9nvr2   4m52s   example       ready
+shard-7997b8d9b7-f9gtd   shard-7997b8d9b7-f9gtd   4m53s   example       ready
+shard-7997b8d9b7-mkh72   shard-7997b8d9b7-mkh72   8s      example       ready
+```
+
+In this case, a rebalancing needs to happen and the sharder needs to move objects away from available shards to the new shard.
+In contrast to moving objects from unavailable shards, this needs to be coordinated to prevent multiple shards from acting on the same object concurrently.
+Otherwise, the shards might perform conflicting actions which might lead to a broken state of the objects.
+
+For this, the sharder adds the drain label to all objects that should be moved to the new shard.
+This asks the currently responsible shard to stop reconciling the object and acknowledge the movement.
+As soon as the controller observes the drain label, it removes it again along with the shard label.
+This triggers the sharder webhook which immediately assigns the object to the desired shard.
+
+```bash
+$ kubectl get cm --show-labels -w --output-watch-events --watch-only
+EVENT      NAME   DATA   AGE     LABELS
+MODIFIED   foo    0      2m49s   drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-f9gtd
+MODIFIED   foo3   0      2m3s    drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-f9gtd
+MODIFIED   foo4   0      2m3s    drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
+MODIFIED   foo    0      2m49s   shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
+MODIFIED   foo3   0      2m3s    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
+MODIFIED   foo6   0      2m3s    drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-f9gtd
+MODIFIED   foo4   0      2m3s    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
+MODIFIED   foo7   0      2m3s    drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
+MODIFIED   foo6   0      2m3s    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
+MODIFIED   foo8   0      2m3s    drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
+MODIFIED   foo7   0      2m3s    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
+MODIFIED   foo9   0      2m3s    drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
+MODIFIED   foo8   0      2m3s    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
+MODIFIED   foo9   0      2m3s    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
+```
+
+## Clean Up
+
+Simply delete the local cluster to clean up:
+
+```bash
+make kind-down
+```
+
+## Where To Go From Here?
+
+Now, you should have a basic understanding of how sharding for Kubernetes controllers works.
+If you want to learn more about the individual components, the sharding architecture, and the reasoning behind it, see [Design](design.md).
+You might also be interested in reading the [Evaluation](evaluation.md) document about load tests for sharded controllers and how this project helps in scaling Kubernetes controllers.
+
+If you want to use sharding for your own controllers, see [Implement Sharding in Your Controller](implement-sharding.md).
+
+To further experiment with the setup from this guide or to start developing changes to the sharding components, see [Development and Testing Setup](development.md).
+
+You can also take a look at the remaining docs in the [documentation index](README.md).

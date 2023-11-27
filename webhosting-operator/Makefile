@@ -118,10 +118,10 @@ images: $(KO) ## Build and push container images using ko.
 
 ##@ Deployment
 
-# use dedicated ghcr repo for dev images to prevent spamming the "production" image repo
-export SKAFFOLD_DEFAULT_REPO ?= ghcr.io/timebertt/dev-images
 # use static label for skaffold to prevent rolling all components on every skaffold invocation
 deploy up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
+# use dedicated ghcr repo for dev images to prevent spamming the "production" image repo
+up dev: export SKAFFOLD_DEFAULT_REPO ?= ghcr.io/timebertt/dev-images
 
 .PHONY: deploy
 deploy: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.

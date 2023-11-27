@@ -29,11 +29,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -42,6 +40,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
+	shardlease "github.com/timebertt/kubernetes-controller-sharding/pkg/shard/lease"
 )
 
 func main() {
@@ -50,10 +49,11 @@ func main() {
 
 	cmd := &cobra.Command{
 		Use:   "shard",
-		Short: "Run a dummy shard",
-		Long: `The shard command runs a dummy shard that fulfills the requirements of a controller that supports sharding.
+		Short: "Run an example shard",
+		Long: `The shard command runs an example shard that fulfills the requirements of a controller that supports sharding.
 For this, it creates a shard Lease object and renews it periodically.
 It also starts a controller for ConfigMaps that are assigned to the shard and handles the drain operation as expected.
+See https://github.com/timebertt/kubernetes-controller-sharding/blob/main/docs/implement-sharding.md for more details.
 This is basically a lightweight example controller which is useful for developing the sharding components without actually
 running a full controller that complies with the sharding requirements.`,
 
@@ -81,6 +81,7 @@ running a full controller that complies with the sharding requirements.`,
 type options struct {
 	zapOptions      *zap.Options
 	clusterRingName string
+	leaseNamespace  string
 	shardName       string
 }
 
@@ -91,14 +92,14 @@ func newOptions() *options {
 			TimeEncoder: zapcore.ISO8601TimeEncoder,
 		},
 
-		clusterRingName: "dummy",
-		shardName:       "shard-" + rand.String(8),
+		clusterRingName: "example",
 	}
 }
 
 func (o *options) AddFlags(fs *pflag.FlagSet) {
-	fs.StringVar(&o.clusterRingName, "clusterring", o.clusterRingName, "Name of the ClusterRing the dummy shard belongs to.")
-	fs.StringVar(&o.shardName, "shard", o.shardName, "Name of the dummy shard. Defaults to shard-<random-suffix>.")
+	fs.StringVar(&o.clusterRingName, "clusterring", o.clusterRingName, "Name of the ClusterRing the shard belongs to.")
+	fs.StringVar(&o.leaseNamespace, "lease-namespace", o.leaseNamespace, "Namespace to use for the shard lease. Defaults to the pod's namespace if running in-cluster.")
+	fs.StringVar(&o.shardName, "shard", o.shardName, "Name of the shard. Defaults to the instance's hostname.")
 
 	zapFlagSet := flag.NewFlagSet("zap", flag.ContinueOnError)
 	o.zapOptions.BindFlags(zapFlagSet)
@@ -106,10 +107,6 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (o *options) validate() error {
-	if o.shardName == "" {
-		return fmt.Errorf("--shard must not be empty")
-	}
-
 	if o.clusterRingName == "" {
 		return fmt.Errorf("--clusterring must not be empty")
 	}
@@ -129,30 +126,16 @@ func (o *options) run(ctx context.Context) error {
 	}
 
 	log.Info("Setting up shard lease")
-	leaseClient, err := client.New(restConfig, client.Options{})
+	shardLease, err := shardlease.NewResourceLock(restConfig, nil, shardlease.Options{
+		ClusterRingName: o.clusterRingName,
+		LeaseNamespace:  o.leaseNamespace, // optional, can be empty
+		ShardName:       o.shardName,      // optional, can be empty
+	})
 	if err != nil {
-		return fmt.Errorf("failed creating client for shard lease: %w", err)
-	}
-
-	shardLease := &LeaseLock{
-		LeaseKey: client.ObjectKey{
-			Namespace: metav1.NamespaceDefault,
-			Name:      o.shardName,
-		},
-		Client: leaseClient,
-		LockConfig: resourcelock.ResourceLockConfig{
-			Identity: o.shardName,
-		},
-		Labels: map[string]string{
-			shardingv1alpha1.LabelClusterRing: o.clusterRingName,
-		},
+		return fmt.Errorf("failed creating shard lease: %w", err)
 	}
 
 	log.Info("Setting up manager")
-	shardLabelSelector := labels.SelectorFromSet(labels.Set{
-		shardingv1alpha1.LabelShard(shardingv1alpha1.KindClusterRing, "", o.clusterRingName): o.shardName,
-	})
-
 	mgr, err := manager.New(restConfig, manager.Options{
 		Metrics: metricsserver.Options{
 			BindAddress: "0",
@@ -161,29 +144,33 @@ func (o *options) run(ctx context.Context) error {
 
 		GracefulShutdownTimeout: ptr.To(5 * time.Second),
 
+		// SHARD LEASE
 		// Use manager's leader election mechanism for maintaining the shard lease.
 		// With this, controllers will only run as long as manager holds the shard lease.
-		// After graceful termination, the lease will be released.
+		// After graceful termination, the shard lease will be released.
 		LeaderElection:                      true,
 		LeaderElectionResourceLockInterface: shardLease,
 		LeaderElectionReleaseOnCancel:       true,
 
-		// Configure cache to watch only objects in the default namespace and that are assigned to this shard.
+		// FILTERED WATCH CACHE
 		Cache: cache.Options{
-			DefaultNamespaces:    map[string]cache.Config{metav1.NamespaceDefault: {}},
-			DefaultLabelSelector: shardLabelSelector,
+			// This shard only acts on objects in the default namespace.
+			DefaultNamespaces: map[string]cache.Config{metav1.NamespaceDefault: {}},
+			// Configure cache to only watch objects that are assigned to this shard.
+			// This shard only watches sharded objects, so we can configure the label selector on the cache's global level.
+			// If your shard watches sharded objects as well as non-sharded objects, use cache.Options.ByObject to configure
+			// the label selector on object level.
+			DefaultLabelSelector: labels.SelectorFromSet(labels.Set{
+				shardingv1alpha1.LabelShard(shardingv1alpha1.KindClusterRing, "", o.clusterRingName): shardLease.Identity(),
+			}),
 		},
 	})
 	if err != nil {
 		return fmt.Errorf("failed setting up manager: %w", err)
 	}
-	log.V(1).Info("Cache filtered with label selector", "selector", shardLabelSelector.String())
 
 	log.Info("Setting up controller")
-	if err := (&Reconciler{
-		ClusterRingName: o.clusterRingName,
-		ShardName:       o.shardName,
-	}).AddToManager(mgr); err != nil {
+	if err := (&Reconciler{}).AddToManager(mgr, o.clusterRingName, shardLease.Identity()); err != nil {
 		return fmt.Errorf("failed adding controller: %w", err)
 	}
 
@@ -198,7 +185,7 @@ func (o *options) run(ctx context.Context) error {
 	// Usually, SIGINT and SIGTERM trigger graceful termination immediately.
 	// For development purposes, we allow simulating non-graceful termination by delaying cancellation of the manager.
 	<-ctx.Done()
-	log.Info("Shutting down gracefully in 2 seconds, send another SIGINT or SIGTERM to shutdown non-gracefully")
+	log.Info("Shutting down gracefully in 2 seconds, send another SIGINT or SIGTERM to shut down non-gracefully")
 
 	<-time.After(2 * time.Second)
 

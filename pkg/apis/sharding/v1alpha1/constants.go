@@ -68,7 +68,7 @@ func LabelDrain(kind string, namespace, name string) string {
 	return LabelDrainPrefix + RingSuffix(kind, namespace, name)
 }
 
-// RingSuffix returns the label key for a given ring kind and key that is appendend to a qualified prefix.
+// RingSuffix returns the label key for a given ring kind and key that is appended to a qualified prefix.
 func RingSuffix(kind string, namespace, name string) string {
 	key := name
 	if namespace != "" {

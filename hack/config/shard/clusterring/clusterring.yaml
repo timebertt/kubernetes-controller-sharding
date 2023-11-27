@@ -1,7 +1,7 @@
 apiVersion: sharding.timebertt.dev/v1alpha1
 kind: ClusterRing
 metadata:
-  name: dummy
+  name: example
 spec:
   resources:
   - group: ""

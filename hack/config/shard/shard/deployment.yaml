@@ -13,6 +13,7 @@ spec:
       - name: shard
         image: shard:latest
         args:
+        - --clusterring=example
         - --zap-log-level=debug
         env:
         - name: DISABLE_HTTP2

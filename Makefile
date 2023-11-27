@@ -4,6 +4,8 @@ PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 TAG ?= latest
 GHCR_REPO ?= ghcr.io/timebertt/kubernetes-controller-sharding
 SHARDER_IMG ?= $(GHCR_REPO)/sharder:$(TAG)
+SHARD_IMG ?= $(GHCR_REPO)/shard:$(TAG)
+JANITOR_IMG ?= $(GHCR_REPO)/janitor:$(TAG)
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.27
@@ -111,10 +113,12 @@ run: $(KUBECTL) generate-fast ## Run the sharder from your host and deploy prere
 	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/certificates/host
 	go run ./cmd/sharder --config=hack/config/sharder/host/config.yaml --zap-log-level=debug
 
+SHARD_NAME ?= shard-$(shell tr -dc bcdfghjklmnpqrstvwxz2456789 </dev/urandom | head -c 8)
+
 .PHONY: run-shard
 run-shard: $(KUBECTL) ## Run a shard from your host and deploy prerequisites.
 	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/shard/clusterring
-	go run ./hack/cmd/shard --zap-log-level=debug
+	go run ./cmd/shard --shard=$(SHARD_NAME) --lease-namespace=default --zap-log-level=debug
 
 PUSH ?= false
 images: export KO_DOCKER_REPO = $(GHCR_REPO)
@@ -139,15 +143,15 @@ kind-up: $(KIND) $(KUBECTL) ## Launch a kind cluster for local development and t
 kind-down: $(KIND) ## Tear down the kind testing cluster.
 	$(KIND) delete cluster --name sharding
 
-# use dedicated ghcr repo for dev images to prevent spamming the "production" image repo
-export SKAFFOLD_DEFAULT_REPO ?= ghcr.io/timebertt/dev-images
 export SKAFFOLD_FILENAME = hack/config/skaffold.yaml
 # use static label for skaffold to prevent rolling all components on every skaffold invocation
 deploy up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=sharding
+# use dedicated ghcr repo for dev images to prevent spamming the "production" image repo
+up dev: export SKAFFOLD_DEFAULT_REPO ?= ghcr.io/timebertt/dev-images
 
 .PHONY: deploy
 deploy: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
-	$(SKAFFOLD) deploy -i $(SHARDER_IMG)
+	$(SKAFFOLD) deploy -i $(SHARDER_IMG) -i $(SHARD_IMG) -i $(JANITOR_IMG)
 
 .PHONY: up
 up: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.
