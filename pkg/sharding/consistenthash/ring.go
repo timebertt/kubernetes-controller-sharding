@@ -41,12 +41,13 @@ func New(fn Hash, tokensPerNode int, initialNodes ...string) *Ring {
 		tokensPerNode = DefaultTokensPerNode
 	}
 
+	numTokens := len(initialNodes) * tokensPerNode
 	r := &Ring{
 		hash:          fn,
 		tokensPerNode: tokensPerNode,
 
-		tokens:      make([]uint64, 0, len(initialNodes)*tokensPerNode),
-		tokenToNode: make(map[uint64]string, len(initialNodes)),
+		tokens:      make([]uint64, 0, numTokens),
+		tokenToNode: make(map[uint64]string, numTokens),
 	}
 	r.AddNodes(initialNodes...)
 	return r

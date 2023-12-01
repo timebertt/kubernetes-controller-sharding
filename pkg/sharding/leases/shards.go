@@ -50,7 +50,7 @@ func (s Shards) ByID(id string) Shard {
 
 // AvailableShards returns the subset of available Shards as determined by IsAvailable.
 func (s Shards) AvailableShards() Shards {
-	var shards Shards
+	shards := make(Shards, 0, len(s))
 	for _, shard := range s {
 		if shard.State.IsAvailable() {
 			shards = append(shards, shard)
