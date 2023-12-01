@@ -76,7 +76,8 @@ func (r *Reconciler) LeasePredicate() predicate.Predicate {
 					return false
 				}
 
-				return leases.ToState(oldLease, r.Clock) != leases.ToState(newLease, r.Clock)
+				now := r.Clock.Now()
+				return leases.ToState(oldLease, now) != leases.ToState(newLease, now)
 			},
 			DeleteFunc: func(_ event.DeleteEvent) bool { return false },
 		},

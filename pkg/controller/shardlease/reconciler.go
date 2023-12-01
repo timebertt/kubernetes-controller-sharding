@@ -71,8 +71,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	}
 
 	var (
+		now           = r.Clock.Now()
 		previousState = leases.StateFromString(lease.Labels[shardingv1alpha1.LabelState])
-		shard         = leases.ToShard(lease, r.Clock)
+		shard         = leases.ToShard(lease, now)
 	)
 	log = log.WithValues("state", shard.State, "expirationTime", shard.Times.Expiration, "leaseDuration", shard.Times.LeaseDuration)
 
@@ -99,7 +100,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	case leases.Uncertain:
 		log.Info("Shard lease has expired more than leaseDuration ago, trying to acquire shard lease")
 
-		now := metav1.NewMicroTime(r.Clock.Now())
+		nowMicro := metav1.NewMicroTime(now)
 		transitions := int32(0)
 		if lease.Spec.LeaseTransitions != nil {
 			transitions = *lease.Spec.LeaseTransitions
@@ -107,8 +108,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 
 		lease.Spec.HolderIdentity = ptr.To(shardingv1alpha1.IdentityShardLeaseController)
 		lease.Spec.LeaseDurationSeconds = ptr.To(2 * int32(shard.Times.LeaseDuration.Round(time.Second).Seconds()))
-		lease.Spec.AcquireTime = &now
-		lease.Spec.RenewTime = &now
+		lease.Spec.AcquireTime = &nowMicro
+		lease.Spec.RenewTime = &nowMicro
 		lease.Spec.LeaseTransitions = ptr.To(transitions + 1)
 		if err := r.Client.Update(ctx, lease); err != nil {
 			return reconcile.Result{}, fmt.Errorf("error acquiring shard lease: %w", err)

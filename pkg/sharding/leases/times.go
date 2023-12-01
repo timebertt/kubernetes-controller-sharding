@@ -19,8 +19,6 @@ package leases
 import (
 	"time"
 
-	"k8s.io/utils/clock"
-
 	coordinationv1 "k8s.io/api/coordination/v1"
 )
 
@@ -46,10 +44,9 @@ type Times struct {
 }
 
 // ToTimes parses the times and durations in the given Lease object and returns them in the Times representation.
-func ToTimes(lease *coordinationv1.Lease, cl clock.PassiveClock) Times {
+func ToTimes(lease *coordinationv1.Lease, now time.Time) Times {
 	var (
 		t               = Times{}
-		now             = cl.Now()
 		acquireTime     = lease.Spec.AcquireTime
 		renewTime       = lease.Spec.RenewTime
 		durationSeconds = lease.Spec.LeaseDurationSeconds

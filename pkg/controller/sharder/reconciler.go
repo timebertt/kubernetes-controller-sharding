@@ -84,7 +84,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	}
 
 	// get ring and shards from cache
-	hashRing, shards := ring.FromLeases(clusterRing, leaseList, r.Clock)
+	hashRing, shards := ring.FromLeases(clusterRing, leaseList, r.Clock.Now())
 
 	namespaces, err := r.getSelectedNamespaces(ctx, clusterRing)
 	if err != nil {

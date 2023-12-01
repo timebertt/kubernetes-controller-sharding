@@ -96,7 +96,8 @@ func (r *Reconciler) LeasePredicate() predicate.Predicate {
 				}
 
 				// only enqueue ring if the shard's state changed
-				return leases.ToState(oldLease, r.Clock).IsAvailable() != leases.ToState(newLease, r.Clock).IsAvailable()
+				now := r.Clock.Now()
+				return leases.ToState(oldLease, now).IsAvailable() != leases.ToState(newLease, now).IsAvailable()
 			},
 			DeleteFunc: func(_ event.DeleteEvent) bool { return true },
 		},

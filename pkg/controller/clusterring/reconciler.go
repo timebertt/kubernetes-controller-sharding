@@ -87,7 +87,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{}, r.updateStatusError(ctx, log, fmt.Errorf("error listing Leases for ClusterRing: %w", err), clusterRing, before)
 	}
 
-	shards := leases.ToShards(leaseList.Items, r.Clock)
+	shards := leases.ToShards(leaseList.Items, r.Clock.Now())
 	clusterRing.Status.Shards = int32(len(shards))
 	clusterRing.Status.AvailableShards = int32(len(shards.AvailableShards()))
 

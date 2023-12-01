@@ -90,7 +90,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 	}
 
 	// get ring from cache and hash the object onto the ring
-	hashRing, _ := ring.FromLeases(ringObj, leaseList, h.Clock)
+	hashRing, _ := ring.FromLeases(ringObj, leaseList, h.Clock.Now())
 	shard := hashRing.Hash(key)
 
 	log.V(1).Info("Assigning object for ring", "ring", client.ObjectKeyFromObject(ringObj), "shard", shard)

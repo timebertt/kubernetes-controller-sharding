@@ -18,9 +18,9 @@ package ring
 
 import (
 	"fmt"
+	"time"
 
 	coordinationv1 "k8s.io/api/coordination/v1"
-	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
@@ -34,7 +34,7 @@ import (
 // This is a central function in the sharding implementation bringing together the leases package with the
 // consistenthash package.
 // In short, it determines the subset of available shards and constructs a new consistenthash.Ring with it.
-func FromLeases(ringObj client.Object, leaseList *coordinationv1.LeaseList, cl clock.PassiveClock) (*consistenthash.Ring, leases.Shards) {
+func FromLeases(ringObj client.Object, leaseList *coordinationv1.LeaseList, now time.Time) (*consistenthash.Ring, leases.Shards) {
 	var kind string
 
 	switch ringObj.(type) {
@@ -45,7 +45,7 @@ func FromLeases(ringObj client.Object, leaseList *coordinationv1.LeaseList, cl c
 	}
 
 	// determine ready shards and calculate hash ring
-	shards := leases.ToShards(leaseList.Items, cl)
+	shards := leases.ToShards(leaseList.Items, now)
 	availableShards := shards.AvailableShards().IDs()
 	ring := consistenthash.New(nil, 0, availableShards...)
 
