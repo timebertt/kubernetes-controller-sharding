@@ -24,10 +24,10 @@ import (
 )
 
 // Hash is a function computing a 64-bit digest.
-type Hash func(data []byte) uint64
+type Hash func(data string) uint64
 
 // DefaultHash is the default Hash used by Ring.
-var DefaultHash Hash = xxhash.Sum64
+var DefaultHash Hash = xxhash.Sum64String
 
 // DefaultTokensPerNode is the default number of virtual nodes per node.
 const DefaultTokensPerNode = 100
@@ -70,7 +70,7 @@ func (r *Ring) IsEmpty() bool {
 func (r *Ring) AddNodes(nodes ...string) {
 	for _, node := range nodes {
 		for i := 0; i < r.tokensPerNode; i++ {
-			t := r.hash([]byte(fmt.Sprintf("%s-%d", node, i)))
+			t := r.hash(fmt.Sprintf("%s-%d", node, i))
 			r.tokens = append(r.tokens, t)
 			r.tokenToNode[t] = node
 		}
@@ -86,7 +86,7 @@ func (r *Ring) Hash(key string) string {
 	}
 
 	// Hash key and find the next virtual node on the ring
-	h := r.hash([]byte(key))
+	h := r.hash(key)
 	i, _ := slices.BinarySearch(r.tokens, h)
 
 	// walked the whole ring, next virtual node is the first one
