@@ -26,11 +26,10 @@ import (
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller/clusterring"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller/sharder"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller/shardlease"
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/ring"
 )
 
 // AddToManager adds all controllers to the manager.
-func AddToManager(ctx context.Context, mgr manager.Manager, ringCache ring.Cache, config *configv1alpha1.SharderConfig) error {
+func AddToManager(ctx context.Context, mgr manager.Manager, config *configv1alpha1.SharderConfig) error {
 	if err := (&clusterring.Reconciler{
 		Config: config,
 	}).AddToManager(mgr); err != nil {
@@ -39,7 +38,6 @@ func AddToManager(ctx context.Context, mgr manager.Manager, ringCache ring.Cache
 
 	if err := (&sharder.Reconciler{
 		Config: config,
-		Cache:  ringCache,
 	}).AddToManager(mgr); err != nil {
 		return fmt.Errorf("failed adding sharder controller: %w", err)
 	}

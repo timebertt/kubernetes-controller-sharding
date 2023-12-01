@@ -60,8 +60,6 @@ type Reconciler struct {
 	Reader client.Reader
 	Clock  clock.PassiveClock
 	Config *configv1alpha1.SharderConfig
-
-	Cache ring.Cache
 }
 
 // Reconcile reconciles a ClusterRing object.
@@ -86,7 +84,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	}
 
 	// get ring and shards from cache
-	hashRing, shards := r.Cache.Get(clusterRing, leaseList)
+	hashRing, shards := ring.FromLeases(clusterRing, leaseList, r.Clock)
 
 	namespaces, err := r.getSelectedNamespaces(ctx, clusterRing)
 	if err != nil {

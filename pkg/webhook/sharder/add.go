@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -43,6 +44,9 @@ const (
 func (h *Handler) AddToManager(mgr manager.Manager) error {
 	if h.Reader == nil {
 		h.Reader = mgr.GetCache()
+	}
+	if h.Clock == nil {
+		h.Clock = clock.RealClock{}
 	}
 
 	mgr.GetWebhookServer().Register(WebhookPathPrefix, &admission.Webhook{
