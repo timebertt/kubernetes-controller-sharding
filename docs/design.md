@@ -1,7 +1,7 @@
 # Design
 
 This document explains the sharding design in more detail.
-Please also consider reading the respective design chapters in the [study project](https://github.com/timebertt/thesis-controller-sharding) and [Master's thesis](https://github.com/timebertt/thesis-controller-sharding) as long as this document is not detailed enough.
+Please also consider reading the respective design chapters in the [study project](https://github.com/timebertt/thesis-controller-sharding) and [Master's thesis](https://github.com/timebertt/masters-thesis-controller-sharding) as long as this document is not detailed enough.
 
 ## Architecture
 
