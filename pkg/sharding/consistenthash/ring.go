@@ -17,8 +17,8 @@ limitations under the License.
 package consistenthash
 
 import (
-	"fmt"
 	"slices"
+	"strconv"
 
 	"github.com/cespare/xxhash/v2"
 )
@@ -70,7 +70,7 @@ func (r *Ring) IsEmpty() bool {
 func (r *Ring) AddNodes(nodes ...string) {
 	for _, node := range nodes {
 		for i := 0; i < r.tokensPerNode; i++ {
-			t := r.hash(fmt.Sprintf("%s-%d", node, i))
+			t := r.hash(node + strconv.FormatInt(int64(i), 10))
 			r.tokens = append(r.tokens, t)
 			r.tokenToNode[t] = node
 		}
