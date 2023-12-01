@@ -92,7 +92,7 @@ func (r *Reconciler) LeasePredicate() predicate.Predicate {
 
 				// We only need to resync the ring if the new shard is available right away.
 				// Note: on controller start we will enqueue anyway for the add event of ClusterRings.
-				return leases.ToState(lease, r.Clock).IsAvailable()
+				return leases.ToState(lease, r.Clock.Now()).IsAvailable()
 			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				oldLease, ok := e.ObjectOld.(*coordinationv1.Lease)
@@ -105,7 +105,8 @@ func (r *Reconciler) LeasePredicate() predicate.Predicate {
 				}
 
 				// We only need to resync the ring if the shard's availability changed.
-				return leases.ToState(oldLease, r.Clock).IsAvailable() != leases.ToState(newLease, r.Clock).IsAvailable()
+				now := r.Clock.Now()
+				return leases.ToState(oldLease, now).IsAvailable() != leases.ToState(newLease, now).IsAvailable()
 			},
 			DeleteFunc: func(e event.DeleteEvent) bool {
 				if e.DeleteStateUnknown {
@@ -123,7 +124,7 @@ func (r *Reconciler) LeasePredicate() predicate.Predicate {
 				}
 
 				// We only need to resync the ring if the removed shard was still available.
-				return leases.ToState(lease, r.Clock).IsAvailable()
+				return leases.ToState(lease, r.Clock.Now()).IsAvailable()
 			},
 		},
 	)

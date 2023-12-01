@@ -17,7 +17,7 @@ limitations under the License.
 package leases
 
 import (
-	"k8s.io/utils/clock"
+	"time"
 
 	coordinationv1 "k8s.io/api/coordination/v1"
 )
@@ -50,7 +50,7 @@ func (s Shards) ByID(id string) Shard {
 
 // AvailableShards returns the subset of available Shards as determined by IsAvailable.
 func (s Shards) AvailableShards() Shards {
-	var shards Shards
+	shards := make(Shards, 0, len(s))
 	for _, shard := range s {
 		if shard.State.IsAvailable() {
 			shards = append(shards, shard)
@@ -71,18 +71,18 @@ func (s Shards) IDs() []string {
 }
 
 // ToShards takes a list of Lease objects and transforms them to a list of Shards.
-func ToShards(leases []coordinationv1.Lease, cl clock.PassiveClock) Shards {
+func ToShards(leases []coordinationv1.Lease, now time.Time) Shards {
 	shards := make(Shards, 0, len(leases))
 	for _, lease := range leases {
 		l := lease
-		shards = append(shards, ToShard(&l, cl))
+		shards = append(shards, ToShard(&l, now))
 	}
 	return shards
 }
 
 // ToShard takes a Lease object and transforms it to a Shard.
-func ToShard(lease *coordinationv1.Lease, cl clock.PassiveClock) Shard {
-	times := ToTimes(lease, cl)
+func ToShard(lease *coordinationv1.Lease, now time.Time) Shard {
+	times := ToTimes(lease, now)
 	return Shard{
 		ID:    lease.GetName(),
 		Times: times,

@@ -26,6 +26,7 @@ import (
 	coordinationv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/utils/clock"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -40,13 +41,13 @@ import (
 // Handler handles admission requests and invalidates the static token in Secret resources related to ServiceAccounts.
 type Handler struct {
 	Reader client.Reader
-	Cache  ring.Cache
+	Clock  clock.PassiveClock
 }
 
 func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.Response {
 	log := logf.FromContext(ctx)
 
-	ring, err := RingForRequest(ctx, h.Reader)
+	ringObj, err := RingForRequest(ctx, h.Reader)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("error determining ring for request: %w", err))
 	}
@@ -58,7 +59,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("error decoding object: %w", err))
 	}
 
-	labelShard := ring.LabelShard()
+	labelShard := ringObj.LabelShard()
 
 	// Don't touch labels that the object already has, we can't simply reassign it because the active shard might still
 	// be working on it.
@@ -69,7 +70,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 	keyFunc, err := sharding.KeyFuncForResource(metav1.GroupResource{
 		Group:    req.Resource.Group,
 		Resource: req.Resource.Resource,
-	}, ring)
+	}, ringObj)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("error deteriming hash key func for object: %w", err))
 	}
@@ -84,15 +85,15 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 
 	// collect list of shards in the ring
 	leaseList := &coordinationv1.LeaseList{}
-	if err := h.Reader.List(ctx, leaseList, client.MatchingLabelsSelector{Selector: ring.LeaseSelector()}); err != nil {
+	if err := h.Reader.List(ctx, leaseList, client.MatchingLabelsSelector{Selector: ringObj.LeaseSelector()}); err != nil {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("error listing Leases for ClusterRing: %w", err))
 	}
 
 	// get ring from cache and hash the object onto the ring
-	hashRing, _ := h.Cache.Get(ring, leaseList)
+	hashRing, _ := ring.FromLeases(ringObj, leaseList, h.Clock.Now())
 	shard := hashRing.Hash(key)
 
-	log.V(1).Info("Assigning object for ring", "ring", client.ObjectKeyFromObject(ring), "shard", shard)
+	log.V(1).Info("Assigning object for ring", "ring", client.ObjectKeyFromObject(ringObj), "shard", shard)
 
 	patches := make([]jsonpatch.JsonPatchOperation, 0, 2)
 	if obj.Labels == nil {
@@ -103,7 +104,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 
 	if !ptr.Deref(req.DryRun, false) {
 		shardingmetrics.AssignmentsTotal.WithLabelValues(
-			shardingv1alpha1.KindClusterRing, ring.GetNamespace(), ring.GetName(),
+			shardingv1alpha1.KindClusterRing, ringObj.GetNamespace(), ringObj.GetName(),
 			req.Resource.Group, req.Resource.Resource,
 		).Inc()
 	}

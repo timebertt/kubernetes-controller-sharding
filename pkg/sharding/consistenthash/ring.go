@@ -17,17 +17,17 @@ limitations under the License.
 package consistenthash
 
 import (
-	"fmt"
-	"sort"
+	"slices"
+	"strconv"
 
 	"github.com/cespare/xxhash/v2"
 )
 
 // Hash is a function computing a 64-bit digest.
-type Hash func(data []byte) uint64
+type Hash func(data string) uint64
 
 // DefaultHash is the default Hash used by Ring.
-var DefaultHash Hash = xxhash.Sum64
+var DefaultHash Hash = xxhash.Sum64String
 
 // DefaultTokensPerNode is the default number of virtual nodes per node.
 const DefaultTokensPerNode = 100
@@ -41,12 +41,13 @@ func New(fn Hash, tokensPerNode int, initialNodes ...string) *Ring {
 		tokensPerNode = DefaultTokensPerNode
 	}
 
+	numTokens := len(initialNodes) * tokensPerNode
 	r := &Ring{
 		hash:          fn,
 		tokensPerNode: tokensPerNode,
 
-		tokens:      make([]uint64, 0, len(initialNodes)*tokensPerNode),
-		tokenToNode: make(map[uint64]string, len(initialNodes)),
+		tokens:      make([]uint64, 0, numTokens),
+		tokenToNode: make(map[uint64]string, numTokens),
 	}
 	r.AddNodes(initialNodes...)
 	return r
@@ -69,16 +70,14 @@ func (r *Ring) IsEmpty() bool {
 func (r *Ring) AddNodes(nodes ...string) {
 	for _, node := range nodes {
 		for i := 0; i < r.tokensPerNode; i++ {
-			t := r.hash([]byte(fmt.Sprintf("%s-%d", node, i)))
+			t := r.hash(node + strconv.FormatInt(int64(i), 10))
 			r.tokens = append(r.tokens, t)
 			r.tokenToNode[t] = node
 		}
 	}
 
 	// sort all tokens on the ring for binary searches
-	sort.Slice(r.tokens, func(i, j int) bool {
-		return r.tokens[i] < r.tokens[j]
-	})
+	slices.Sort(r.tokens)
 }
 
 func (r *Ring) Hash(key string) string {
@@ -86,15 +85,11 @@ func (r *Ring) Hash(key string) string {
 		return ""
 	}
 
-	// Hash key and walk the ring until we find the next virtual node
-	h := r.hash([]byte(key))
+	// Hash key and find the next virtual node on the ring
+	h := r.hash(key)
+	i, _ := slices.BinarySearch(r.tokens, h)
 
-	// binary search
-	i := sort.Search(len(r.tokens), func(i int) bool {
-		return r.tokens[i] >= h
-	})
-
-	// walked the whole ring
+	// walked the whole ring, next virtual node is the first one
 	if i == len(r.tokens) {
 		i = 0
 	}

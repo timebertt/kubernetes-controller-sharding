@@ -17,7 +17,7 @@ limitations under the License.
 package leases
 
 import (
-	"k8s.io/utils/clock"
+	"time"
 
 	coordinationv1 "k8s.io/api/coordination/v1"
 )
@@ -83,8 +83,8 @@ func (s ShardState) IsAvailable() bool {
 }
 
 // ToState returns the ShardState of the given Lease.
-func ToState(lease *coordinationv1.Lease, cl clock.PassiveClock) ShardState {
-	return toState(lease, ToTimes(lease, cl))
+func ToState(lease *coordinationv1.Lease, now time.Time) ShardState {
+	return toState(lease, ToTimes(lease, now))
 }
 
 func toState(lease *coordinationv1.Lease, t Times) ShardState {

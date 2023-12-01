@@ -36,7 +36,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller"
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/ring"
 	healthzutils "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/healthz"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/webhook"
 )
@@ -114,15 +113,13 @@ func run(ctx context.Context, log logr.Logger, opts *options) error {
 		return err
 	}
 
-	ringCache := ring.NewCache()
-
 	log.Info("Adding controllers to manager")
-	if err := controller.AddToManager(ctx, mgr, ringCache, opts.config); err != nil {
+	if err := controller.AddToManager(ctx, mgr, opts.config); err != nil {
 		return fmt.Errorf("failed adding controllers to manager: %w", err)
 	}
 
 	log.Info("Adding webhooks to manager")
-	if err := webhook.AddToManager(ctx, mgr, ringCache, opts.config); err != nil {
+	if err := webhook.AddToManager(ctx, mgr, opts.config); err != nil {
 		return fmt.Errorf("failed adding webhooks to manager: %w", err)
 	}
 
