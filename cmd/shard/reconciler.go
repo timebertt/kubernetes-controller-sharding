@@ -55,7 +55,7 @@ func (r *Reconciler) AddToManager(mgr manager.Manager, clusterRingName, shardNam
 	// - wrapping the actual reconciler a reconciler that handles the drain operation for us
 	return builder.ControllerManagedBy(mgr).
 		Named("configmap").
-		For(&corev1.ConfigMap{}, builder.WithPredicates(shardcontroller.Predicate(clusterRingName, shardName, ConfigMapDataChanged()))).
+		For(&corev1.ConfigMap{}, builder.WithPredicates(shardcontroller.Predicate(clusterRingName, shardName, ConfigMapDataChanged(), predicate.GenerationChangedPredicate{}))).
 		Owns(&corev1.Secret{}, builder.WithPredicates(ObjectDeleted())).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
@@ -69,25 +69,23 @@ func (r *Reconciler) AddToManager(mgr manager.Manager, clusterRingName, shardNam
 		)
 }
 
+// ConfigMapDataChanged returns a predicate that is similar to predicate.GenerationChangedPredicate but for ConfigMaps
+// that don't have a metadata.generation field.
 func ConfigMapDataChanged() predicate.Predicate {
 	return predicate.Funcs{
-		CreateFunc: func(_ event.CreateEvent) bool {
-			return false
-		},
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			return apiequality.Semantic.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data)
-		},
-		DeleteFunc: func(_ event.DeleteEvent) bool {
-			return false
 		},
 	}
 }
 
+// ObjectDeleted returns a predicate that only triggers for DELETE events.
 func ObjectDeleted() predicate.Predicate {
 	return predicate.Funcs{
-		CreateFunc: func(_ event.CreateEvent) bool { return false },
-		UpdateFunc: func(_ event.UpdateEvent) bool { return false },
-		DeleteFunc: func(_ event.DeleteEvent) bool { return true },
+		CreateFunc:  func(_ event.CreateEvent) bool { return false },
+		UpdateFunc:  func(_ event.UpdateEvent) bool { return false },
+		DeleteFunc:  func(_ event.DeleteEvent) bool { return true },
+		GenericFunc: func(_ event.GenericEvent) bool { return false },
 	}
 }
 
