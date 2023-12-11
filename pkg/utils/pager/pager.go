@@ -48,7 +48,7 @@ func New(reader client.Reader) *ListPager {
 // Exception: this ListPager also fixes the `specifying resource version is not allowed when using continue` error
 // in EachListItem and EachListItemWithAlloc.
 type ListPager struct {
-	client.Reader
+	Reader client.Reader
 
 	// PageSize is the maximum number of objects to retrieve in individual list calls.
 	// If a client.Limit option is passed, the pager uses the option's value instead.
@@ -171,7 +171,7 @@ func (p *ListPager) eachListChunk(ctx context.Context, list client.ObjectList, f
 
 		// create a new list to not share memory between paginated lists
 		list = list.DeepCopyObject().(client.ObjectList)
-		if err := p.List(ctx, list, options); err != nil {
+		if err := p.Reader.List(ctx, list, options); err != nil {
 			return err
 		}
 

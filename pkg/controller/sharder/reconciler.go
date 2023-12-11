@@ -42,6 +42,7 @@ import (
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/ring"
 	utilclient "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/client"
 	utilerrors "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/errors"
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/pager"
 )
 
 //+kubebuilder:rbac:groups=sharding.timebertt.dev,resources=clusterrings,verbs=get;list;watch
@@ -161,26 +162,30 @@ func (r *Reconciler) resyncResource(
 		return fmt.Errorf("no kinds found for resource %q", gr.String())
 	}
 
+	var allErrs *multierror.Error
+
 	list := &metav1.PartialObjectMetadataList{}
 	list.SetGroupVersionKind(gvks[0])
-	// List a recent version from the API server's watch cache by setting resourceVersion=0. This reduces the load on etcd
-	// for ring resyncs. Listing from etcd with quorum read would be a scalability limitation/bottleneck.
-	// If we try to move or drain an object with an old resourceVersion (conflict error), we will retry with exponential
-	// backoff.
-	// This trades retries for smaller impact of periodic resyncs (that don't require any action).
-	if err := r.Reader.List(ctx, list, utilclient.ResourceVersion("0")); err != nil {
-		return fmt.Errorf("error listing %s: %w", gr.String(), err)
+	err = pager.New(r.Reader).EachListItem(ctx, list,
+		func(obj client.Object) error {
+			if !namespaces.Has(obj.GetNamespace()) {
+				return nil
+			}
+
+			allErrs = multierror.Append(allErrs, r.resyncObject(ctx, log, gr, obj.(*metav1.PartialObjectMetadata), ring, hashRing, shards, controlled))
+			return nil
+		},
+		// List a recent version from the API server's watch cache by setting resourceVersion=0. This reduces the load on etcd
+		// for ring resyncs. Listing from etcd with quorum read would be a scalability limitation/bottleneck.
+		// If we try to move or drain an object with an old resourceVersion (conflict error), we will retry with exponential
+		// backoff.
+		// This trades retries for smaller impact of periodic resyncs (that don't require any action).
+		utilclient.ResourceVersion("0"),
+	)
+	if err != nil {
+		allErrs = multierror.Append(allErrs, fmt.Errorf("error listing %s: %w", gr.String(), err))
 	}
 
-	var allErrs *multierror.Error
-	for _, o := range list.Items {
-		obj := o
-		if !namespaces.Has(obj.Namespace) {
-			continue
-		}
-
-		allErrs = multierror.Append(allErrs, r.resyncObject(ctx, log, gr, &obj, ring, hashRing, shards, controlled))
-	}
 	return allErrs.ErrorOrNil()
 }
 
