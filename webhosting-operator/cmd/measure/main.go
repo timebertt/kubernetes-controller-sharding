@@ -51,7 +51,7 @@ var (
 	queryRange    = v1.Range{
 		Start: now.Add(-15 * time.Minute),
 		End:   now,
-		Step:  15 * time.Second,
+		Step:  30 * time.Second,
 	}
 	rateInterval = 5 * time.Minute
 )
