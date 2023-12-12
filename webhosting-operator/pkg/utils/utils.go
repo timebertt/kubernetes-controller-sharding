@@ -20,34 +20,9 @@ import (
 	"math/rand"
 )
 
-// CopyMap returns a new map with the same contents as the given map.
-func CopyMap[K comparable, V any](in map[K]V) map[K]V {
-	out := make(map[K]V, len(in))
-	for k, v := range in {
-		out[k] = v
-	}
-	return out
-}
-
 // PickRandom picks a random element from the given slice.
 func PickRandom[T any](in []T) T {
 	return in[rand.Intn(len(in))]
-}
-
-// PickNRandom picks n random elements from the given slice.
-func PickNRandom[T any](in []T, n int) []T {
-	if n <= 0 {
-		return nil
-	}
-	if n >= len(in) {
-		return in
-	}
-
-	rand.Shuffle(len(in), func(i, j int) {
-		in[i], in[j] = in[j], in[i]
-	})
-
-	return in[:n]
 }
 
 // RandomName generates a random string with n characters that can be used as part of API object names.

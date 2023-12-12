@@ -48,7 +48,7 @@ import (
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/controllers/webhosting"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/routes"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils/routes"
 	//+kubebuilder:scaffold:imports
 )
 
