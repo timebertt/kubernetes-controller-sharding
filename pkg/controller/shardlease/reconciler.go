@@ -91,7 +91,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	switch shard.State {
 	case leases.Ready:
 		if previousState != leases.Ready {
-			log.Info("Shard got ready")
+			log.Info("Shard got available")
 		}
 		requeueAfter = shard.Times.ToExpired
 	case leases.Expired:
@@ -119,6 +119,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		// requeue with leaseDuration just to be sure
 		requeueAfter = shard.Times.LeaseDuration
 	case leases.Dead:
+		if previousState != leases.Dead {
+			log.Info("Shard got unavailable")
+		}
+
 		// garbage collect later
 		requeueAfter = shard.Times.ToOrphaned
 	case leases.Orphaned:
