@@ -131,7 +131,7 @@ This is done to make load test experiments more stable and and their results mor
 ## Key Results
 
 > [!NOTE]
-> These are preliminary results from a first set of test runs.
+> These are preliminary results from a first set of test runs.  
 > TODO: update these once the full evaluation is completed.
 
 The following graphs compare CPU and memory usage of the components in three different setups when running the `basic` experiment scenario (~8,000 websites created over 10m):
@@ -146,5 +146,5 @@ The following graphs compare CPU and memory usage of the components in three dif
 
 The new external sharding approach proves to scale best.
 The individual shards consume about a third of the singleton controller's usage (close to optimum).
-Also, the sharder pods consume a low amount of resources which is almost static apart from periodic resyncs every 5 minutes. 
+Also, the sharder pods consume a low static amount of resources. 
 Most importantly, the sharder's resource usage is independent of the number of sharded objects.
