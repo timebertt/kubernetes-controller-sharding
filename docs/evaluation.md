@@ -117,6 +117,9 @@ kubectl apply -f hack/config/shoot.yaml
 # gardenctl target --shoot ...
 kubectl apply --server-side -k hack/config/external-dns
 kubectl -n external-dns create secret generic google-clouddns-timebertt-dev --from-literal project=$PROJECT_NAME --from-file service-account.json=$SERVICE_ACCOUNT_FILE
+
+# gardenctl target --control-plane
+kubectl apply --server-side -k hack/config/policy/controlplane
 ```
 
 In addition to the described components, [kyverno](https://github.com/kyverno/kyverno) is deployed to the cluster itself (shoot cluster) and to the control plane (seed cluster).
