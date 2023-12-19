@@ -125,7 +125,8 @@ images: export KO_DOCKER_REPO = $(GHCR_REPO)
 
 .PHONY: images
 images: $(KO) ## Build and push container images using ko.
-	$(KO) build --push=$(PUSH) --sbom none --base-import-paths -t $(TAG) --platform linux/amd64,linux/arm64 ./cmd/sharder
+	$(KO) build --push=$(PUSH) --sbom none --base-import-paths -t $(TAG) --platform linux/amd64,linux/arm64 \
+		./cmd/sharder ./cmd/shard ./hack/cmd/janitor
 
 ##@ Deployment
 
