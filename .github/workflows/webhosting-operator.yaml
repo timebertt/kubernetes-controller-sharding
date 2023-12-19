@@ -8,10 +8,12 @@ on:
     - v*
     paths:
     - "webhosting-operator/**"
+    - ".github/workflows/webhosting-operator.yaml"
     - "!**.md"
   pull_request:
     paths:
     - "webhosting-operator/**"
+    - ".github/workflows/webhosting-operator.yaml"
     - "!**.md"
 
 jobs:
