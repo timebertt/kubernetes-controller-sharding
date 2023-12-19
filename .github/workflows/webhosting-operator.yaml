@@ -1,9 +1,6 @@
 name: webhosting-operator
 
 on:
-  release:
-    types:
-    - published
   push:
     branches:
     - main
@@ -11,10 +8,12 @@ on:
     - v*
     paths:
     - "webhosting-operator/**"
+    - ".github/workflows/webhosting-operator.yaml"
     - "!**.md"
   pull_request:
     paths:
     - "webhosting-operator/**"
+    - ".github/workflows/webhosting-operator.yaml"
     - "!**.md"
 
 jobs:
@@ -30,7 +29,7 @@ jobs:
         working-directory: go/src/github.com/timebertt/kubernetes-controller-sharding
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         path: go/src/github.com/timebertt/kubernetes-controller-sharding
     - uses: actions/setup-go@v4
@@ -43,7 +42,10 @@ jobs:
   images:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        # fetch all history so that git describe works (needed by hack/prepare-image-metadata.sh)
+        fetch-depth: 0
     - uses: actions/setup-go@v4
       with:
         go-version-file: webhosting-operator/go.mod
@@ -53,42 +55,18 @@ jobs:
         version: v0.15.0
     - name: Prepare image metadata
       id: meta
-      # generate comma-separated tags and labels for image build (similar to docker/metadata-action)
-      run: |
-        short_ref=${{ github.ref_name }}
-        if ${{ github.event_name == 'pull_request' }} ; then
-          # for PR events, ref_name is '<pr-number>/merge' but tags may not contain /
-          short_ref=pr-${{ github.event.pull_request.number }}
-        fi
-
-        tags=(
-          $short_ref
-          sha-$( echo ${{ github.sha }} | head -c7 )
-        )
-
-        if ${{ github.ref_name == 'main' }} ; then
-          tags+=( latest )
-        fi
-
-        echo "tags=$(IFS=, ; echo "${tags[*]}")" >> $GITHUB_OUTPUT
-
-        labels=(
-          org.opencontainers.image.created=$( date -u +%Y-%m-%dT%H:%M:%SZ )
-          org.opencontainers.image.licenses=Apache-2.0
-          org.opencontainers.image.revision=${{ github.sha }}
-          org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          org.opencontainers.image.url=https://github.com/${{ github.repository }}
-          org.opencontainers.image.version=$short_ref
-        )
-
-        echo "labels=$(IFS=, ; echo "${labels[*]}")" >> $GITHUB_OUTPUT
+      run: ./hack/prepare-image-metadata.sh
     - name: ko build
       run: |
         set -ex
-
         cd ./webhosting-operator
+
+        entrypoints=(
+          ./cmd/experiment
+          ./cmd/webhosting-operator
+        )
+
         ko build --push=${{ github.event_name != 'pull_request' }} --sbom none --base-import-paths \
           --tags "${{ steps.meta.outputs.tags }}" --image-label "${{ steps.meta.outputs.labels }}" \
           --platform linux/amd64,linux/arm64 \
-          ./cmd/experiment \
-          ./cmd/webhosting-operator
+          "${entrypoints[@]}"
