@@ -1,9 +1,6 @@
 name: controller-sharding
 
 on:
-  release:
-    types:
-    - published
   push:
     branches:
     - main

@@ -1,9 +1,6 @@
 name: webhosting-operator
 
 on:
-  release:
-    types:
-    - published
   push:
     branches:
     - main
