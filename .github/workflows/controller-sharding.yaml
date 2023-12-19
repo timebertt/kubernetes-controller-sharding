@@ -67,9 +67,17 @@ jobs:
           # for PR events, ref_name is '<pr-number>/merge' but tags may not contain /
           short_ref=pr-${{ github.event.pull_request.number }}
         fi
-        
+
+        tags=( sha-$( echo $revision | head -c7 ) )
+        if [[ $short_ref = main ]] ; then
+          tags+=( latest )
+        fi
+
         if [[ ${{ github.ref }} = refs/tags/* && $short_ref =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)([-].*)?([+].*)?$ ]] ; then
-          # if triggered for a semver tag, extract its information
+          # triggered for a semver tag, add it as image tag
+          tags+=( $short_ref )
+
+          # extract version information
           version=$short_ref
 
           major_version=${BASH_REMATCH[1]}
@@ -89,17 +97,6 @@ jobs:
           version=v$major_version.$minor_version.$patch_version-dev
         fi
 
-        tags=(
-          $short_ref
-          sha-$( echo $revision | head -c7 )
-        )
-
-        if [[ $short_ref = main ]] ; then
-          tags+=( latest )
-        fi
-
-        echo "tags=$(IFS=, ; echo "${tags[*]}")" >> $GITHUB_OUTPUT
-
         labels=(
           org.opencontainers.image.created=$build_date
           org.opencontainers.image.licenses=Apache-2.0
@@ -109,6 +106,7 @@ jobs:
           org.opencontainers.image.version=$version
         )
 
+        echo "tags=$(IFS=, ; echo "${tags[*]}")" >> $GITHUB_OUTPUT
         echo "labels=$(IFS=, ; echo "${labels[*]}")" >> $GITHUB_OUTPUT
         
         # calculate ldflags for injecting version information into binaries
