@@ -27,7 +27,7 @@ jobs:
         working-directory: go/src/github.com/timebertt/kubernetes-controller-sharding
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         path: go/src/github.com/timebertt/kubernetes-controller-sharding
     - uses: actions/setup-go@v4
@@ -40,7 +40,10 @@ jobs:
   images:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        # fetch all history so that git describe works (needed by hack/prepare-image-metadata.sh)
+        fetch-depth: 0
     - uses: actions/setup-go@v4
       with:
         go-version-file: webhosting-operator/go.mod
