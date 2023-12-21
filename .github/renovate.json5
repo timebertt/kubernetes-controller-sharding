@@ -55,7 +55,7 @@
       // setup-envtest is not tagged, don't create a PR for every commit in controller-runtime
       matchDatasources: ["go"],
       matchPackageNames: ["sigs.k8s.io/controller-runtime/tools/setup-envtest"],
-      dependencyDashboardApproval: true
+      enabled: false
     },
     {
       // bump webhosting-operator dependencies and tools in separate PRs
