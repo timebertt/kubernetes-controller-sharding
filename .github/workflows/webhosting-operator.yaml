@@ -41,6 +41,9 @@ jobs:
 
   images:
     runs-on: ubuntu-latest
+    env:
+      # renovate: datasource=github-tags depName=ko-build/ko
+      KO_VERSION: v0.15.0
     steps:
     - uses: actions/checkout@v4
       with:
@@ -52,7 +55,7 @@ jobs:
         cache-dependency-path: webhosting-operator/go.sum
     - uses: ko-build/setup-ko@v0.6
       with:
-        version: v0.15.0
+        version: ${{ env.KO_VERSION }}
     - name: Prepare image metadata
       id: meta
       run: ./hack/prepare-image-metadata.sh
