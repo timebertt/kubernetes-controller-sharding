@@ -2,6 +2,37 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: [
     "config:recommended",
+    ":semanticCommitsDisabled",
     "regexManagers:githubActionsVersions"
   ],
+  postUpdateOptions: ["gomodTidy"],
+  packageRules: [
+    {
+      // bump k8s and controller-runtime dependencies together
+      groupName: "k8s packages",
+      groupSlug: "k8s-go",
+      matchDatasources: ["go"],
+      matchPackagePrefixes: ["k8s.io/", "sigs.k8s.io/controller-runtime"]
+    },
+    {
+      // setup-envtest is not tagged, don't create a PR for every commit in controller-runtime
+      matchDatasources: ["go"],
+      matchPackageNames: ["sigs.k8s.io/controller-runtime/tools/setup-envtest"],
+      dependencyDashboardApproval: true
+    },
+    {
+      // bump webhosting-operator dependencies and tools in separate PRs
+      matchFileNames: ["webhosting-operator/**"],
+      additionalBranchPrefix: "webhosting-operator-",
+      commitMessagePrefix: "webhosting-operator"
+    },
+    {
+      // k8s and controller-runtime dependencies in webhosting-operator can only be upgraded after rebasing the sharding
+      // implementation in the controller-runtime fork, disable bumps
+      matchDatasources: ["go"],
+      matchFileNames: ["webhosting-operator/go.mod"],
+      matchPackagePrefixes: ["k8s.io/", "sigs.k8s.io/controller-runtime", "github.com/timebertt/controller-runtime"],
+      enabled: false
+    }
+  ]
 }
