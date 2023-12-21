@@ -6,6 +6,34 @@
     "regexManagers:githubActionsVersions"
   ],
   postUpdateOptions: ["gomodTidy"],
+  kubernetes: {
+    fileMatch: ["\\.yaml$"]
+  },
+  customManagers: [
+    {
+      // generic detection for install manifests from GitHub releases
+      customType: "regex",
+      fileMatch: ["kustomization\\.yaml$"],
+      matchStrings: ["https:\/\/github\\.com\/(?<depName>.*\/.*?)\/releases\/download\/(?<currentValue>.*?)\/"],
+      datasourceTemplate: "github-releases"
+    },
+    {
+      // generic detection for raw manifests from GitHub refs
+      customType: "regex",
+      fileMatch: ["kustomization\\.yaml$"],
+      matchStrings: ["https:\/\/raw.githubusercontent.com\/(?<depName>.*?/.*?)\/(?<currentValue>.*?)\/"],
+      datasourceTemplate: "github-tags"
+    },
+    {
+      // update `_VERSION` variables in scripts
+      // inspired by `regexManagers:dockerfileVersions` preset
+      customType: "regex",
+      fileMatch: ["\\.sh$"],
+      matchStrings: [
+        "# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s.+?_VERSION[ =]\"?(?<currentValue>.+?)\"?\\s"
+      ],
+    },
+  ],
   packageRules: [
     {
       // bump k8s and controller-runtime dependencies together
@@ -33,6 +61,23 @@
       matchFileNames: ["webhosting-operator/go.mod"],
       matchPackagePrefixes: ["k8s.io/", "sigs.k8s.io/controller-runtime", "github.com/timebertt/controller-runtime"],
       enabled: false
+    },
+    {
+      // combine upgrade of manifests and image tag in one PR
+      groupName: "external-dns",
+      matchPackagePatterns: ["external-dns"]
+    },
+    {
+      // special case for ingress-nginx: version is prefixed with `controller-`
+      matchDatasources: ["github-tags"],
+      matchPackageNames: ["kubernetes/ingress-nginx"],
+      extractVersion: "^controller-(?<version>.+)$"
+    },
+    {
+      // manual action required: upgrading kube-prometheus is not fully automated yet
+      matchDatasources: ["github-tags"],
+      matchPackageNames: ["prometheus-operator/kube-prometheus"],
+      prHeader: "⚠️ Manual action required ⚠️\nPlease check this PR out and run `hack/config/monitoring/update.sh`."
     }
   ]
 }

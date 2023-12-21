@@ -6,14 +6,15 @@ set -o pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-kube_prometheus_version="v0.12.0"
-echo "> Fetching kube-prometheus@$kube_prometheus_version"
+# renovate: datasource=github-tags depName=prometheus-operator/kube-prometheus
+KUBE_PROMETHEUS_VERSION=v0.12.0
+echo "> Fetching kube-prometheus@$KUBE_PROMETHEUS_VERSION"
 
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT
 
 tarball="$tmp_dir/archive.tar.gz"
-curl -sSLo "$tarball" https://github.com/prometheus-operator/kube-prometheus/archive/refs/tags/$kube_prometheus_version.tar.gz
+curl -sSLo "$tarball" https://github.com/prometheus-operator/kube-prometheus/archive/refs/tags/$KUBE_PROMETHEUS_VERSION.tar.gz
 
 prometheus_operator_version=$(tar -xzf "$tarball" --wildcards "kube-prometheus-*/manifests/prometheusOperator-deployment.yaml" -O | grep app.kubernetes.io/version | head -1 | awk '{print $2}')
 echo "Included prometheus-operator version: $prometheus_operator_version"
@@ -29,7 +30,7 @@ rm namespace.yaml
 
 cat <<EOF > README.md
 The CRDs in this directory were downloaded from
-https://github.com/prometheus-operator/kube-prometheus/tree/$kube_prometheus_version/manifests/setup.
+https://github.com/prometheus-operator/kube-prometheus/tree/$KUBE_PROMETHEUS_VERSION/manifests/setup.
 
 Bump the version in [\`$(basename $0)\`](../$(basename $0)) and run the script to update the CRDs.
 EOF
@@ -66,7 +67,7 @@ rm prometheus-podDisruptionBudget.yaml
 
 cat <<EOF > README.md
 The manifests in this directory were downloaded from
-https://github.com/prometheus-operator/kube-prometheus/tree/$kube_prometheus_version/manifests.
+https://github.com/prometheus-operator/kube-prometheus/tree/$KUBE_PROMETHEUS_VERSION/manifests.
 
 Bump the version in [\`$(basename $0)\`](../$(basename $0)) and run the script to update the CRDs.
 EOF
