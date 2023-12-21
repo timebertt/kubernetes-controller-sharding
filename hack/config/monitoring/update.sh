@@ -7,7 +7,7 @@ set -o pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 # renovate: datasource=github-tags depName=prometheus-operator/kube-prometheus
-KUBE_PROMETHEUS_VERSION=v0.12.0
+KUBE_PROMETHEUS_VERSION=v0.13.0
 echo "> Fetching kube-prometheus@$KUBE_PROMETHEUS_VERSION"
 
 tmp_dir=$(mktemp -d)
