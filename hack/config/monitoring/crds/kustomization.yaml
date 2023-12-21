@@ -5,7 +5,7 @@ kind: Kustomization
 commonLabels:
   app.kubernetes.io/name: prometheus-operator
   app.kubernetes.io/part-of: kube-prometheus
-  app.kubernetes.io/version: 0.62.0
+  app.kubernetes.io/version: 0.67.1
 
 resources:
 - 0alertmanagerConfigCustomResourceDefinition.yaml
@@ -13,6 +13,8 @@ resources:
 - 0podmonitorCustomResourceDefinition.yaml
 - 0probeCustomResourceDefinition.yaml
 - 0prometheusCustomResourceDefinition.yaml
+- 0prometheusagentCustomResourceDefinition.yaml
 - 0prometheusruleCustomResourceDefinition.yaml
+- 0scrapeconfigCustomResourceDefinition.yaml
 - 0servicemonitorCustomResourceDefinition.yaml
 - 0thanosrulerCustomResourceDefinition.yaml
