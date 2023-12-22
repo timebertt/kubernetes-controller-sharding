@@ -1,160 +1,159 @@
----
-apiVersion: skaffold/v4beta6
+apiVersion: skaffold/v4beta8
 kind: Config
 metadata:
   name: policy
 profiles:
-- name: shoot
-  activation:
-  - kubeContext: .*--sharding.*
-  manifests:
-    kustomize:
-      paths:
-      - config/policy
-  deploy:
-    kubectl:
-      defaultNamespace: ""
-      flags:
-        apply:
-        - --server-side
-        - --force-conflicts
-    statusCheck: false
+  - name: shoot
+    activation:
+      - kubeContext: .*--sharding.*
+    manifests:
+      kustomize:
+        paths:
+          - config/policy
+    deploy:
+      kubectl:
+        flags:
+          apply:
+            - --server-side
+            - --force-conflicts
+        defaultNamespace: ""
+      statusCheck: false
 ---
-apiVersion: skaffold/v4beta6
+apiVersion: skaffold/v4beta8
 kind: Config
 metadata:
   name: webhosting-operator
 build:
+  artifacts:
+    - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator
+      ko:
+        dependencies:
+          paths:
+            - go.mod
+            - '**/*.go'
+            - ../../../../sigs.k8s.io/controller-runtime/**/*.go
+        main: ./cmd/webhosting-operator
   local:
     concurrency: 0
-  artifacts:
-  - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator
-    ko:
-      main: ./cmd/webhosting-operator
-      dependencies:
-        paths:
-        - go.mod
-        - '**/*.go'
-        - ../../../../sigs.k8s.io/controller-runtime/**/*.go
 manifests:
   kustomize:
     paths:
-    # default configuration: only run operator shards and use external sharding implementation via ClusterRing
-    - config/manager/overlays/default
+      # default configuration: only run operator shards and use external sharding implementation via ClusterRing
+      - config/manager/overlays/default
 deploy:
   kubectl:
-    defaultNamespace: ""
     flags:
       apply:
-      - --server-side
-      - --force-conflicts
+        - --server-side
+        - --force-conflicts
+    defaultNamespace: ""
     hooks:
       before:
-      - host:
-          command:
-          # ensure CRDs and RBAC are up-to-date
-          - make
-          - manifests
+        - host:
+            # ensure CRDs and RBAC are up-to-date
+            command:
+              - make
+              - manifests
 profiles:
-- name: debug
-  activation:
-  - command: debug
-  patches:
-  - op: replace
-    path: /manifests/kustomize/paths/0
-    value: config/manager/overlays/debug
-- name: sharder
-  patches:
-  - op: replace
-    path: /manifests/kustomize/paths/0
-    # legacy implementation for comparision: don't use external sharding implementation, run shards and sharder in operator
-    value: config/manager/overlays/sharder
-- name: non-sharded
-  patches:
-  - op: replace
-    path: /manifests/kustomize/paths/0
-    # singleton controller without sharding for comparison
-    value: config/manager/overlays/non-sharded
-# The following profiles are variants of the default, sharder, and non-sharded profiles for running on the shoot cluster
-# with dns for websites enabled.
-- name: shoot
-  activation:
-  - kubeContext: .*--sharding.*
-  patches:
-  - op: replace
-    path: /manifests/kustomize/paths/0
-    # default configuration: only run operator shards and use external sharding implementation via ClusterRing
-    value: config/manager/overlays/shoot/default
-- name: shoot-sharder
-  patches:
-  - op: replace
-    path: /manifests/kustomize/paths/0
-    value: config/manager/overlays/shoot/sharder
-- name: shoot-non-sharded
-  patches:
-  - op: replace
-    path: /manifests/kustomize/paths/0
-    # singleton controller without sharding for comparison
-    value: config/manager/overlays/shoot/non-sharded
+  - name: debug
+    activation:
+      - command: debug
+    patches:
+      - op: replace
+        path: /manifests/kustomize/paths/0
+        value: config/manager/overlays/debug
+  - name: sharder
+    patches:
+      - op: replace
+        path: /manifests/kustomize/paths/0
+        # legacy implementation for comparision: don't use external sharding implementation, run shards and sharder in operator
+        value: config/manager/overlays/sharder
+  - name: non-sharded
+    patches:
+      - op: replace
+        path: /manifests/kustomize/paths/0
+        # singleton controller without sharding for comparison
+        value: config/manager/overlays/non-sharded
+  # The following profiles are variants of the default, sharder, and non-sharded profiles for running on the shoot cluster
+  # with dns for websites enabled.
+  - name: shoot
+    activation:
+      - kubeContext: .*--sharding.*
+    patches:
+      - op: replace
+        path: /manifests/kustomize/paths/0
+        # default configuration: only run operator shards and use external sharding implementation via ClusterRing
+        value: config/manager/overlays/shoot/default
+  - name: shoot-sharder
+    patches:
+      - op: replace
+        path: /manifests/kustomize/paths/0
+        value: config/manager/overlays/shoot/sharder
+  - name: shoot-non-sharded
+    patches:
+      - op: replace
+        path: /manifests/kustomize/paths/0
+        # singleton controller without sharding for comparison
+        value: config/manager/overlays/shoot/non-sharded
 ---
-apiVersion: skaffold/v4beta6
+apiVersion: skaffold/v4beta8
 kind: Config
 metadata:
   name: experiment
 profiles:
-- name: expirement
-  activation:
-  - env: EXPERIMENT_SCENARIO=.+
-  build:
-    local:
-      concurrency: 0
-    artifacts:
-    - image: ghcr.io/timebertt/kubernetes-controller-sharding/experiment
-      ko:
-        main: ./cmd/experiment
-        dependencies:
-          paths:
-          - go.mod
-          - '**/*.go'
-          - ../../../../sigs.k8s.io/controller-runtime/**/*.go
-  manifests:
-    kustomize:
-      paths:
-      - config/experiment/{{ .EXPERIMENT_SCENARIO }}
-  deploy:
-    kubectl:
-      hooks:
-        before:
-          - host:
-              command:
-              - /usr/bin/env
-              - bash
-              - -c
-              - |
-                active_pods="$(kubectl -n experiment get job experiment -ojsonpath='{.status.active}' 2>dev/null)"
-                if [ "${active_pods:-0}" -gt 0 ] && [ -z "$EXPERIMENT_DELETE_FORCE" ] ; then
-                  echo "Experiment is running currently, refusing to delete the job. Set EXPERIMENT_DELETE_FORCE to override."
-                  exit 1
-                fi
-                kubectl -n experiment delete job experiment --ignore-not-found --wait=true
-      defaultNamespace: ""
-      flags:
-        apply:
-        - --server-side
-        - --force-conflicts
+  - name: expirement
+    activation:
+      - env: EXPERIMENT_SCENARIO=.+
+    build:
+      artifacts:
+        - image: ghcr.io/timebertt/kubernetes-controller-sharding/experiment
+          ko:
+            dependencies:
+              paths:
+                - go.mod
+                - '**/*.go'
+                - ../../../../sigs.k8s.io/controller-runtime/**/*.go
+            main: ./cmd/experiment
+      local:
+        concurrency: 0
+    manifests:
+      kustomize:
+        paths:
+          - config/experiment/{{ .EXPERIMENT_SCENARIO }}
+    deploy:
+      kubectl:
+        flags:
+          apply:
+            - --server-side
+            - --force-conflicts
+        defaultNamespace: ""
+        hooks:
+          before:
+            - host:
+                command:
+                  - /usr/bin/env
+                  - bash
+                  - -c
+                  - |
+                    active_pods="$(kubectl -n experiment get job experiment -ojsonpath='{.status.active}' 2>dev/null)"
+                    if [ "${active_pods:-0}" -gt 0 ] && [ -z "$EXPERIMENT_DELETE_FORCE" ] ; then
+                      echo "Experiment is running currently, refusing to delete the job. Set EXPERIMENT_DELETE_FORCE to override."
+                      exit 1
+                    fi
+                    kubectl -n experiment delete job experiment --ignore-not-found --wait=true
 ---
-apiVersion: skaffold/v4beta6
+apiVersion: skaffold/v4beta8
 kind: Config
 metadata:
   name: monitoring
 manifests:
   kustomize:
     paths:
-    - config/monitoring/default
+      - config/monitoring/default
 deploy:
   kubectl:
-    defaultNamespace: ""
     flags:
       apply:
-      - --server-side
-      - --force-conflicts
+        - --server-side
+        - --force-conflicts
+    defaultNamespace: ""
