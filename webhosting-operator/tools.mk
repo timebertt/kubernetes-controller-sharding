@@ -19,7 +19,7 @@ $(TOOLS_BIN_DIR)/.version_%:
 
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
 # renovate: datasource=github-tags depName=kubernetes-sigs/controller-tools
-CONTROLLER_GEN_VERSION ?= v0.12.1
+CONTROLLER_GEN_VERSION ?= v0.13.0
 $(CONTROLLER_GEN): $(call tool_version_file,$(CONTROLLER_GEN),$(CONTROLLER_GEN_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION)
 
