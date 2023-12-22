@@ -58,13 +58,19 @@
       enabled: false
     },
     {
+      // jsonpatch has to be kept in sync with k8s and controller-runtime dependencies
+      matchDatasources: ["go"],
+      matchPackagePrefixes: ["gomodules.xyz/jsonpatch"],
+      enabled: false
+    },
+    {
       // bump webhosting-operator dependencies and tools in separate PRs
       matchFileNames: [
         "webhosting-operator/**",
         ".github/workflows/webhosting-operator.yaml"
       ],
       additionalBranchPrefix: "webhosting-operator-",
-      commitMessagePrefix: "webhosting-operator"
+      commitMessagePrefix: "webhosting-operator:"
     },
     {
       // k8s and controller-runtime dependencies in webhosting-operator can only be upgraded after rebasing the sharding
@@ -72,6 +78,11 @@
       matchDatasources: ["go"],
       matchFileNames: ["webhosting-operator/go.mod"],
       matchPackagePrefixes: ["k8s.io/", "sigs.k8s.io/controller-runtime", "github.com/timebertt/controller-runtime"],
+      enabled: false
+    },
+    {
+      // kind k8s version should be updated together with shoot k8s version
+      matchPackageNames: ["kindest/node"],
       enabled: false
     },
     {
@@ -100,6 +111,14 @@
     {
       matchPackageNames: ["registry.k8s.io/prometheus-adapter/prometheus-adapter"],
       customChangelogUrl: "https://github.com/kubernetes-sigs/prometheus-adapter"
+    },
+    {
+      matchPackageNames: ["registry.k8s.io/kube-state-metrics/kube-state-metrics"],
+      customChangelogUrl: "https://github.com/kubernetes/kube-state-metrics"
+    },
+    {
+      matchPackageNames: ["quay.io/brancz/kube-rbac-proxy"],
+      customChangelogUrl: "https://github.com/brancz/kube-rbac-proxy"
     }
   ]
 }
