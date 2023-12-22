@@ -70,6 +70,11 @@ test: $(SETUP_ENVTEST) ## Run tests.
 test-kyverno: $(KYVERNO) ## Run kyverno policy tests.
 	$(KYVERNO) test --remove-color -v 4 .
 
+.PHONY: skaffold-fix
+skaffold-fix: $(SKAFFOLD) ## Upgrade skaffold configuration to the latest apiVersion.
+	$(SKAFFOLD) fix --overwrite
+	[ ! -f $(SKAFFOLD_FILENAME).v2 ] || rm $(SKAFFOLD_FILENAME).v2
+
 ##@ Verification
 
 .PHONY: lint

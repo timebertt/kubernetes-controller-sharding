@@ -69,6 +69,11 @@ test: $(SETUP_ENVTEST) ## Run tests.
 test-kyverno: $(KYVERNO) ## Run kyverno policy tests.
 	$(KYVERNO) test --remove-color -v 4 .
 
+.PHONY: skaffold-fix
+skaffold-fix: $(SKAFFOLD) ## Upgrade skaffold configuration to the latest apiVersion.
+	$(SKAFFOLD) fix --overwrite
+	[ ! -f $(SKAFFOLD_FILENAME).v2 ] || rm $(SKAFFOLD_FILENAME).v2
+
 ##@ Verification
 
 .PHONY: vet
@@ -118,6 +123,7 @@ images: $(KO) ## Build and push container images using ko.
 
 ##@ Deployment
 
+export SKAFFOLD_FILENAME = skaffold.yaml
 # use static label for skaffold to prevent rolling all components on every skaffold invocation
 deploy up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=webhosting-operator
 # use dedicated ghcr repo for dev images to prevent spamming the "production" image repo
