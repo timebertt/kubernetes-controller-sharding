@@ -91,6 +91,11 @@
       matchPackageNames: ["prometheus-operator/kube-prometheus"],
       prHeader: "⚠️ Manual action required ⚠️\nPlease check this PR out and run `hack/config/monitoring/update.sh`."
     },
+    {
+      // kube-prometheus manifests are generated and managed by update.sh, disable renovate bumps
+      matchFileNames: ["hack/config/monitoring/{crds,kube-prometheus}/**"],
+      enabled: false
+    },
     // help renovate fetch changelogs for packages that don't have any sourceUrl metadata attached
     {
       matchPackageNames: ["registry.k8s.io/prometheus-adapter/prometheus-adapter"],
