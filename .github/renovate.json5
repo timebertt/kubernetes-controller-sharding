@@ -58,6 +58,12 @@
       enabled: false
     },
     {
+      // jsonpatch has to be kept in sync with k8s and controller-runtime dependencies
+      matchDatasources: ["go"],
+      matchPackagePrefixes: ["gomodules.xyz/jsonpatch"],
+      enabled: false
+    },
+    {
       // bump webhosting-operator dependencies and tools in separate PRs
       matchFileNames: [
         "webhosting-operator/**",
