@@ -90,6 +90,11 @@
       matchDatasources: ["github-tags"],
       matchPackageNames: ["prometheus-operator/kube-prometheus"],
       prHeader: "⚠️ Manual action required ⚠️\nPlease check this PR out and run `hack/config/monitoring/update.sh`."
+    },
+    // help renovate fetch changelogs for packages that don't have any sourceUrl metadata attached
+    {
+      matchPackageNames: ["registry.k8s.io/prometheus-adapter/prometheus-adapter"],
+      customChangelogUrl: "https://github.com/kubernetes-sigs/prometheus-adapter"
     }
   ]
 }
