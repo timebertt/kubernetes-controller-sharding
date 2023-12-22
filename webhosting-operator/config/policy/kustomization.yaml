@@ -9,4 +9,4 @@ resources:
 images:
 - name: pause
   newName: registry.k8s.io/pause
-  newTag: "3.7"
+  newTag: "3.9"
