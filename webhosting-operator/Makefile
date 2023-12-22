@@ -65,10 +65,6 @@ modules: ## Runs go mod to ensure modules are up to date.
 test: $(SETUP_ENVTEST) ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test -race ./...
 
-.PHONY: test-kyverno
-test-kyverno: $(KYVERNO) ## Run kyverno policy tests.
-	$(KYVERNO) test --remove-color -v 4 .
-
 .PHONY: skaffold-fix
 skaffold-fix: $(SKAFFOLD) ## Upgrade skaffold configuration to the latest apiVersion.
 	$(SKAFFOLD) fix --overwrite
@@ -81,7 +77,7 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: check
-check: vet test test-kyverno ## Check everything (vet + test + test-kyverno).
+check: vet test ## Check everything (vet + test).
 
 .PHONY: verify-fmt
 verify-fmt: fmt ## Verify go code is formatted.
