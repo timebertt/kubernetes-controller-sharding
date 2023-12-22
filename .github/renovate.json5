@@ -75,6 +75,11 @@
       enabled: false
     },
     {
+      // kind k8s version should be updated together with shoot k8s version
+      matchPackageNames: ["kindest/node"],
+      enabled: false
+    },
+    {
       // combine upgrade of manifests and image tag in one PR
       groupName: "external-dns",
       matchPackagePatterns: ["external-dns"]
