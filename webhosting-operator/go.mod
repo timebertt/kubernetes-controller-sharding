@@ -1,6 +1,6 @@
 module github.com/timebertt/kubernetes-controller-sharding/webhosting-operator
 
-go 1.20
+go 1.21.5
 
 require (
 	github.com/go-logr/logr v1.4.1
