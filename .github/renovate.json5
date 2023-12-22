@@ -70,7 +70,7 @@
         ".github/workflows/webhosting-operator.yaml"
       ],
       additionalBranchPrefix: "webhosting-operator-",
-      commitMessagePrefix: "webhosting-operator"
+      commitMessagePrefix: "webhosting-operator:"
     },
     {
       // k8s and controller-runtime dependencies in webhosting-operator can only be upgraded after rebasing the sharding
@@ -106,6 +106,14 @@
     {
       matchPackageNames: ["registry.k8s.io/prometheus-adapter/prometheus-adapter"],
       customChangelogUrl: "https://github.com/kubernetes-sigs/prometheus-adapter"
+    },
+    {
+      matchPackageNames: ["registry.k8s.io/kube-state-metrics/kube-state-metrics"],
+      customChangelogUrl: "https://github.com/kubernetes/kube-state-metrics"
+    },
+    {
+      matchPackageNames: ["quay.io/brancz/kube-rbac-proxy"],
+      customChangelogUrl: "https://github.com/brancz/kube-rbac-proxy"
     }
   ]
 }
