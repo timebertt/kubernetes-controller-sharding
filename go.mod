@@ -1,6 +1,6 @@
 module github.com/timebertt/kubernetes-controller-sharding
 
-go 1.21
+go 1.21.5
 
 require (
 	github.com/cespare/xxhash/v2 v2.2.0
