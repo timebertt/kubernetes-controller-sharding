@@ -1,0 +1,23 @@
+changelog:
+  exclude:
+    labels:
+    - no-release-note
+  categories:
+  - title: ⚠️ Breaking Changes
+    labels:
+    - breaking
+  - title: ✨ Features
+    labels:
+    - enhancement
+  - title: 🐛 Bug Fixes
+    labels:
+    - bug
+  - title: 📖 Documentation
+    labels:
+    - documentation
+  - title: 🤖 Dependencies
+    labels:
+    - dependencies
+  - title: ℹ️ Other Changes
+    labels:
+    - "*"

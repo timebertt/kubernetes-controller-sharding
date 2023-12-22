@@ -5,6 +5,7 @@
     ":semanticCommitsDisabled",
     "regexManagers:githubActionsVersions"
   ],
+  labels: ["dependencies"],
   postUpdateOptions: ["gomodTidy"],
   kubernetes: {
     fileMatch: ["\\.yaml$"]
@@ -31,7 +32,7 @@
       fileMatch: ["\\.sh$"],
       matchStrings: [
         "# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s.+?_VERSION[ =]\"?(?<currentValue>.+?)\"?\\s"
-      ],
+      ]
     },
     {
       // update `_VERSION` variables in Makefiles
@@ -40,8 +41,8 @@
       fileMatch: ["\/Makefile$", "\/.+\\.mk"],
       matchStrings: [
         "# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s.+?_VERSION *[?:]?= *\"?(?<currentValue>.+?)\"?\\s"
-      ],
-    },
+      ]
+    }
   ],
   packageRules: [
     {
