@@ -6,7 +6,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/go-logr/logr v1.4.1
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/prometheus/client_golang v1.17.0
+	github.com/prometheus/client_golang v1.18.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	go.uber.org/automaxprocs v1.5.3
