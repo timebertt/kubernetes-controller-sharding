@@ -49,7 +49,7 @@ $(SETUP_ENVTEST): go.mod
 
 SKAFFOLD := $(TOOLS_BIN_DIR)/skaffold
 # renovate: datasource=github-tags depName=GoogleContainerTools/skaffold
-SKAFFOLD_VERSION ?= v2.9.0
+SKAFFOLD_VERSION ?= v2.10.0
 $(SKAFFOLD): $(call tool_version_file,$(SKAFFOLD),$(SKAFFOLD_VERSION))
 	curl -Lo $(SKAFFOLD) https://storage.googleapis.com/skaffold/releases/$(SKAFFOLD_VERSION)/skaffold-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/')
 	chmod +x $(SKAFFOLD)

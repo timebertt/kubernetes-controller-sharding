@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: policy
@@ -19,7 +19,7 @@ profiles:
         defaultNamespace: ""
       statusCheck: false
 ---
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: webhosting-operator
@@ -96,7 +96,7 @@ profiles:
         # singleton controller without sharding for comparison
         value: config/manager/overlays/shoot/non-sharded
 ---
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: experiment
@@ -142,7 +142,7 @@ profiles:
                     fi
                     kubectl -n experiment delete job experiment --ignore-not-found --wait=true
 ---
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: monitoring
