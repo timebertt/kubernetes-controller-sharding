@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: cert-manager
@@ -30,7 +30,7 @@ deploy:
                 done
                 exit 1
 ---
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: cert-manager-resources
@@ -46,7 +46,7 @@ deploy:
         - --force-conflicts
     defaultNamespace: ""
 ---
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: ingress-nginx
@@ -86,7 +86,7 @@ profiles:
         paths:
           - hack/config/ingress-nginx/shoot
 ---
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: kyverno
@@ -119,7 +119,7 @@ deploy:
                 done
                 exit 1
 ---
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: policy
@@ -142,7 +142,7 @@ profiles:
             - --force-conflicts
         defaultNamespace: ""
 ---
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: sharder
@@ -184,7 +184,7 @@ profiles:
         path: /manifests/kustomize/paths/0
         value: hack/config/sharder/local
 ---
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: shard
@@ -212,7 +212,7 @@ deploy:
         - --force-conflicts
     defaultNamespace: ""
 ---
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: monitoring-crds
@@ -228,7 +228,7 @@ deploy:
         - --force-conflicts
     defaultNamespace: ""
 ---
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: monitoring
@@ -272,7 +272,7 @@ profiles:
         path: /manifests/kustomize/paths/0
         value: hack/config/monitoring/shoot
 ---
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: profiling
