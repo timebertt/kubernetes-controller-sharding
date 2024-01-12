@@ -95,7 +95,7 @@
       // special case for ingress-nginx: version is prefixed with `controller-`
       matchDatasources: ["github-tags"],
       matchPackageNames: ["kubernetes/ingress-nginx"],
-      extractVersion: "^controller-(?<version>.+)$"
+      "versionCompatibility": "^(?<compatibility>.*)-(?<version>.+)$"
     },
     {
       // manual action required: upgrading kube-prometheus is not fully automated yet
