@@ -676,8 +676,8 @@ sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.28.3 h1:IYXtJZpv6oAlx
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.28.3/go.mod h1:z7+wmGM2dfIiLRfrC6jb5kV2Mq/sK1ZP303cxzkV5Y4=
 sigs.k8s.io/controller-runtime v0.17.0 h1:fjJQf8Ukya+VjogLO6/bNX9HE6Y2xpsO5+fyS26ur/s=
 sigs.k8s.io/controller-runtime v0.17.0/go.mod h1:+MngTvIQQQhfXtwfdGw/UOQ/aIaqsYywfCINOtwMO/s=
-sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231018175906-5f8d96b043ef h1:sKqbZgGxR8I06r81DVnBOVObudDhh09Xjmd3CLJsQdI=
-sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231018175906-5f8d96b043ef/go.mod h1:B6HLcvOy2S1qq2eWOFm9xepiKPMIc8Z9OXSPsnUDaR4=
+sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20240116072139-11e5a5e261ac h1:aBT4D6OyZyvmcRrMNmJQzwjWFY3lKzawvTSjSOO9H60=
+sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20240116072139-11e5a5e261ac/go.mod h1:TF/lVLWS+JNNaVqJuDDictY2hZSXSsIHCx4FClMvqFg=
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd h1:EDPBXCAspyGV4jQlpZSudPeMmr1bNJefnuqLsRAsHZo=
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd/go.mod h1:B8JuhiUyNFVKdsE8h686QcCxMaH6HrOAZj4vswFpcB0=
 sigs.k8s.io/structured-merge-diff/v4 v4.4.1 h1:150L+0vs/8DA78h1u02ooW1/fFq/Lwr+sGiqlzvrtq4=
