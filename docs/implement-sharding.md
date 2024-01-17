@@ -13,13 +13,13 @@ As an example, let's consider a subset of kube-controller-manager's controllers:
 - The `Deployment` controller reconciles the `deployments` resource and controls `replicasets`.
 - The `ReplicaSet` controller reconciles the `replicaset` resource and controls `pods`.
 
-The corresponding `ClusterRing` would need to be configured like this:
+The corresponding `ClusterRing` for the `Deployment` controller would need to be configured like this:
 
 ```yaml
 apiVersion: sharding.timebertt.dev/v1alpha1
 kind: ClusterRing
 metadata:
-  name: kube-controller-manager
+  name: kube-controller-manager-deployment
 spec:
   resources:
   - group: apps
@@ -27,11 +27,6 @@ spec:
     controlledResources:
     - group: apps
       resource: replicasets
-  - group: apps
-    resource: replicasets
-    controlledResources:
-    - group: ""
-      resource: pods
 ```
 
 To allow the sharder to reassign the sharded objects during rebalancing, we need to grant the corresponding permissions.
@@ -50,13 +45,6 @@ rules:
   resources:
   - deployments
   - replicaset
-  verbs:
-  - list
-  - patch
-- apiGroups:
-  - ""
-  resources:
-  - pods
   verbs:
   - list
   - patch
