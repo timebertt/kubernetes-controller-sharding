@@ -193,7 +193,7 @@ With this, the shard will only cache the objects assigned to it and the controll
 Note that when you use a label or field selector on a watch connection and the label or field changes so that the selector doesn't match anymore, the API server will emit a `DELETE` watch event.
 
 In controller-runtime, you can configure your shard to only watch and reconcile assigned objects as follows.
-This snippet works with controller-runtime v0.16, other versions might require deviating configuration.
+This snippet works with controller-runtime v0.16 and v0.17, other versions might require deviating configuration.
 
 ```go
 package main
