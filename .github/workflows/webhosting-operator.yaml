@@ -14,7 +14,6 @@ on:
     paths:
     - "webhosting-operator/**"
     - ".github/workflows/webhosting-operator.yaml"
-    - "!**.md"
 
 jobs:
   verify:
