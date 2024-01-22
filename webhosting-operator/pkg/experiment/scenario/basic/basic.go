@@ -55,7 +55,6 @@ func (s *scenario) LongDescription() string {
 - website creation: 8000 over 10m
 - website deletion: 600 over 10m
 - website reconciliation: max 130/s
-- theme reconciliation: 1/m -> triggers reconciliation of all referencing websites
 `
 }
 
@@ -109,19 +108,6 @@ func (s *scenario) Run(ctx context.Context) error {
 		Every: time.Minute,
 	}).AddToManager(s.Manager); err != nil {
 		return fmt.Errorf("error adding website-mutator: %w", err)
-	}
-
-	// update one theme every minute which causes all referencing websites to be reconciled
-	// => peaks at about 2.6 reconciliations per second on average
-	// (note: these reconciliation triggers occur in bursts of up to ~156)
-	if err := (&generator.Every{
-		Name: "theme-mutator",
-		Do: func(ctx context.Context, c client.Client) error {
-			return generator.MutateRandomTheme(ctx, c, s.Labels)
-		},
-		Rate: rate.Every(time.Minute),
-	}).AddToManager(s.Manager); err != nil {
-		return fmt.Errorf("error adding theme-mutator: %w", err)
 	}
 
 	return nil
