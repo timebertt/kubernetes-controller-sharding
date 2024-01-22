@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/generator"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/tracker"
 )
 
 // Scenario provides a common base implemenation for parts of the experiment.Scenario interface.
@@ -120,6 +121,12 @@ func (s *Scenario) Start(ctx context.Context) (err error) {
 		return ctx.Err()
 	case <-time.After(30 * time.Second):
 	}
+
+	websiteTracker := &tracker.WebsiteTracker{}
+	if err := websiteTracker.AddToManager(s.Manager); err != nil {
+		return fmt.Errorf("error adding website-tracker: %w", err)
+	}
+	generator.SetWebsiteTracker(websiteTracker)
 
 	if err := s.Delegate.Run(ctx); err != nil {
 		return err

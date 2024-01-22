@@ -19,6 +19,7 @@ package generator
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +30,22 @@ import (
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
 )
+
+var (
+	websiteTracker     WebsiteTracker
+	websiteTrackerOnce sync.Once
+)
+
+type WebsiteTracker interface {
+	RecordSpecChange(website *webhostingv1alpha1.Website)
+}
+
+// SetWebsiteTracker sets up this package to track website creations and spec updates with the given tracker.
+func SetWebsiteTracker(tracker WebsiteTracker) {
+	websiteTrackerOnce.Do(func() {
+		websiteTracker = tracker
+	})
+}
 
 // CreateWebsites creates n random websites.
 func CreateWebsites(ctx context.Context, c client.Client, n int, opts ...GenerateOption) error {
@@ -76,6 +93,10 @@ func CreateWebsite(ctx context.Context, c client.Client, opts ...GenerateOption)
 	}
 
 	log.V(1).Info("Created website", "website", client.ObjectKeyFromObject(website))
+	if websiteTracker != nil {
+		websiteTracker.RecordSpecChange(website)
+	}
+
 	return nil
 }
 
@@ -100,6 +121,10 @@ func MutateWebsite(ctx context.Context, c client.Client, website *webhostingv1al
 	}
 
 	log.V(1).Info("Mutated website", "website", client.ObjectKeyFromObject(website))
+	if websiteTracker != nil {
+		websiteTracker.RecordSpecChange(website)
+	}
+
 	return nil
 }
 
