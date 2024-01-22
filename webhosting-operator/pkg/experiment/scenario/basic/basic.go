@@ -54,7 +54,7 @@ func (s *scenario) LongDescription() string {
 	return `The ` + ScenarioName + ` scenario combines several operations typical for a lively operator environment:
 - website creation: 8000 over 10m
 - website deletion: 600 over 10m
-- website reconciliation: max 130/s
+- website spec changes: max 130/s
 `
 }
 
@@ -98,12 +98,13 @@ func (s *scenario) Run(ctx context.Context) error {
 		return fmt.Errorf("error adding website-deleter: %w", err)
 	}
 
-	// trigger individual reconciliations for website once per minute
-	// => peaks at about 130 reconciliations per second
+	// trigger individual spec changes for website once per minute
+	// => peaks at about 130 spec changes per second
+	// (triggers roughly double the reconciliation rate in website controller)
 	if err := (&generator.ForEach[*webhostingv1alpha1.Website]{
 		Name: "website-mutator",
 		Do: func(ctx context.Context, c client.Client, obj *webhostingv1alpha1.Website) error {
-			return client.IgnoreNotFound(generator.ReconcileWebsite(ctx, c, obj))
+			return client.IgnoreNotFound(generator.MutateWebsite(ctx, c, obj, s.Labels))
 		},
 		Every: time.Minute,
 	}).AddToManager(s.Manager); err != nil {
