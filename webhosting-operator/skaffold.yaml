@@ -133,7 +133,7 @@ profiles:
                   - bash
                   - -c
                   - |
-                    active_pods="$(kubectl -n experiment get job experiment -ojsonpath='{.status.active}' 2>dev/null)"
+                    active_pods="$(kubectl -n experiment get job experiment -ojsonpath='{.status.active}' 2>/dev/null)"
                     if [ "${active_pods:-0}" -gt 0 ] && [ -z "$EXPERIMENT_DELETE_FORCE" ] ; then
                       echo "Experiment is running currently, refusing to delete the job. Set EXPERIMENT_DELETE_FORCE to override."
                       exit 1
