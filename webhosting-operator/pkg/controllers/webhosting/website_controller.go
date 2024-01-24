@@ -149,12 +149,6 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 	serverName := calculateServerName(website)
 	log = log.WithValues("theme", website.Spec.Theme, "serverName", serverName)
 
-	// get current deployment status
-	currentDeployment := &appsv1.Deployment{}
-	if err := r.ShardedClient.Get(ctx, client.ObjectKey{Namespace: website.Namespace, Name: serverName}, currentDeployment); client.IgnoreNotFound(err) != nil {
-		return r.recordError(website, "ReconcilerError", "Error getting Deployment: %v", err)
-	}
-
 	// create downstream objects
 	configMap, err := r.ConfigMapForWebsite(serverName, website, theme)
 	if err != nil {
@@ -190,7 +184,7 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 
 	// update status
 	newPhase := webhostingv1alpha1.PhasePending
-	if cond := GetDeploymentCondition(currentDeployment.Status.Conditions, appsv1.DeploymentAvailable); cond != nil && cond.Status == corev1.ConditionTrue {
+	if IsDeploymentAvailable(deployment) {
 		newPhase = webhostingv1alpha1.PhaseReady
 	}
 	website.Status.Phase = newPhase
@@ -499,7 +493,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		// watch deployments for relevant changes to reconcile them back if changed
 		Owns(&appsv1.Deployment{}, builder.Sharded{}, builder.WithPredicates(predicate.Or(
 			predicate.GenerationChangedPredicate{},
-			DeploymentReadinessChanged,
+			DeploymentAvailabilityChanged,
 		))).
 		// watch owned objects for relevant changes to reconcile them back if changed
 		Owns(&corev1.ConfigMap{}, builder.Sharded{}, builder.WithPredicates(ConfigMapDataChanged)).
@@ -544,8 +538,8 @@ func (r *WebsiteReconciler) MapThemeToWebsites(ctx context.Context, theme client
 	return requests
 }
 
-// DeploymentReadinessChanged is a predicate for filtering relevant Deployment events.
-var DeploymentReadinessChanged = predicate.Funcs{
+// DeploymentAvailabilityChanged is a predicate for filtering relevant Deployment events.
+var DeploymentAvailabilityChanged = predicate.Funcs{
 	UpdateFunc: func(e event.UpdateEvent) bool {
 		if e.ObjectOld == nil || e.ObjectNew == nil {
 			return false
@@ -560,13 +554,7 @@ var DeploymentReadinessChanged = predicate.Funcs{
 			return false
 		}
 
-		if !apiequality.Semantic.DeepEqual(oldDeployment.Status.ReadyReplicas, newDeployment.Status.ReadyReplicas) {
-			return true
-		}
-
-		oldAvailable := GetDeploymentCondition(oldDeployment.Status.Conditions, appsv1.DeploymentAvailable)
-		newAvailable := GetDeploymentCondition(newDeployment.Status.Conditions, appsv1.DeploymentAvailable)
-		return !apiequality.Semantic.DeepEqual(oldAvailable, newAvailable)
+		return IsDeploymentAvailable(oldDeployment) != IsDeploymentAvailable(newDeployment)
 	},
 }
 
@@ -588,6 +576,13 @@ var ConfigMapDataChanged = predicate.Funcs{
 		}
 		return !apiequality.Semantic.DeepEqual(oldConfigMap.Data, newConfigMap.Data)
 	},
+}
+
+// IsDeploymentAvailable returns true if the current generation has been observed by the deployment controller and the
+// Available condition is True.
+func IsDeploymentAvailable(deployment *appsv1.Deployment) bool {
+	available := GetDeploymentCondition(deployment.Status.Conditions, appsv1.DeploymentAvailable)
+	return deployment.Status.ObservedGeneration == deployment.Generation && available != nil && available.Status == corev1.ConditionTrue
 }
 
 // GetDeploymentCondition returns the condition with the given type or nil, if it is not included.
