@@ -18,6 +18,7 @@ package generator
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -47,9 +48,16 @@ func CreateWebsite(ctx context.Context, c client.Client, opts ...GenerateOption)
 	if err := c.List(ctx, themeList, client.MatchingLabels(options.Labels)); err != nil {
 		return err
 	}
+	if len(themeList.Items) == 0 {
+		return fmt.Errorf("no themes found, cannot create website")
+	}
+
 	namespaceList := &corev1.NamespaceList{}
 	if err := c.List(ctx, namespaceList, client.MatchingLabels(options.Labels)); err != nil {
 		return err
+	}
+	if len(namespaceList.Items) == 0 {
+		return fmt.Errorf("no namespaces found, cannot create website")
 	}
 
 	website := &webhostingv1alpha1.Website{
@@ -77,6 +85,10 @@ func MutateWebsite(ctx context.Context, c client.Client, website *webhostingv1al
 	themeList := &webhostingv1alpha1.ThemeList{}
 	if err := c.List(ctx, themeList, client.MatchingLabels(labels)); err != nil {
 		return err
+	}
+	if len(themeList.Items) == 0 {
+		log.V(1).Info("No themes found, skipping mutation")
+		return nil
 	}
 
 	patch := client.MergeFrom(website.DeepCopy())
@@ -112,7 +124,7 @@ func DeleteWebsite(ctx context.Context, c client.Client, labels map[string]strin
 	}
 
 	if len(websiteList.Items) == 0 {
-		log.V(1).Info("No websites created yet, skipping mutation")
+		log.V(1).Info("No websites found, skipping deletion")
 		return nil
 	}
 

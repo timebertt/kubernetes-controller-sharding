@@ -87,7 +87,7 @@ func MutateRandomTheme(ctx context.Context, c client.Client, labels map[string]s
 	}
 
 	if len(themeList.Items) == 0 {
-		log.V(1).Info("No themes created yet, skipping mutation")
+		log.V(1).Info("No themes found, skipping mutation")
 		return nil
 	}
 
