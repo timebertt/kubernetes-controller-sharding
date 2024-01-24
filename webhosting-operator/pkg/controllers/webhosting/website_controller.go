@@ -35,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -99,6 +100,8 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// update the status if needed
 	if !apiequality.Semantic.DeepEqual(before.Status, website.Status) {
+		website.Status.LastTransitionTime = ptr.To(metav1.NowMicro())
+
 		if err := r.ShardedClient.Status().Update(ctx, website); err != nil {
 			// unable to update status, requeue with backoff
 			if reconcileErr != nil {

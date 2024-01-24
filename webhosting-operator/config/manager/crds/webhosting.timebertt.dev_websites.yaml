@@ -21,6 +21,9 @@ spec:
     - jsonPath: .status.phase
       name: Phase
       type: string
+    - jsonPath: .status.lastTransitionTime
+      name: Since
+      type: date
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
@@ -60,6 +63,11 @@ spec:
             description: Status contains the most recently observed status of the
               Website.
             properties:
+              lastTransitionTime:
+                description: LastTransitionTime is the last time the observedGeneration
+                  or phase transitioned from one value to another.
+                format: date-time
+                type: string
               observedGeneration:
                 description: The generation observed by the Website controller.
                 format: int64
