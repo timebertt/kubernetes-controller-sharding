@@ -493,11 +493,15 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{})),
 		).
 		// watch deployments in order to update phase on relevant changes
-		Owns(&appsv1.Deployment{}, builder.Sharded{}, builder.WithPredicates(DeploymentReadinessChanged)).
+		// watch deployments for relevant changes to reconcile them back if changed
+		Owns(&appsv1.Deployment{}, builder.Sharded{}, builder.WithPredicates(predicate.Or(
+			predicate.GenerationChangedPredicate{},
+			DeploymentReadinessChanged,
+		))).
 		// watch owned objects for relevant changes to reconcile them back if changed
 		Owns(&corev1.ConfigMap{}, builder.Sharded{}, builder.WithPredicates(ConfigMapDataChanged)).
-		Owns(&corev1.Service{}, builder.Sharded{}, builder.WithPredicates(ServiceSpecChanged)).
-		Owns(&networkingv1.Ingress{}, builder.Sharded{}, builder.WithPredicates(IngressSpecChanged)).
+		Owns(&corev1.Service{}, builder.Sharded{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Owns(&networkingv1.Ingress{}, builder.Sharded{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		// watch themes to roll out theme changes to all referencing websites
 		Watches(
 			&webhostingv1alpha1.Theme{},
@@ -564,6 +568,7 @@ var DeploymentReadinessChanged = predicate.Funcs{
 }
 
 // ConfigMapDataChanged is a predicate for filtering relevant ConfigMap events.
+// Similar to predicate.GenerationChangedPredicate (ConfigMaps don't have a generation).
 var ConfigMapDataChanged = predicate.Funcs{
 	UpdateFunc: func(e event.UpdateEvent) bool {
 		if e.ObjectOld == nil || e.ObjectNew == nil {
@@ -579,44 +584,6 @@ var ConfigMapDataChanged = predicate.Funcs{
 			return false
 		}
 		return !apiequality.Semantic.DeepEqual(oldConfigMap.Data, newConfigMap.Data)
-	},
-}
-
-// ServiceSpecChanged is a predicate for filtering relevant Service events.
-var ServiceSpecChanged = predicate.Funcs{
-	UpdateFunc: func(e event.UpdateEvent) bool {
-		if e.ObjectOld == nil || e.ObjectNew == nil {
-			return false
-		}
-
-		oldService, ok := e.ObjectOld.(*corev1.Service)
-		if !ok {
-			return false
-		}
-		newService, ok := e.ObjectNew.(*corev1.Service)
-		if !ok {
-			return false
-		}
-		return !apiequality.Semantic.DeepEqual(oldService.Spec, newService.Spec)
-	},
-}
-
-// IngressSpecChanged is a predicate for filtering relevant Ingress events.
-var IngressSpecChanged = predicate.Funcs{
-	UpdateFunc: func(e event.UpdateEvent) bool {
-		if e.ObjectOld == nil || e.ObjectNew == nil {
-			return false
-		}
-
-		oldIngress, ok := e.ObjectOld.(*networkingv1.Ingress)
-		if !ok {
-			return false
-		}
-		newIngress, ok := e.ObjectNew.(*networkingv1.Ingress)
-		if !ok {
-			return false
-		}
-		return !apiequality.Semantic.DeepEqual(oldIngress.Spec, newIngress.Spec)
 	},
 }
 
