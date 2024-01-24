@@ -87,9 +87,33 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 		return ctrl.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
 	}
-	// update status with the latest observed generation
+
+	before := website.DeepCopy()
+	// always update the status with the latest observed generation
 	website.Status.ObservedGeneration = website.Generation
 
+	reconcileErr := r.reconcileWebsite(ctx, log, website)
+	if reconcileErr != nil {
+		website.Status.Phase = webhostingv1alpha1.PhaseError
+	}
+
+	// update the status if needed
+	if !apiequality.Semantic.DeepEqual(before.Status, website.Status) {
+		if err := r.ShardedClient.Status().Update(ctx, website); err != nil {
+			// unable to update status, requeue with backoff
+			if reconcileErr != nil {
+				// if a reconcile error happened as well, prefer this error
+				return reconcile.Result{}, reconcileErr
+			}
+
+			return reconcile.Result{}, fmt.Errorf("failed updating Website status: %w", err)
+		}
+	}
+
+	return reconcile.Result{}, reconcileErr
+}
+
+func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logger, website *webhostingv1alpha1.Website) error {
 	if website.DeletionTimestamp != nil {
 		// Nothing to do on deletion, all owned objects are cleaned up by the garbage collector.
 		// Set the website's status to terminating and be done with it.
@@ -97,26 +121,26 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		// otherwise it will be gone immediately.
 		website.Status.Phase = webhostingv1alpha1.PhaseTerminating
 
-		return ctrl.Result{}, r.ShardedClient.Status().Update(ctx, website)
+		return nil
 	}
 
 	if website.Spec.Theme == "" {
-		log.Error(fmt.Errorf("website doesn't specify a theme"), "Unable to reconcile Website")
-		r.Recorder.Event(website, corev1.EventTypeWarning, "ThemeUnspecified", "Website doesn't specify a Theme")
+		err := r.recordError(website, "ThemeUnspecified", "Website doesn't specify a Theme")
 
-		website.Status.Phase = webhostingv1alpha1.PhaseError
 		// Only requeue with backoff if we fail to update the status. We can't do much till the spec changes, so rather wait
 		// for the next update event.
-		return ctrl.Result{}, r.ShardedClient.Status().Update(ctx, website)
+		// Log the error and forget the object for now.
+		log.Error(err, "Unable to reconcile Website")
+		return nil
 	}
 
 	// retrieve theme
 	theme := &webhostingv1alpha1.Theme{}
 	if err := r.Client.Get(ctx, client.ObjectKey{Name: website.Spec.Theme}, theme); err != nil {
 		if apierrors.IsNotFound(err) {
-			return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ThemeNotFound", "Theme %s not found", website.Spec.Theme)
+			return r.recordError(website, "ThemeNotFound", "Theme %s not found", website.Spec.Theme)
 		}
-		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error getting Theme %s: %v", website.Spec.Theme, err)
+		return r.recordError(website, "ReconcilerError", "Error getting Theme %s: %v", website.Spec.Theme, err)
 	}
 
 	serverName := calculateServerName(website)
@@ -125,40 +149,40 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// get current deployment status
 	currentDeployment := &appsv1.Deployment{}
 	if err := r.ShardedClient.Get(ctx, client.ObjectKey{Namespace: website.Namespace, Name: serverName}, currentDeployment); client.IgnoreNotFound(err) != nil {
-		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error getting Deployment: %v", err)
+		return r.recordError(website, "ReconcilerError", "Error getting Deployment: %v", err)
 	}
 
 	// create downstream objects
 	configMap, err := r.ConfigMapForWebsite(serverName, website, theme)
 	if err != nil {
-		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing ConfigMap: %v", err)
+		return r.recordError(website, "ReconcilerError", "Error computing ConfigMap: %v", err)
 	}
 	if err := r.ShardedClient.Patch(ctx, configMap, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
-		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying ConfigMap: %v", err)
+		return r.recordError(website, "ReconcilerError", "Error applying ConfigMap: %v", err)
 	}
 
 	service, err := r.ServiceForWebsite(serverName, website)
 	if err != nil {
-		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing Service: %v", err)
+		return r.recordError(website, "ReconcilerError", "Error computing Service: %v", err)
 	}
 	if err := r.ShardedClient.Patch(ctx, service, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
-		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying Service: %v", err)
+		return r.recordError(website, "ReconcilerError", "Error applying Service: %v", err)
 	}
 
 	ingress, err := r.IngressForWebsite(serverName, website)
 	if err != nil {
-		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing Ingress: %v", err)
+		return r.recordError(website, "ReconcilerError", "Error computing Ingress: %v", err)
 	}
 	if err := r.ShardedClient.Patch(ctx, ingress, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
-		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying Ingress: %v", err)
+		return r.recordError(website, "ReconcilerError", "Error applying Ingress: %v", err)
 	}
 
 	deployment, err := r.DeploymentForWebsite(serverName, website, configMap)
 	if err != nil {
-		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error computing Deployment: %v", err)
+		return r.recordError(website, "ReconcilerError", "Error computing Deployment: %v", err)
 	}
 	if err := r.ShardedClient.Patch(ctx, deployment, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
-		return ctrl.Result{}, r.recordErrorAndUpdateStatus(ctx, website, "ReconcilerError", "Error applying Deployment: %v", err)
+		return r.recordError(website, "ReconcilerError", "Error applying Deployment: %v", err)
 	}
 
 	// update status
@@ -168,18 +192,13 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	website.Status.Phase = newPhase
 
-	return ctrl.Result{}, r.ShardedClient.Status().Update(ctx, website)
+	return nil
 }
 
-func (r *WebsiteReconciler) recordErrorAndUpdateStatus(ctx context.Context, website *webhostingv1alpha1.Website, reason, messageFmt string, args ...interface{}) error {
+func (r *WebsiteReconciler) recordError(website *webhostingv1alpha1.Website, reason, messageFmt string, args ...interface{}) error {
 	r.Recorder.Eventf(website, corev1.EventTypeWarning, reason, messageFmt, args...)
 
-	website.Status.Phase = webhostingv1alpha1.PhaseError
-	if err := r.ShardedClient.Status().Update(ctx, website); err != nil {
-		// unable to update status, requeue with backoff
-		return err
-	}
-	// return error to retry with backoff
+	// this error can be returned by the reconciler to retry with backoff
 	return fmt.Errorf(messageFmt, args...)
 }
 
