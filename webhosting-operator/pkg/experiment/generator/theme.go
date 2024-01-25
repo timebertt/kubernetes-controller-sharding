@@ -87,20 +87,10 @@ func MutateRandomTheme(ctx context.Context, c client.Client, labels map[string]s
 	}
 
 	if len(themeList.Items) == 0 {
-		log.V(1).Info("No themes created yet, skipping mutation")
+		log.V(1).Info("No themes found, skipping mutation")
 		return nil
 	}
 
 	theme := utils.PickRandom(themeList.Items)
 	return MutateTheme(ctx, c, &theme)
-}
-
-// CleanupThemes deletes all themes with the given labels.
-func CleanupThemes(ctx context.Context, c client.Client, labels map[string]string) error {
-	if err := c.DeleteAllOf(ctx, &webhostingv1alpha1.Theme{}, client.MatchingLabels(labels)); err != nil {
-		return err
-	}
-
-	log.V(1).Info("Cleaned up all project themes")
-	return nil
 }

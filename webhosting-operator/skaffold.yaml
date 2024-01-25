@@ -133,12 +133,23 @@ profiles:
                   - bash
                   - -c
                   - |
-                    active_pods="$(kubectl -n experiment get job experiment -ojsonpath='{.status.active}' 2>dev/null)"
+                    active_pods="$(kubectl -n experiment get job experiment -ojsonpath='{.status.active}' 2>/dev/null)"
                     if [ "${active_pods:-0}" -gt 0 ] && [ -z "$EXPERIMENT_DELETE_FORCE" ] ; then
                       echo "Experiment is running currently, refusing to delete the job. Set EXPERIMENT_DELETE_FORCE to override."
                       exit 1
                     fi
                     kubectl -n experiment delete job experiment --ignore-not-found --wait=true
+            - host:
+                command:
+                  - /usr/bin/env
+                  - bash
+                  - -c
+                  - |
+                    if kubectl get clusterring example &>/dev/null || kubectl -n default get deploy shard &>/dev/null ; then
+                      echo "Example shard is still running, refusing to run a load test experiment."
+                      echo "Ensure a clean load test environment, i.e., run 'make down SKAFFOLD_MODULE=shard'."
+                      exit 1
+                    fi
 ---
 apiVersion: skaffold/v4beta9
 kind: Config

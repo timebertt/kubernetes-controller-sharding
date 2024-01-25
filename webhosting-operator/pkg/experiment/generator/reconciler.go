@@ -80,6 +80,7 @@ func (r *Every) Reconcile(ctx context.Context, _ reconcile.Request) (reconcile.R
 }
 
 // ForEach runs the given Func for each object of the given kind with the specified frequency.
+// The first execution runs Every after object creation.
 type ForEach[T client.Object] struct {
 	client.Client
 
@@ -120,7 +121,8 @@ func (r *ForEach[T]) AddToManager(mgr manager.Manager) error {
 		}).
 		Watches(
 			r.obj,
-			&handler.EnqueueRequestForObject{},
+			// we should not enqueue directly on creation, but only after Every has passed for the first time
+			delayingHandler(&handler.EnqueueRequestForObject{}, r.Every),
 			builder.WithPredicates(predicate.Funcs{
 				CreateFunc:  func(event.CreateEvent) bool { return true },
 				DeleteFunc:  func(event.DeleteEvent) bool { return false },
@@ -152,4 +154,32 @@ func (r *ForEach[T]) Reconcile(ctx context.Context, request reconcile.Request) (
 func unlimitedRateLimiter() ratelimiter.RateLimiter {
 	// if no limiter is given, MaxOfRateLimiter returns 0 for When and NumRequeues => unlimited
 	return &workqueue.MaxOfRateLimiter{}
+}
+
+// delayingHandler wraps the given EventHandler and delays all Add calls to the queue by the given delay.
+func delayingHandler(h handler.EventHandler, d time.Duration) handler.EventHandler {
+	return handler.Funcs{
+		CreateFunc: func(ctx context.Context, e event.CreateEvent, q workqueue.RateLimitingInterface) {
+			h.Create(ctx, e, delayingQueue{q, d})
+		},
+		UpdateFunc: func(ctx context.Context, e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+			h.Update(ctx, e, delayingQueue{q, d})
+		},
+		DeleteFunc: func(ctx context.Context, e event.DeleteEvent, q workqueue.RateLimitingInterface) {
+			h.Delete(ctx, e, delayingQueue{q, d})
+		},
+		GenericFunc: func(ctx context.Context, e event.GenericEvent, q workqueue.RateLimitingInterface) {
+			h.Generic(ctx, e, delayingQueue{q, d})
+		},
+	}
+}
+
+// delayingQueue delays all Add calls by calling AddAfter with delay.
+type delayingQueue struct {
+	workqueue.RateLimitingInterface
+	delay time.Duration
+}
+
+func (d delayingQueue) Add(item any) {
+	d.AddAfter(item, d.delay)
 }
