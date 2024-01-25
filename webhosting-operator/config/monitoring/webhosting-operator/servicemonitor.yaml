@@ -8,13 +8,12 @@ spec:
     port: https
     scheme: https
     bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    honorLabels: true
     interval: 10s
     scrapeTimeout: 10s
     tlsConfig:
       insecureSkipVerify: true
-    relabelings:
-    - targetLabel: job
-      replacement: webhosting-operator
+  jobLabel: app.kubernetes.io/name
   selector:
     matchLabels:
       app.kubernetes.io/name: webhosting-operator

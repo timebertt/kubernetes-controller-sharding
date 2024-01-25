@@ -48,6 +48,7 @@ import (
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/controllers/webhosting"
+	webhostingmetrics "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/metrics"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils/routes"
 	//+kubebuilder:scaffold:imports
 )
@@ -111,6 +112,12 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Website")
 		os.Exit(1)
 	}
+
+	if err = webhostingmetrics.AddToManager(mgr); err != nil {
+		setupLog.Error(err, "unable to add metrics exporters")
+		os.Exit(1)
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
