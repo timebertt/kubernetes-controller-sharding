@@ -34,6 +34,9 @@ type WebsiteStatus struct {
 	// Phase is the current phase of this Website.
 	// +optional
 	Phase WebsitePhase `json:"phase,omitempty"`
+	// LastTransitionTime is the last time the observedGeneration or phase transitioned from one value to another.
+	// +optional
+	LastTransitionTime *metav1.MicroTime `json:"lastTransitionTime,omitempty"`
 }
 
 // WebsitePhase describes the phase of a Website.
@@ -57,6 +60,7 @@ var AllWebsitePhases = []WebsitePhase{PhasePending, PhaseReady, PhaseError, Phas
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="Theme",type=string,JSONPath=`.spec.theme`
 //+kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`
+//+kubebuilder:printcolumn:name="Since",type="date",JSONPath=".status.lastTransitionTime"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // Website enables declarative management of hosted websites.

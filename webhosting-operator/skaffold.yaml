@@ -31,7 +31,6 @@ build:
           paths:
             - go.mod
             - '**/*.go'
-            - ../../../../sigs.k8s.io/controller-runtime/**/*.go
         main: ./cmd/webhosting-operator
   local:
     concurrency: 0
@@ -112,7 +111,6 @@ profiles:
               paths:
                 - go.mod
                 - '**/*.go'
-                - ../../../../sigs.k8s.io/controller-runtime/**/*.go
             main: ./cmd/experiment
       local:
         concurrency: 0
