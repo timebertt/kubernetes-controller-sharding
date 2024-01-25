@@ -93,7 +93,6 @@ func main() {
 	cmd.Flags().Var((*timeValue)(&queryRange.End), "end", "Query end timestamp (RFC3339/duration relative to now/unix timestamp in seconds), inclusive (defaults to now)")
 
 	if err := cmd.ExecuteContext(signals.SetupSignalHandler()); err != nil {
-		fmt.Printf("Error retrieving measurements: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -174,9 +173,7 @@ func run(ctx context.Context, c v1.API) error {
 	fmt.Printf("Using time range for query: %s\n", rangeToString(queryRange))
 
 	for _, q := range config.Queries {
-		fileName := outputPrefix + q.Name + ".csv"
-
-		data, err := fetchData(ctx, c, q)
+		data, err := q.fetchData(ctx, c)
 		if err != nil {
 			return fmt.Errorf("error fetching data for query %q: %w", q.Name, err)
 		}
@@ -189,28 +186,8 @@ func run(ctx context.Context, c v1.API) error {
 			return fmt.Errorf("data is empty for query %q, but query is required", q.Name)
 		}
 
-		if err = func() error {
-			var out io.Writer
-			if outputDir == stdout {
-				out = os.Stdout
-				fmt.Println("# " + fileName)
-			} else {
-				file, err := os.OpenFile(filepath.Join(outputDir, fileName), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
-				if err != nil {
-					return err
-				}
-				defer file.Close()
-				out = file
-			}
-
-			if err := writeResult(data, out); err != nil {
-				return err
-			}
-
-			fmt.Printf("Succesfully written output to %s\n", fileName)
-			return nil
-		}(); err != nil {
-			return fmt.Errorf("error writing result to %s: %w", fileName, err)
+		if err = q.writeResult(data); err != nil {
+			return fmt.Errorf("error writing result: %w", err)
 		}
 	}
 
@@ -243,7 +220,7 @@ func prepareOutputDir() error {
 	return nil
 }
 
-func fetchData(ctx context.Context, c v1.API, q Query) (metricData, error) {
+func (q Query) fetchData(ctx context.Context, c v1.API) (metricData, error) {
 	opts := []v1.Option{v1.WithTimeout(10 * time.Second)}
 
 	var (
@@ -293,7 +270,22 @@ func fetchData(ctx context.Context, c v1.API, q Query) (metricData, error) {
 	return data, nil
 }
 
-func writeResult(data metricData, out io.Writer) error {
+func (q Query) writeResult(data metricData) error {
+	fileName := outputPrefix + q.Name + ".csv"
+
+	var out io.Writer
+	if outputDir == stdout {
+		out = os.Stdout
+		fmt.Println("# " + fileName)
+	} else {
+		file, err := os.OpenFile(filepath.Join(outputDir, fileName), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		out = file
+	}
+
 	// go maps are unsorted -> need to sort labels by name so that all values end up in the right column
 	labelNames := data.GetLabelNames()
 	slices.Sort(labelNames)
@@ -305,6 +297,7 @@ func writeResult(data metricData, out io.Writer) error {
 	}
 
 	// write contents
+	data.Reset()
 	for {
 		value := data.NextValue()
 		if value.IsZero() { // end of results
@@ -325,7 +318,12 @@ func writeResult(data metricData, out io.Writer) error {
 	}
 
 	w.Flush()
-	return w.Error()
+	if err := w.Error(); err != nil {
+		return err
+	}
+
+	fmt.Printf("Succesfully written output to %s\n", fileName)
+	return nil
 }
 
 func rangeToString(r v1.Range) string {
@@ -339,6 +337,8 @@ type metricData interface {
 	IsEmpty() bool
 	// GetLabelNames returns an unsorted list of label names of the first metric.
 	GetLabelNames() model.LabelNames
+	// Reset resets the cursor.
+	Reset()
 	// NextValue moves the cursor to the next metric value and returns it. It returns a zero metricValue at the end.
 	NextValue() metricValue
 }
@@ -378,6 +378,11 @@ func (m *matrixData) GetLabelNames() model.LabelNames {
 	}
 
 	return labels.UnsortedList()
+}
+
+func (m *matrixData) Reset() {
+	m.cursor.metric = 0
+	m.cursor.value = 0
 }
 
 func (m *matrixData) NextValue() metricValue {
@@ -432,6 +437,10 @@ func (v *vectorData) GetLabelNames() model.LabelNames {
 	}
 
 	return labels.UnsortedList()
+}
+
+func (v *vectorData) Reset() {
+	v.cursor = 0
 }
 
 func (v *vectorData) NextValue() metricValue {
