@@ -242,7 +242,7 @@
             "uid": "${datasource}"
           },
           "exemplar": true,
-          "expr": "sum(kube_theme_info) or vector(0)",
+          "expr": "sum(max(kube_theme_info) without (instance, pod)) or vector(0)",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -521,7 +521,7 @@
             "uid": "${datasource}"
           },
           "exemplar": true,
-          "expr": "sum(kube_website_info{namespace=~\"$project\"} or 0*sum(kube_theme_info{}) by (theme)) by (theme)",
+          "expr": "sum(max(kube_website_info{namespace=~\"$project\"}) without (instance, pod) or 0*max(kube_theme_info{}) by (theme)) by (theme)",
           "interval": "",
           "legendFormat": "{{namespace}}",
           "refId": "A"
@@ -798,7 +798,7 @@
             "uid": "${datasource}"
           },
           "exemplar": true,
-          "expr": "(sum(kube_website_info{namespace=~\"$project\"} unless on(uid) kube_website_info{namespace=~\"$project\"} offset $__rate_interval) and max(up{job=\"webhosting-exporter\",endpoint!=\"https-self\"} offset $__rate_interval)) or vector(0)",
+          "expr": "(sum(kube_website_info{namespace=~\"$project\"} unless on(uid) kube_website_info{namespace=~\"$project\"} offset $__rate_interval) and min(up{job=\"webhosting-operator\"} offset $__rate_interval) == 1) or vector(0)",
           "hide": false,
           "interval": "",
           "legendFormat": "Creation",
@@ -810,7 +810,7 @@
             "uid": "${datasource}"
           },
           "exemplar": true,
-          "expr": "-(sum(kube_website_info{namespace=~\"$project\"} offset $__rate_interval unless on(uid) kube_website_info{namespace=~\"$project\"}) and max(up{job=\"webhosting-exporter\",endpoint!=\"https-self\"})) or vector(0)",
+          "expr": "-(sum(kube_website_info{namespace=~\"$project\"} offset $__rate_interval unless on(uid) kube_website_info{namespace=~\"$project\"}) and min(up{job=\"webhosting-operator\"}) == 1) or vector(0)",
           "hide": false,
           "interval": "",
           "legendFormat": "Deletion",
@@ -923,7 +923,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(kube_website_info{namespace=~\"$project\"} * on(theme) group_left(color, font_family) kube_theme_info) by (namespace, theme, website, color, font_family)",
+          "expr": "sum(kube_website_info{namespace=~\"$project\"} * on(theme) group_left(color, font_family) max(kube_theme_info) without (instance, pod)) by (namespace, theme, website, color, font_family)",
           "format": "table",
           "instant": true,
           "interval": "",

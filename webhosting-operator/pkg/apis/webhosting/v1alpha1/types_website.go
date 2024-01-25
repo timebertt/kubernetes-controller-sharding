@@ -50,6 +50,9 @@ const (
 	PhaseTerminating WebsitePhase = "Terminating"
 )
 
+// AllWebsitePhases is a list of all Website phases.
+var AllWebsitePhases = []WebsitePhase{PhasePending, PhaseReady, PhaseError, PhaseTerminating}
+
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="Theme",type=string,JSONPath=`.spec.theme`

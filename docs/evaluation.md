@@ -49,8 +49,7 @@ You can also visit your [local webhosting dashboard](http://127.0.0.1:3000/d/Nbm
 kubectl -n monitoring port-forward svc/grafana 3000
 ```
 
-This dashboard uses metrics exported by [webhosting-exporter](../webhosting-operator/config/monitoring/webhosting-exporter).
-Similar to [sharding-exporter](monitoring.md#sharding-exporter), webhosting-exporter is uses the [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) [custom resource metrics feature](https://github.com/kubernetes/kube-state-metrics/blob/main/docs/customresourcestate-metrics.md) to export metrics about the webhosting-operator's API objects.
+This dashboard uses metrics exported by [webhosting-operator](../webhosting-operator/pkg/metrics) about its API objects, i.e., `kube_website_*` and `kube_theme_*`.
 There is also a dashboard about the [sharding of websites](http://127.0.0.1:3000/d/7liIybkVk/sharding?orgId=1).
 
 In addition to creating the preconfigured websites, you can also generate some more random websites using the [samples-generator](../webhosting-operator/cmd/samples-generator):
