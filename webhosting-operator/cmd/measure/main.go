@@ -21,6 +21,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
@@ -158,6 +159,8 @@ type Query struct {
 	Type     string `yaml:"type,omitempty"`
 	Query    string `yaml:"query"`
 	Optional bool   `yaml:"optional,omitempty"`
+	// upper threshold for values
+	SLO *float64 `yaml:"slo,omitempty"`
 }
 
 func run(ctx context.Context, c v1.API) error {
@@ -171,6 +174,8 @@ func run(ctx context.Context, c v1.API) error {
 	}
 
 	fmt.Printf("Using time range for query: %s\n", rangeToString(queryRange))
+
+	slosMet := true
 
 	for _, q := range config.Queries {
 		data, err := q.fetchData(ctx, c)
@@ -189,6 +194,16 @@ func run(ctx context.Context, c v1.API) error {
 		if err = q.writeResult(data); err != nil {
 			return fmt.Errorf("error writing result: %w", err)
 		}
+
+		if !q.verifySLO(data) {
+			slosMet = false
+		}
+	}
+
+	if slosMet {
+		fmt.Println("✅ SLO verifications succeeded")
+	} else {
+		return fmt.Errorf("❌ SLO verifications failed")
 	}
 
 	return nil
@@ -324,6 +339,37 @@ func (q Query) writeResult(data metricData) error {
 
 	fmt.Printf("Succesfully written output to %s\n", fileName)
 	return nil
+}
+
+func (q Query) verifySLO(data metricData) bool {
+	if q.SLO == nil {
+		return true
+	}
+
+	var allFailures []string
+
+	data.Reset()
+	for {
+		value := data.NextValue()
+		if value.IsZero() { // end of results
+			break
+		}
+
+		if math.IsNaN(value.value) || value.value <= *q.SLO {
+			continue
+		}
+
+		allFailures = append(allFailures, fmt.Sprintf("%s => %f @[%s]", value.metric, value.value, value.time.Format(time.RFC3339)))
+	}
+
+	if len(allFailures) > 0 {
+		indent := "- "
+		fmt.Printf("❌ SLO for query %q (<= %f) is not met:\n%s\n", q.Name, *q.SLO, indent+strings.Join(allFailures, "\n"+indent))
+		return false
+	}
+
+	fmt.Printf("✅ SLO for query %q (<= %f) met\n", q.Name, *q.SLO)
+	return true
 }
 
 func rangeToString(r v1.Range) string {

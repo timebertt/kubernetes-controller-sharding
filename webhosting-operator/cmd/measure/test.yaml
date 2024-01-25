@@ -1,9 +1,11 @@
 queries:
 - name: queue-rate-by-pod
   type: range # returns a matrix
+  slo: 200
   query: sum(rate(workqueue_adds_total{job="webhosting-operator"}[1m])) by (pod)
 - name: queue-latency-by-controller
   type: instant # returns a vector
+  slo: 0.1
   query: |
     histogram_quantile(0.99,
       sum by (name, le) (rate(
