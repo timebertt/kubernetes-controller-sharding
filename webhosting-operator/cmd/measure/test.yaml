@@ -1,5 +1,14 @@
 queries:
-- name: test-websites_per_shard
-  query: sum(kube_website_shard{shard!=""} * on(shard) group_left kube_shard_info{app="webhosting-operator"}) by (shard)
-- name: test-websites_per_project
-  query: count(kube_website_info{}) by (namespace)
+- name: queue-rate-by-pod
+  type: range # returns a matrix
+  query: sum(rate(workqueue_adds_total{job="webhosting-operator"}[1m])) by (pod)
+- name: queue-latency-by-controller
+  type: instant # returns a vector
+  query: |
+    histogram_quantile(0.99,
+      sum by (name, le) (rate(
+        workqueue_queue_duration_seconds_bucket{
+          job="webhosting-operator",
+        }[$__range]
+      ))
+    )
