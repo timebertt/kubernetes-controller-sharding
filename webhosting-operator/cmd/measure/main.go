@@ -21,10 +21,12 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/api"
@@ -32,6 +34,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
@@ -53,7 +56,6 @@ var (
 		End:   now,
 		Step:  30 * time.Second,
 	}
-	rateInterval = 5 * time.Minute
 )
 
 func main() {
@@ -87,13 +89,11 @@ func main() {
 	cmd.Flags().StringVarP(&outputDir, "output-dir", "o", outputDir, "Directory to write output files to, - for stdout (defaults to working directory)")
 	cmd.Flags().StringVar(&outputPrefix, "output-prefix", outputPrefix, "Prefix to prepend to all output files")
 	cmd.Flags().StringVar(&prometheusURL, "prometheus-url", prometheusURL, "URL for querying prometheus")
-	cmd.Flags().DurationVar(&rateInterval, "rate-interval", rateInterval, "Interval to use for rate queries")
 	cmd.Flags().DurationVar(&queryRange.Step, "step", queryRange.Step, "Query resolution step width")
 	cmd.Flags().Var((*timeValue)(&queryRange.Start), "start", "Query start timestamp (RFC3339/duration relative to now/unix timestamp in seconds), inclusive (defaults to now-15m)")
 	cmd.Flags().Var((*timeValue)(&queryRange.End), "end", "Query end timestamp (RFC3339/duration relative to now/unix timestamp in seconds), inclusive (defaults to now)")
 
 	if err := cmd.ExecuteContext(signals.SetupSignalHandler()); err != nil {
-		fmt.Printf("Error retrieving measurements: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -143,14 +143,24 @@ func newClient() (v1.API, error) {
 	return v1.NewAPI(apiClient), nil
 }
 
+const (
+	QueryTypeInstant = "instant"
+	QueryTypeRange   = "range"
+)
+
 type QueriesConfig struct {
 	Queries []Query `yaml:"queries"`
 }
 
 type Query struct {
-	Name     string `yaml:"name"`
+	Name string `yaml:"name"`
+	// range or instant, defaults to range.
+	// If instant is specified, the $__range variable in the query is substituted by the configured range's duration.
+	Type     string `yaml:"type,omitempty"`
 	Query    string `yaml:"query"`
 	Optional bool   `yaml:"optional,omitempty"`
+	// upper threshold for values
+	SLO *float64 `yaml:"slo,omitempty"`
 }
 
 func run(ctx context.Context, c v1.API) error {
@@ -165,50 +175,35 @@ func run(ctx context.Context, c v1.API) error {
 
 	fmt.Printf("Using time range for query: %s\n", rangeToString(queryRange))
 
-	for _, q := range config.Queries {
-		fileName := outputPrefix + q.Name + ".csv"
+	slosMet := true
 
-		value, err := fetchData(ctx, c, q.Query)
+	for _, q := range config.Queries {
+		data, err := q.fetchData(ctx, c)
 		if err != nil {
 			return fmt.Errorf("error fetching data for query %q: %w", q.Name, err)
 		}
 
-		matrix, ok := value.(model.Matrix)
-		if !ok {
-			return fmt.Errorf("unsupported value type %q for query %q, expected matrix", value.Type().String(), q.Name)
-		}
-
-		if matrix.Len() == 0 {
+		if data.IsEmpty() {
 			if q.Optional {
-				fmt.Printf("Skipping output for query %q as matrix is empty\n", q.Name)
+				fmt.Printf("Skipping output for query %q as data is empty\n", q.Name)
 				continue
 			}
-			return fmt.Errorf("matrix is empty for query %q", q.Name)
+			return fmt.Errorf("data is empty for query %q, but query is required", q.Name)
 		}
 
-		if err = func() error {
-			var out io.Writer
-			if outputDir == stdout {
-				out = os.Stdout
-				fmt.Println("# " + fileName)
-			} else {
-				file, err := os.OpenFile(filepath.Join(outputDir, fileName), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
-				if err != nil {
-					return err
-				}
-				defer file.Close()
-				out = file
-			}
-
-			if err := writeResult(matrix, out); err != nil {
-				return err
-			}
-
-			fmt.Printf("Succesfully written output to %s\n", fileName)
-			return nil
-		}(); err != nil {
-			return fmt.Errorf("error writing result to %s: %w", fileName, err)
+		if err = q.writeResult(data); err != nil {
+			return fmt.Errorf("error writing result: %w", err)
 		}
+
+		if !q.verifySLO(data) {
+			slosMet = false
+		}
+	}
+
+	if slosMet {
+		fmt.Println("✅ SLO verifications succeeded")
+	} else {
+		return fmt.Errorf("❌ SLO verifications failed")
 	}
 
 	return nil
@@ -240,56 +235,286 @@ func prepareOutputDir() error {
 	return nil
 }
 
-func fetchData(ctx context.Context, c v1.API, query string) (model.Value, error) {
-	result, warnings, err := c.QueryRange(ctx, query, queryRange, v1.WithTimeout(10*time.Second))
-	if err != nil {
-		return nil, err
+func (q Query) fetchData(ctx context.Context, c v1.API) (metricData, error) {
+	opts := []v1.Option{v1.WithTimeout(10 * time.Second)}
+
+	var (
+		data     metricData
+		result   model.Value
+		warnings v1.Warnings
+		err      error
+	)
+
+	switch q.Type {
+	case QueryTypeRange, "":
+		result, warnings, err = c.QueryRange(ctx, q.Query, queryRange, opts...)
+		if err != nil {
+			return nil, err
+		}
+
+		matrix, ok := result.(model.Matrix)
+		if !ok {
+			return nil, fmt.Errorf("unexpected value type %q for query %q, expected matrix", result.Type().String(), q.Name)
+		}
+		data = &matrixData{Matrix: matrix}
+
+	case QueryTypeInstant:
+		rangeString := queryRange.End.Sub(queryRange.Start).String()
+		query := q.Query
+		query = strings.ReplaceAll(query, "$__range", rangeString)
+
+		result, warnings, err = c.Query(ctx, query, queryRange.End, opts...)
+		if err != nil {
+			return nil, err
+		}
+
+		vector, ok := result.(model.Vector)
+		if !ok {
+			return nil, fmt.Errorf("unexpected value type %q for query %q, expected vector", result.Type().String(), q.Name)
+		}
+		data = &vectorData{Vector: vector}
+
+	default:
+		return nil, fmt.Errorf("unsupported query type %q", q.Type)
 	}
+
 	if len(warnings) > 0 {
 		fmt.Printf("Warnings: %v\n", warnings)
 	}
 
-	return result, nil
+	return data, nil
 }
 
-func writeResult(matrix model.Matrix, out io.Writer) error {
-	// go maps are unsorted -> need to sort labels by name so that all values end up in the right column
-	var labelNames []string
-	for name := range matrix[0].Metric {
-		if name == model.MetricNameLabel {
-			continue
+func (q Query) writeResult(data metricData) error {
+	fileName := outputPrefix + q.Name + ".csv"
+
+	var out io.Writer
+	if outputDir == stdout {
+		out = os.Stdout
+		fmt.Println("# " + fileName)
+	} else {
+		file, err := os.OpenFile(filepath.Join(outputDir, fileName), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			return err
 		}
-		labelNames = append(labelNames, string(name))
+		defer file.Close()
+		out = file
 	}
-	sort.Strings(labelNames)
+
+	// go maps are unsorted -> need to sort labels by name so that all values end up in the right column
+	labelNames := data.GetLabelNames()
+	slices.Sort(labelNames)
 
 	// write header
 	w := csv.NewWriter(out)
-	if err := w.Write(append([]string{"ts", "value"}, labelNames...)); err != nil {
+	if err := w.Write(append([]string{"ts", "value"}, toStringSlice(labelNames)...)); err != nil {
 		return err
 	}
 
 	// write contents
-	for _, stream := range matrix {
-		labelValues := make([]string, len(labelNames))
-		for i, name := range labelNames {
-			labelValues[i] = string(stream.Metric[model.LabelName(name)])
+	data.Reset()
+	for {
+		value := data.NextValue()
+		if value.IsZero() { // end of results
+			break
 		}
 
-		for _, samplePair := range stream.Values {
-			if err := w.Write(append([]string{
-				strconv.FormatInt(samplePair.Timestamp.Unix(), 10),
-				samplePair.Value.String(),
-			}, labelValues...)); err != nil {
-				return err
-			}
+		labelValues := make([]string, len(labelNames))
+		for i, name := range labelNames {
+			labelValues[i] = string(value.metric[name])
+		}
+
+		if err := w.Write(append([]string{
+			strconv.FormatInt(value.time.Unix(), 10),
+			strconv.FormatFloat(value.value, 'f', -1, 64),
+		}, labelValues...)); err != nil {
+			return err
 		}
 	}
 
 	w.Flush()
-	return w.Error()
+	if err := w.Error(); err != nil {
+		return err
+	}
+
+	fmt.Printf("Succesfully written output to %s\n", fileName)
+	return nil
+}
+
+func (q Query) verifySLO(data metricData) bool {
+	if q.SLO == nil {
+		return true
+	}
+
+	var allFailures []string
+
+	data.Reset()
+	for {
+		value := data.NextValue()
+		if value.IsZero() { // end of results
+			break
+		}
+
+		if math.IsNaN(value.value) || value.value <= *q.SLO {
+			continue
+		}
+
+		allFailures = append(allFailures, fmt.Sprintf("%s => %f @[%s]", value.metric, value.value, value.time.Format(time.RFC3339)))
+	}
+
+	if len(allFailures) > 0 {
+		indent := "- "
+		fmt.Printf("❌ SLO for query %q (<= %f) is not met:\n%s\n", q.Name, *q.SLO, indent+strings.Join(allFailures, "\n"+indent))
+		return false
+	}
+
+	fmt.Printf("✅ SLO for query %q (<= %f) met\n", q.Name, *q.SLO)
+	return true
 }
 
 func rangeToString(r v1.Range) string {
 	return fmt.Sprintf("start:%s end:%s step:%s", r.Start.UTC().Format(time.RFC3339), r.End.UTC().Format(time.RFC3339), r.Step.String())
+}
+
+// metricData gives cursor-style access to metric values, which could either be a matrix (for range queries) or a vector
+// (for instant queries).
+type metricData interface {
+	// IsEmpty returns true if the query result was empty.
+	IsEmpty() bool
+	// GetLabelNames returns an unsorted list of label names of the first metric.
+	GetLabelNames() model.LabelNames
+	// Reset resets the cursor.
+	Reset()
+	// NextValue moves the cursor to the next metric value and returns it. It returns a zero metricValue at the end.
+	NextValue() metricValue
+}
+
+type metricValue struct {
+	metric model.Metric
+	time   time.Time
+	value  float64
+}
+
+func (m metricValue) IsZero() bool {
+	return m.time.IsZero()
+}
+
+type matrixData struct {
+	model.Matrix
+
+	cursor struct {
+		metric, value int
+	}
+}
+
+func (m *matrixData) IsEmpty() bool {
+	return m.Matrix.Len() == 0
+}
+
+func (m *matrixData) GetLabelNames() model.LabelNames {
+	labels := sets.New[model.LabelName]()
+
+	for _, metric := range m.Matrix {
+		for labelName := range metric.Metric {
+			if labelName == model.MetricNameLabel {
+				continue
+			}
+			labels.Insert(labelName)
+		}
+	}
+
+	return labels.UnsortedList()
+}
+
+func (m *matrixData) Reset() {
+	m.cursor.metric = 0
+	m.cursor.value = 0
+}
+
+func (m *matrixData) NextValue() metricValue {
+	if m.IsEmpty() {
+		return metricValue{}
+	}
+
+	// move to next metric if we already visited all values in the current metric
+	if m.cursor.value >= len(m.Matrix[m.cursor.metric].Values) {
+		m.cursor.metric++
+		m.cursor.value = 0
+	}
+
+	// end of results
+	if m.cursor.metric >= m.Len() {
+		return metricValue{}
+	}
+
+	sampleStream := m.Matrix[m.cursor.metric]
+	value := sampleStream.Values[m.cursor.value]
+
+	// move on to the next value in the current metric
+	m.cursor.value++
+
+	return metricValue{
+		metric: sampleStream.Metric,
+		time:   value.Timestamp.Time(),
+		value:  float64(value.Value),
+	}
+}
+
+type vectorData struct {
+	model.Vector
+
+	cursor int
+}
+
+func (v *vectorData) IsEmpty() bool {
+	return v.Vector.Len() == 0
+}
+
+func (v *vectorData) GetLabelNames() model.LabelNames {
+	labels := sets.New[model.LabelName]()
+
+	for _, metric := range v.Vector {
+		for labelName := range metric.Metric {
+			if labelName == model.MetricNameLabel {
+				continue
+			}
+			labels.Insert(labelName)
+		}
+	}
+
+	return labels.UnsortedList()
+}
+
+func (v *vectorData) Reset() {
+	v.cursor = 0
+}
+
+func (v *vectorData) NextValue() metricValue {
+	if v.IsEmpty() {
+		return metricValue{}
+	}
+
+	// end of results
+	if v.cursor >= len(v.Vector) {
+		return metricValue{}
+	}
+
+	sample := v.Vector[v.cursor]
+
+	// move on to the next sample
+	v.cursor++
+
+	return metricValue{
+		metric: sample.Metric,
+		time:   sample.Timestamp.Time(),
+		value:  float64(sample.Value),
+	}
+}
+
+func toStringSlice[S ~[]E, E ~string](s S) []string {
+	out := make([]string, 0, len(s))
+	for _, v := range s {
+		out = append(out, string(v))
+	}
+	return out
 }
