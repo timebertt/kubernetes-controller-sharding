@@ -47,14 +47,14 @@ type scenario struct {
 }
 
 func (s *scenario) Description() string {
-	return "Basic load test scenario (15m) that creates roughly 8k websites over 10m"
+	return "Basic load test scenario that creates roughly 10k websites over 15m"
 }
 
 func (s *scenario) LongDescription() string {
 	return `The ` + ScenarioName + ` scenario combines several operations typical for a lively operator environment:
-- website creation: 8000 over 10m
-- website deletion: 600 over 10m
-- website spec changes: max 130/s
+- website creation: 10800 over 15m
+- website deletion: 900 over 15m
+- website spec changes: 1/m per object, max 165/s
 `
 }
 
@@ -73,16 +73,15 @@ func (s *scenario) Prepare(ctx context.Context) error {
 }
 
 func (s *scenario) Run(ctx context.Context) error {
-	// website-generator: creates about 8400 websites over  10 minutes
-	// website-deleter:   deletes about  600 websites over  10 minutes
-	// => in total, there will be about 7800 websites after 10 minutes
+	// website-generator: creates about 10800 websites over  15 minutes
+	// website-deleter:   deletes about   900 websites over  15 minutes
+	// => in total, there will be about  9900 websites after 15 minutes
 	if err := (&generator.Every{
 		Name: "website-generator",
 		Do: func(ctx context.Context, c client.Client) error {
 			return generator.CreateWebsite(ctx, c, generator.WithLabels(s.Labels))
 		},
-		Rate: rate.Limit(14),
-		Stop: time.Now().Add(10 * time.Minute),
+		Rate: rate.Limit(12),
 	}).AddToManager(s.Manager); err != nil {
 		return fmt.Errorf("error adding website-generator: %w", err)
 	}
@@ -92,15 +91,14 @@ func (s *scenario) Run(ctx context.Context) error {
 		Do: func(ctx context.Context, c client.Client) error {
 			return generator.DeleteWebsite(ctx, c, s.Labels)
 		},
-		Rate: rate.Limit(1),
-		Stop: time.Now().Add(10 * time.Minute),
+		Rate: rate.Limit(2),
 	}).AddToManager(s.Manager); err != nil {
 		return fmt.Errorf("error adding website-deleter: %w", err)
 	}
 
 	// trigger individual spec changes for website once per minute
-	// => peaks at about 130 spec changes per second
-	// (triggers roughly double the reconciliation rate in website controller)
+	// => peaks at about 165 spec changes per second at the end of the experiment
+	// (triggers roughly double the reconciliation rate in website controller because of deployment watches)
 	if err := (&generator.ForEach[*webhostingv1alpha1.Website]{
 		Name: "website-mutator",
 		Do: func(ctx context.Context, c client.Client, obj *webhostingv1alpha1.Website) error {
