@@ -43,6 +43,11 @@ func (e *WebsiteExporter) AddToManager(mgr manager.Manager) error {
 	return mgr.Add(e)
 }
 
+// NeedLeaderElection tells the manager to run the exporter in all instances.
+func (e *WebsiteExporter) NeedLeaderElection() bool {
+	return false
+}
+
 // Start registers this collector in the controller-runtime metrics registry.
 // When Start runs, caches have already been started, so we are ready to export metrics.
 func (e *WebsiteExporter) Start(_ context.Context) error {
