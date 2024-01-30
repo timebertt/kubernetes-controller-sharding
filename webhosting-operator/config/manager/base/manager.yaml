@@ -41,10 +41,10 @@ spec:
           periodSeconds: 10
         resources:
           limits:
-            cpu: "1"
+            cpu: "2"
             memory: 1Gi
           requests:
-            cpu: 250m
-            memory: 256Mi
+            cpu: "1"
+            memory: 512Mi
       serviceAccountName: operator
       terminationGracePeriodSeconds: 30
