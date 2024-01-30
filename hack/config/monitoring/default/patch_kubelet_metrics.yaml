@@ -26,3 +26,7 @@
     sourceLabels: [namespace]
     regex: project-.+
     action: drop
+# increase cadvisor scrape interval
+- op: replace
+  path: /spec/endpoints/1/interval
+  value: 10s

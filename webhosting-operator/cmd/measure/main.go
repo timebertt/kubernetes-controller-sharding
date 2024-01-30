@@ -54,7 +54,7 @@ var (
 	queryRange    = v1.Range{
 		Start: now.Add(-15 * time.Minute),
 		End:   now,
-		Step:  30 * time.Second,
+		Step:  15 * time.Second,
 	}
 )
 
