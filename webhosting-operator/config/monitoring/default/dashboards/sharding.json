@@ -1524,15 +1524,15 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(kube_clusterring_metadata_generation, clusterring)",
+        "definition": "label_values(kube_shard_info,clusterring)",
         "hide": 0,
         "includeAll": false,
         "multi": false,
         "name": "clusterring",
         "options": [],
         "query": {
-          "query": "label_values(kube_clusterring_metadata_generation, clusterring)",
-          "refId": "StandardVariableQuery"
+          "query": "label_values(kube_shard_info,clusterring)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
         "regex": "",
@@ -1643,6 +1643,6 @@
   "timezone": "",
   "title": "Sharding",
   "uid": "7liIybkVk",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
