@@ -35,8 +35,6 @@ This doesn't consider the action taken by the shard.
 Type: counter  
 Description: Total number of shard ring calculations per ring kind.
 This counter is incremented every time the sharder calculates a new consistent hash ring based on the shard leases.
-As this calculation is rather expensive, the sharder holds a shared cache of hash rings to minimize the number of hash ring calculations.
-This metric can serve as an indicator for how well this optimization works.
 
 ## sharding-exporter
 

@@ -65,7 +65,7 @@ profiles:
     patches:
       - op: replace
         path: /manifests/kustomize/paths/0
-        # legacy implementation for comparision: don't use external sharding implementation, run shards and sharder in operator
+        # legacy implementation for comparison: don't use external sharding implementation, run shards and sharder in operator
         value: config/manager/overlays/sharder
   - name: non-sharded
     patches:

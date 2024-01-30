@@ -5,7 +5,7 @@ This document explains more details of the development and testing setup that is
 ## Development Cluster
 
 The setup's basis is a local [kind](https://kind.sigs.k8s.io/) cluster.
-This simplifies developing and testing the project as it doesn't come without additional cost, can be thrown away easily, and one doesn't need to push development images to a remote registry.
+This simplifies developing and testing the project as it comes without additional cost, can be thrown away easily, and one doesn't need to push development images to a remote registry.
 In other words, there are no prerequisites for getting started with this project other than a [Go](https://go.dev/) and [Docker](https://www.docker.com/) installation.
 
 ```bash
