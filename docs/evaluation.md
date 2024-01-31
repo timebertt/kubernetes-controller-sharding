@@ -133,15 +133,19 @@ This is done to make load test experiments more stable and and their results mor
 > These are preliminary results from a first set of test runs.  
 > TODO: update these once the full evaluation is completed.
 
-The following graphs compare CPU and memory usage of the components in three different setups when running the `basic` experiment scenario (~8,000 websites created over 10m):
+The following graphs show the generated load and compare the resulting CPU, memory, and network usage of the components in three different setups when running the `basic` experiment scenario (~10k websites created over 15m):
 
 - external sharder: 3 webhosting-operator pods (shards) + 2 sharder pods (the new approach implemented in this repository, second iteration for the Master's thesis)
-- internal sharder: 3 webhosting-operator pods (3 shards, 1 acts as the sharder) (the old approach implemented, first iteration for the study project)
+- internal sharder: 3 webhosting-operator pods (3 shards, 1 acts as the sharder) (the old approach, first iteration for the study project)
 - singleton: 1 webhosting-operator pod (traditional leader election setup without sharding)
 
-![CPU comparison](assets/comparison-cpu.jpg)
+![Generated load](assets/load.svg)
 
-![Memory comparison](assets/comparison-memory.jpg)
+![CPU comparison](assets/comparison-cpu.svg)
+
+![Memory comparison](assets/comparison-memory.svg)
+
+![Network comparison](assets/comparison-network.svg)
 
 The new external sharding approach proves to scale best.
 The individual shards consume about a third of the singleton controller's usage (close to optimum).
