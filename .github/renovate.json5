@@ -27,19 +27,10 @@
       datasourceTemplate: "github-tags"
     },
     {
-      // update `_VERSION` variables in scripts
+      // update `_VERSION` variables in Makefiles and scripts
       // inspired by `regexManagers:dockerfileVersions` preset
       customType: "regex",
-      fileMatch: ["\\.sh$"],
-      matchStrings: [
-        "# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s.+?_VERSION[ =]\"?(?<currentValue>.+?)\"?\\s"
-      ]
-    },
-    {
-      // update `_VERSION` variables in Makefiles
-      // inspired by `regexManagers:dockerfileVersions` preset
-      customType: "regex",
-      fileMatch: ["\/Makefile$", "\/.+\\.mk"],
+      fileMatch: ["Makefile$", "\\.mk$", "\\.sh$"],
       matchStrings: [
         "# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s.+?_VERSION *[?:]?= *\"?(?<currentValue>.+?)\"?\\s"
       ]
