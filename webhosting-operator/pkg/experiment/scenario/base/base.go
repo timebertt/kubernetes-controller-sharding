@@ -20,12 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/go-logr/logr"
+	appsv1 "k8s.io/api/apps/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -33,6 +35,7 @@ import (
 
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/generator"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/tracker"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
 )
 
 // Scenario provides a common base implemenation for parts of the experiment.Scenario interface.
@@ -47,6 +50,7 @@ type Scenario struct {
 	client.Client
 	done chan struct{}
 
+	RunID    string
 	Labels   map[string]string
 	OwnerRef *metav1.OwnerReference
 }
@@ -146,16 +150,24 @@ func (s *Scenario) Start(ctx context.Context) (err error) {
 }
 
 func (s *Scenario) prepare(ctx context.Context) (func(context.Context) error, error) {
+	// determine run ID
+	// env var can be specified in the pod spec, e.g. from the pod's uid so that experiment's own metrics can be selected
+	// by run ID
+	s.RunID = os.Getenv("RUN_ID")
+	if s.RunID == "" {
+		s.RunID = string(uuid.NewUUID())
+	}
+
+	// use unique label set per scenario run
+	s.Labels["run-id"] = s.RunID
+	s.Log = s.Log.WithValues("run-id", s.RunID)
+
 	s.Log.Info("Creating owner object")
 	ownerObject, ownerRef, err := generator.CreateClusterScopedOwnerObject(ctx, s.Client, generator.WithLabels(s.Labels))
 	if err != nil {
 		return nil, err
 	}
 	s.OwnerRef = ownerRef
-
-	// use unique label set per scenario run
-	s.Labels["run-id"] = string(ownerObject.GetUID())
-	s.Log = s.Log.WithValues("runID", s.Labels["run-id"])
 	s.Log.Info("Created owner object", "object", ownerObject)
 
 	cleanup := func(cleanupCtx context.Context) error {
@@ -165,28 +177,30 @@ func (s *Scenario) prepare(ctx context.Context) (func(context.Context) error, er
 		return nil
 	}
 
-	s.Log.Info("Restarting observed components")
-
-	// restart observed components to start from a fresh state
-	if err := s.Client.DeleteAllOf(ctx, &corev1.Pod{},
-		client.InNamespace("sharding-system"), client.MatchingLabels{"app.kubernetes.io/component": "sharder"},
-	); err != nil {
-		return nil, err
+	// Label all observed components with the experiment's run ID to trigger a rollout (start from a fresh state).
+	// The run ID is added to all scraped metrics in the ServiceMonitor.
+	// This allows calculating rates of individual runs without considering metrics of adjacent runs.
+	s.Log.Info("Restarting/labeling observed components")
+	observedComponents := []struct{ namespace, name string }{
+		{"sharding-system", "sharder"},
+		{"webhosting-system", "webhosting-operator"},
 	}
-	if err := s.Client.DeleteAllOf(ctx, &corev1.Pod{},
-		client.InNamespace("webhosting-system"), client.MatchingLabels{"app.kubernetes.io/name": "webhosting-operator"},
-	); err != nil {
-		return nil, err
+
+	for _, c := range observedComponents {
+		if err := s.injectRunIDLabel(ctx, c.namespace, c.name); err != nil {
+			return nil, err
+		}
+	}
+
+	// wait for all observed components to be rolled out and ready again
+	for _, c := range observedComponents {
+		if err := s.waitForDeployment(ctx, c.namespace, c.name); err != nil {
+			return nil, fmt.Errorf("failed waiting for deployment: %w", err)
+		}
 	}
 
 	// clean up orphaned leases after instances have been terminated
-	select {
-	case <-ctx.Done():
-		s.Log.Info("Scenario cancelled")
-		return nil, ctx.Err()
-	case <-time.After(5 * time.Second):
-	}
-
+	// this only speeds up the cleaning and allows us to start sooner, but is not required otherwise
 	if err := s.Client.DeleteAllOf(ctx, &coordinationv1.Lease{},
 		client.InNamespace("webhosting-system"), client.MatchingLabels{"alpha.sharding.timebertt.dev/state": "dead"},
 	); err != nil {
@@ -201,9 +215,43 @@ func (s *Scenario) prepare(ctx context.Context) (func(context.Context) error, er
 	return cleanup, nil
 }
 
+func (s *Scenario) injectRunIDLabel(ctx context.Context, namespace, name string) error {
+	deployment := &appsv1.Deployment{}
+	if err := s.Client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, deployment); err != nil {
+		return err
+	}
+
+	patch := client.MergeFrom(deployment.DeepCopy())
+	metav1.SetMetaDataLabel(&deployment.Spec.Template.ObjectMeta, "label.prometheus.io/run_id", s.RunID)
+	return s.Client.Patch(ctx, deployment, patch)
+}
+
+func (s *Scenario) waitForDeployment(ctx context.Context, namespace, name string) error {
+	var lastError error
+	if err := wait.PollUntilContextTimeout(ctx, 2*time.Second, 2*time.Minute, false, func(ctx context.Context) (done bool, err error) {
+		deployment := &appsv1.Deployment{}
+		if err := s.Client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, deployment); err != nil {
+			return true, err
+		}
+
+		if !utils.IsDeploymentReady(deployment) {
+			lastError = fmt.Errorf("deployment %s is not available", client.ObjectKeyFromObject(deployment))
+			return false, nil
+		}
+
+		return true, nil
+	}); err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return lastError
+		}
+		return err
+	}
+	return nil
+}
+
 func (s *Scenario) waitForShardLeases(ctx context.Context) error {
 	var lastError error
-	if err := wait.PollUntilContextTimeout(ctx, 2*time.Second, 2*time.Minute, true, func(ctx context.Context) (done bool, err error) {
+	if err := wait.PollUntilContextTimeout(ctx, 2*time.Second, 2*time.Minute, false, func(ctx context.Context) (done bool, err error) {
 		leaseList := &coordinationv1.LeaseList{}
 		if err := s.Client.List(ctx, leaseList,
 			client.InNamespace("webhosting-system"), client.MatchingLabels{"alpha.sharding.timebertt.dev/clusterring": "webhosting-operator"},

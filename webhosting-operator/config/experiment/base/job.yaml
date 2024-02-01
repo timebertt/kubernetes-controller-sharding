@@ -15,6 +15,10 @@ spec:
         args:
         - --zap-log-level=info
         env:
+        - name: RUN_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
         - name: DISABLE_HTTP2
           value: "true"
         ports:

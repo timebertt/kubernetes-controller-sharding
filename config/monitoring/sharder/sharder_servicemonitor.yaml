@@ -16,6 +16,10 @@ spec:
     scrapeTimeout: 10s
     tlsConfig:
       insecureSkipVerify: true
+    relabelings:
+    - action: labelmap
+      regex: "__meta_kubernetes_pod_label_label_prometheus_io_(.*)"
+      replacement: "${1}"
   selector:
     matchLabels:
       app.kubernetes.io/name: controller-sharding
