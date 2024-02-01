@@ -72,8 +72,8 @@ Usage:
   experiment [command]
 
 Available Scenarios
-  basic       Basic load test scenario (15m) that creates roughly 8k websites over 10m
-  reconcile   High frequency reconciliation load test scenario (15m) with a static number of websites (10k)
+  basic       Basic load test scenario (15m) that creates roughly 9k websites
+  scale-out   Scenario for testing scale-out with high churn rate
 ...
 ```
 
@@ -133,7 +133,7 @@ This is done to make load test experiments more stable and and their results mor
 > These are preliminary results from a first set of test runs.  
 > TODO: update these once the full evaluation is completed.
 
-The following graphs show the generated load and compare the resulting CPU, memory, and network usage of the components in three different setups when running the `basic` experiment scenario (~10k websites created over 15m):
+The following graphs show the generated load and compare the resulting CPU, memory, and network usage of the components in three different setups when running the `basic` experiment scenario (~9k websites created over 15m):
 
 - external sharder: 3 webhosting-operator pods (shards) + 2 sharder pods (the new approach implemented in this repository, second iteration for the Master's thesis)
 - internal sharder: 3 webhosting-operator pods (3 shards, 1 acts as the sharder) (the old approach, first iteration for the study project)

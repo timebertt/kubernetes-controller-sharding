@@ -47,14 +47,14 @@ type scenario struct {
 }
 
 func (s *scenario) Description() string {
-	return "Basic load test scenario that creates roughly 10k websites over 15m"
+	return "Basic load test scenario (15m) that creates roughly 9k websites"
 }
 
 func (s *scenario) LongDescription() string {
 	return `The ` + ScenarioName + ` scenario combines several operations typical for a lively operator environment:
 - website creation: 10800 over 15m
-- website deletion: 900 over 15m
-- website spec changes: 1/m per object, max 165/s
+- website deletion: 1800 over 15m
+- website spec changes: 1/m per object, max 150/s
 `
 }
 
@@ -74,8 +74,8 @@ func (s *scenario) Prepare(ctx context.Context) error {
 
 func (s *scenario) Run(ctx context.Context) error {
 	// website-generator: creates about 10800 websites over  15 minutes
-	// website-deleter:   deletes about   900 websites over  15 minutes
-	// => in total, there will be about  9900 websites after 15 minutes
+	// website-deleter:   deletes about  1800 websites over  15 minutes
+	// => in total, there will be about  9000 websites after 15 minutes
 	if err := (&generator.Every{
 		Name: "website-generator",
 		Do: func(ctx context.Context, c client.Client) error {
@@ -97,7 +97,7 @@ func (s *scenario) Run(ctx context.Context) error {
 	}
 
 	// trigger individual spec changes for website once per minute
-	// => peaks at about 165 spec changes per second at the end of the experiment
+	// => peaks at about 150 spec changes per second at the end of the experiment
 	// (triggers roughly double the reconciliation rate in website controller because of deployment watches)
 	if err := (&generator.ForEach[*webhostingv1alpha1.Website]{
 		Name: "website-mutator",
