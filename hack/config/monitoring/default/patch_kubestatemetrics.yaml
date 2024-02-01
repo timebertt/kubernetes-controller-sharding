@@ -3,3 +3,9 @@
   path: /spec/template/spec/containers/0/args/-
   value:
     --namespaces=cert-manager,default,experiment,external-dns,ingress-nginx,kube-node-lease,kube-public,kube-system,kyverno,monitoring,parca,sharding-system,webhosting-system
+# add run_id label to kube_pod_labels to select metrics by experiment run ID
+# flag doesn't support wildcard patterns
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value:
+    --metric-labels-allowlist=pods=[label.prometheus.io/run_id]

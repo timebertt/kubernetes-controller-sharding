@@ -1,0 +1,12 @@
+# label map for label.prometheus.io/* labels
+- op: add
+  path: /spec/endpoints/0/metricRelabelings/-
+  value:
+    action: labelmap
+    regex: "label_label_prometheus_io_(.*)"
+    replacement: "${1}"
+- op: add
+  path: /spec/endpoints/0/metricRelabelings/-
+  value:
+    action: labeldrop
+    regex: "label_label_prometheus_io_(.*)"
