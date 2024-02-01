@@ -90,7 +90,7 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.3.2",
+      "pluginVersion": "9.5.3",
       "targets": [
         {
           "datasource": {
@@ -165,7 +165,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "9.3.2",
+      "pluginVersion": "9.5.3",
       "targets": [
         {
           "datasource": {
@@ -234,7 +234,7 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.3.2",
+      "pluginVersion": "9.5.3",
       "targets": [
         {
           "datasource": {
@@ -300,7 +300,7 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.3.2",
+      "pluginVersion": "9.5.3",
       "targets": [
         {
           "datasource": {
@@ -630,6 +630,21 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Terminating"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
           }
         ]
       },
@@ -850,7 +865,9 @@
           },
           "custom": {
             "align": "auto",
-            "displayMode": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
             "inspect": false
           },
           "links": [],
@@ -906,7 +923,9 @@
       },
       "id": 19,
       "options": {
+        "cellHeight": "sm",
         "footer": {
+          "countRows": false,
           "fields": "",
           "reducer": [
             "sum"
@@ -915,7 +934,7 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "9.3.2",
+      "pluginVersion": "9.5.3",
       "targets": [
         {
           "datasource": {
@@ -957,7 +976,7 @@
     }
   ],
   "refresh": "10s",
-  "schemaVersion": 37,
+  "schemaVersion": 38,
   "style": "dark",
   "tags": [
     "webhosting-operator"
