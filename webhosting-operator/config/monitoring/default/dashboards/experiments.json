@@ -103,7 +103,7 @@
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": false
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
@@ -117,8 +117,8 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "count(kube_website_info)",
-          "legendFormat": "website count",
+          "expr": "count(kube_website_info{run_id=~\"$run_id\"}) by (run_id)",
+          "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
@@ -216,7 +216,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "sum(rate(\n    controller_runtime_reconcile_total{\n        job=\"experiment\", result!=\"error\",\n        controller=~\"website-(generator|deleter|mutator)\"\n    }[$__rate_interval]\n)) by (controller)",
+          "expr": "sum(\n    rate(controller_runtime_reconcile_total{\n        job=\"experiment\", result!=\"error\",\n        controller=~\"website-(generator|deleter|mutator)\"\n    }[$__rate_interval])\n    * on(namespace, pod) group_left\n    max by (namespace, pod, uid) (kube_pod_info{namespace=\"experiment\", pod=~\"experiment-.+\", uid=~\"$run_id\"})\n) by (controller)",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -248,7 +248,7 @@
         "defaults": {
           "color": {
             "fixedColor": "text",
-            "mode": "fixed",
+            "mode": "palette-classic",
             "seriesBy": "last"
           },
           "custom": {
@@ -276,7 +276,7 @@
             "spanNulls": false,
             "stacking": {
               "group": "A",
-              "mode": "normal"
+              "mode": "none"
             },
             "thresholdsStyle": {
               "mode": "dashed+area"
@@ -309,17 +309,15 @@
       "id": 5,
       "options": {
         "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": false,
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
           "sortBy": "Last *",
           "sortDesc": true
         },
         "tooltip": {
-          "mode": "multi",
+          "mode": "single",
           "sort": "desc"
         }
       },
@@ -330,7 +328,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99,\n    sum by (name, le) (rate(\n        workqueue_queue_duration_seconds_bucket{\n            job=\"webhosting-operator\", name=\"website\"\n        }[$__rate_interval]\n    ))\n)",
+          "expr": "histogram_quantile(0.99,\n    sum by (run_id, le) (rate(\n        workqueue_queue_duration_seconds_bucket{\n            job=\"webhosting-operator\", name=\"website\", run_id=~\"$run_id\"\n        }[$__rate_interval]\n    ))\n)",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -349,7 +347,7 @@
         "defaults": {
           "color": {
             "fixedColor": "text",
-            "mode": "fixed",
+            "mode": "palette-classic",
             "seriesBy": "last"
           },
           "custom": {
@@ -377,7 +375,7 @@
             "spanNulls": false,
             "stacking": {
               "group": "A",
-              "mode": "normal"
+              "mode": "none"
             },
             "thresholdsStyle": {
               "mode": "dashed+area"
@@ -410,17 +408,15 @@
       "id": 6,
       "options": {
         "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": false,
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
           "sortBy": "Last *",
           "sortDesc": true
         },
         "tooltip": {
-          "mode": "multi",
+          "mode": "single",
           "sort": "desc"
         }
       },
@@ -431,8 +427,8 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99,\n    sum by (le) (rate(\n        experiment_website_reconciliation_duration_seconds_bucket{\n            job=\"experiment\"\n        }[$__rate_interval]\n    ))\n)",
-          "legendFormat": "website",
+          "expr": "histogram_quantile(0.99,\n    sum by (run_id, le) (rate(\n        experiment_website_reconciliation_duration_seconds_bucket{\n            job=\"experiment\", run_id=~\"$run_id\"\n        }[$__rate_interval]\n    ))\n)",
+          "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
@@ -541,7 +537,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace, pod) (rate(\n    container_cpu_usage_seconds_total{\n        pod=~\"sharder-.+|webhosting-operator-.+\",\n        container=~\"sharder|manager\"\n    }[1m]\n))",
+          "expr": "sum by (namespace, pod) (rate(\n    container_cpu_usage_seconds_total{\n        pod=~\"sharder-.+|webhosting-operator-.+\",\n        container=~\"sharder|manager\"\n    }[1m]\n)) * on (namespace, pod) group_left (run_id) max by (namespace, pod, run_id) (kube_pod_labels{run_id=~\"$run_id\"})",
           "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
@@ -636,7 +632,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace, pod) (\n    go_memory_classes_total_bytes{pod=~\"sharder-.+|webhosting-operator-.+\"}\n    - go_memory_classes_heap_released_bytes{\n        pod=~\"sharder-.+|webhosting-operator-.+\"\n    }\n    - go_memory_classes_heap_unused_bytes{\n        pod=~\"sharder-.+|webhosting-operator-.+\"\n    }\n    - go_memory_classes_heap_free_bytes{\n        pod=~\"sharder-.+|webhosting-operator-.+\"\n    }\n)",
+          "expr": "sum by (namespace, pod, run_id) (\n    go_memory_classes_total_bytes{pod=~\"sharder-.+|webhosting-operator-.+\",run_id=~\"$run_id\"}\n    - go_memory_classes_heap_released_bytes{\n        pod=~\"sharder-.+|webhosting-operator-.+\",\n        run_id=~\"$run_id\"\n    }\n    - go_memory_classes_heap_unused_bytes{\n        pod=~\"sharder-.+|webhosting-operator-.+\",\n        run_id=~\"$run_id\"\n    }\n    - go_memory_classes_heap_free_bytes{\n        pod=~\"sharder-.+|webhosting-operator-.+\",\n        run_id=~\"$run_id\"\n    }\n)",
           "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
@@ -731,7 +727,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace, pod) (rate(\n    container_network_receive_bytes_total{\n        pod=~\"sharder-.+|webhosting-operator-.+\"\n    }[1m]\n))",
+          "expr": "sum by (namespace, pod, run_id) (rate(\n    container_network_receive_bytes_total{\n        pod=~\"sharder-.+|webhosting-operator-.+\"\n    }[1m]\n)) * on (namespace, pod) group_left (run_id) max by (namespace, pod, run_id) (kube_pod_labels{run_id=~\"$run_id\"})",
           "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
@@ -826,7 +822,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace, pod) (rate(\n    container_network_transmit_bytes_total{\n        pod=~\"sharder-.+|webhosting-operator-.+\"\n    }[1m]\n))",
+          "expr": "sum by (namespace, pod, run_id) (rate(\n    container_network_transmit_bytes_total{\n        pod=~\"sharder-.+|webhosting-operator-.+\"\n    }[1m]\n)) * on (namespace, pod) group_left (run_id) max by (namespace, pod, run_id) (kube_pod_labels{run_id=~\"$run_id\"})",
           "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
@@ -841,7 +837,39 @@
   "style": "dark",
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "P1809F7CD0C75ACF3"
+        },
+        "definition": "label_values(kube_pod_info{namespace=\"experiment\", pod=~\"experiment-.+\"},uid)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "run_id",
+        "options": [],
+        "query": {
+          "query": "label_values(kube_pod_info{namespace=\"experiment\", pod=~\"experiment-.+\"},uid)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-1h",
@@ -851,6 +879,6 @@
   "timezone": "",
   "title": "Experiments",
   "uid": "d33509b4-7e28-41e2-961a-4d7fbad57d01",
-  "version": 7,
+  "version": 2,
   "weekStart": ""
 }
