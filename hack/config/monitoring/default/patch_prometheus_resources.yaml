@@ -8,8 +8,8 @@ spec:
   alerting: null
   resources:
     requests:
-      cpu: 1000m
+      cpu: 3000m
       memory: 12Gi
     limits:
-      cpu: 3000m # replaying WAL takes some CPU
+      cpu: 4000m # replaying WAL takes some CPU
       memory: 12Gi
