@@ -134,17 +134,10 @@ func (s *Scenario) Start(ctx context.Context) (err error) {
 	}
 	generator.SetWebsiteTracker(websiteTracker)
 
-	if err := s.Delegate.Run(ctx); err != nil {
-		return err
-	}
-
 	s.Log.Info("Scenario running")
 
-	select {
-	case <-ctx.Done():
-		s.Log.Info("Scenario cancelled")
-		return ctx.Err()
-	case <-time.After(15 * time.Minute):
+	if err := s.Delegate.Run(ctx); err != nil {
+		return err
 	}
 
 	s.Log.Info("Scenario finished")
@@ -275,6 +268,17 @@ func (s *Scenario) waitForShardLeases(ctx context.Context) error {
 			return lastError
 		}
 		return err
+	}
+	return nil
+}
+
+// Wait does blocks until the given duration has passed or returns an error when the context is cancelled.
+func (s *Scenario) Wait(ctx context.Context, d time.Duration) error {
+	select {
+	case <-ctx.Done():
+		s.Log.Info("Scenario cancelled")
+		return ctx.Err()
+	case <-time.After(d):
 	}
 	return nil
 }

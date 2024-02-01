@@ -86,5 +86,5 @@ func (s *scenario) Run(ctx context.Context) error {
 		return fmt.Errorf("error adding website-reconcile-trigger: %w", err)
 	}
 
-	return nil
+	return s.Wait(ctx, 15*time.Minute)
 }
