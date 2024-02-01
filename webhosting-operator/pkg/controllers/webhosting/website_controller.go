@@ -49,6 +49,7 @@ import (
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/controllers/webhosting/templates"
+	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
 )
 
 // WebsiteReconciler reconciles a Website object.
@@ -184,7 +185,7 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 
 	// update status
 	newPhase := webhostingv1alpha1.PhasePending
-	if IsDeploymentAvailable(deployment) {
+	if utils.IsDeploymentReady(deployment) {
 		newPhase = webhostingv1alpha1.PhaseReady
 	}
 	website.Status.Phase = newPhase
@@ -561,7 +562,7 @@ var DeploymentAvailabilityChanged = predicate.Funcs{
 			return false
 		}
 
-		return IsDeploymentAvailable(oldDeployment) != IsDeploymentAvailable(newDeployment)
+		return utils.IsDeploymentReady(oldDeployment) != utils.IsDeploymentReady(newDeployment)
 	},
 }
 
@@ -583,23 +584,6 @@ var ConfigMapDataChanged = predicate.Funcs{
 		}
 		return !apiequality.Semantic.DeepEqual(oldConfigMap.Data, newConfigMap.Data)
 	},
-}
-
-// IsDeploymentAvailable returns true if the current generation has been observed by the deployment controller and the
-// Available condition is True.
-func IsDeploymentAvailable(deployment *appsv1.Deployment) bool {
-	available := GetDeploymentCondition(deployment.Status.Conditions, appsv1.DeploymentAvailable)
-	return deployment.Status.ObservedGeneration == deployment.Generation && available != nil && available.Status == corev1.ConditionTrue
-}
-
-// GetDeploymentCondition returns the condition with the given type or nil, if it is not included.
-func GetDeploymentCondition(conditions []appsv1.DeploymentCondition, conditionType appsv1.DeploymentConditionType) *appsv1.DeploymentCondition {
-	for _, cond := range conditions {
-		if cond.Type == conditionType {
-			return &cond
-		}
-	}
-	return nil
 }
 
 func isGeneratedByExperiment(obj client.Object) bool {
