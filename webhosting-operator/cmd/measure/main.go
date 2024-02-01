@@ -54,7 +54,7 @@ var (
 	queryRange    = v1.Range{
 		Start: now.Add(-15 * time.Minute),
 		End:   now,
-		Step:  30 * time.Second,
+		Step:  15 * time.Second,
 	}
 )
 
@@ -175,7 +175,10 @@ func run(ctx context.Context, c v1.API) error {
 
 	fmt.Printf("Using time range for query: %s\n", rangeToString(queryRange))
 
-	slosMet := true
+	var (
+		slosChecked = false
+		slosMet     = true
+	)
 
 	for _, q := range config.Queries {
 		data, err := q.fetchData(ctx, c)
@@ -195,15 +198,22 @@ func run(ctx context.Context, c v1.API) error {
 			return fmt.Errorf("error writing result: %w", err)
 		}
 
-		if !q.verifySLO(data) {
-			slosMet = false
+		if checked, ok := q.verifySLO(data); checked {
+			slosChecked = true
+			if !ok {
+				slosMet = false
+			}
 		}
 	}
 
-	if slosMet {
-		fmt.Println("✅ SLO verifications succeeded")
+	if slosChecked {
+		if slosMet {
+			fmt.Println("✅ SLO verifications succeeded")
+		} else {
+			return fmt.Errorf("❌ SLO verifications failed")
+		}
 	} else {
-		return fmt.Errorf("❌ SLO verifications failed")
+		fmt.Println("ℹ️ No SLOs defined")
 	}
 
 	return nil
@@ -341,9 +351,9 @@ func (q Query) writeResult(data metricData) error {
 	return nil
 }
 
-func (q Query) verifySLO(data metricData) bool {
+func (q Query) verifySLO(data metricData) (checked bool, ok bool) {
 	if q.SLO == nil {
-		return true
+		return false, true
 	}
 
 	var allFailures []string
@@ -365,11 +375,11 @@ func (q Query) verifySLO(data metricData) bool {
 	if len(allFailures) > 0 {
 		indent := "- "
 		fmt.Printf("❌ SLO for query %q (<= %f) is not met:\n%s\n", q.Name, *q.SLO, indent+strings.Join(allFailures, "\n"+indent))
-		return false
+		return true, false
 	}
 
 	fmt.Printf("✅ SLO for query %q (<= %f) met\n", q.Name, *q.SLO)
-	return true
+	return true, true
 }
 
 func rangeToString(r v1.Range) string {

@@ -1,0 +1,39 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: guaranteed-resources
+spec:
+  failurePolicy: Fail
+  rules:
+  # set resource requests to limits to guarantee the resources during load test experiments
+  - name: guaranteed-resources
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - experiment
+          - sharding-system
+          - webhosting-system
+          selector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - experiment
+              - controller-sharding
+              - webhosting-operator
+          operations:
+          - CREATE
+    mutate:
+      foreach:
+      - list: request.object.spec.containers
+        patchStrategicMerge:
+          spec:
+            containers:
+            - (name): "{{element.name}}"
+              resources:
+                requests:
+                  cpu: "{{element.resources.limits.cpu}}"
+                  memory: "{{element.resources.limits.memory}}"

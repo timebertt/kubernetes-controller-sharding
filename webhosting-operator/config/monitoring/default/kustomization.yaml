@@ -11,6 +11,7 @@ configMapGenerator:
 - files:
   - dashboards/sharding.json
   - dashboards/webhosting.json
+  - dashboards/experiments.json
   name: grafana-dashboards-sharding
   namespace: monitoring
   options:

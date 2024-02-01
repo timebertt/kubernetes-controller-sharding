@@ -477,11 +477,11 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile(0.5, sum(rate(controller_runtime_reconcile_time_seconds_bucket{job=\"$job\",controller=~\"$controller\",pod=~\"$pod\"}[$__rate_interval])) by (controller,le))",
+          "expr": "histogram_quantile(0.9, sum(rate(controller_runtime_reconcile_time_seconds_bucket{job=\"$job\",controller=~\"$controller\",pod=~\"$pod\"}[$__rate_interval])) by (controller,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
-          "legendFormat": "P50",
+          "legendFormat": "P90",
           "range": true,
           "refId": "A"
         },
@@ -492,12 +492,12 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile(0.9, sum(rate(controller_runtime_reconcile_time_seconds_bucket{job=\"$job\",controller=~\"$controller\",pod=~\"$pod\"}[$__rate_interval])) by (controller,le))",
+          "expr": "histogram_quantile(0.95, sum(rate(controller_runtime_reconcile_time_seconds_bucket{job=\"$job\",controller=~\"$controller\",pod=~\"$pod\"}[$__rate_interval])) by (controller,le))",
           "format": "time_series",
           "hide": false,
           "instant": false,
           "interval": "",
-          "legendFormat": "P90",
+          "legendFormat": "P95",
           "range": true,
           "refId": "B"
         },
@@ -518,7 +518,7 @@
           "refId": "C"
         }
       ],
-      "title": "Reconciliation Time (P50, P90, P99)",
+      "title": "Reconciliation Time (P90, P95, P99)",
       "type": "timeseries"
     },
     {
@@ -675,7 +675,9 @@
           },
           "custom": {
             "align": "auto",
-            "displayMode": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
             "inspect": false
           },
           "mappings": [],
@@ -703,8 +705,11 @@
             },
             "properties": [
               {
-                "id": "custom.displayMode",
-                "value": "color-background"
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
               },
               {
                 "id": "custom.width",
@@ -722,7 +727,9 @@
       },
       "id": 35,
       "options": {
+        "cellHeight": "sm",
         "footer": {
+          "countRows": false,
           "fields": "",
           "reducer": [
             "sum"
@@ -732,7 +739,7 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "9.3.2",
+      "pluginVersion": "9.5.3",
       "targets": [
         {
           "datasource": {
@@ -776,6 +783,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -809,7 +818,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -872,6 +882,8 @@
             "mode": "continuous-GrYlRd"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -905,7 +917,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -981,6 +994,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1014,7 +1029,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -1073,6 +1089,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1106,7 +1124,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -1165,6 +1184,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1198,7 +1219,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -1233,11 +1255,11 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile(0.5, sum(rate(workqueue_queue_duration_seconds_bucket{job=\"$job\",name=~\"$controller\",pod=~\"$pod\"}[$__rate_interval])) by (name,le))",
+          "expr": "histogram_quantile(0.9, sum(rate(workqueue_queue_duration_seconds_bucket{job=\"$job\",name=~\"$controller\",pod=~\"$pod\"}[$__rate_interval])) by (name,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
-          "legendFormat": "P50",
+          "legendFormat": "P90",
           "range": true,
           "refId": "A"
         },
@@ -1248,12 +1270,12 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile(0.9, sum(rate(workqueue_queue_duration_seconds_bucket{job=\"$job\",name=~\"$controller\",pod=~\"$pod\"}[$__rate_interval])) by (name,le))",
+          "expr": "histogram_quantile(0.95, sum(rate(workqueue_queue_duration_seconds_bucket{job=\"$job\",name=~\"$controller\",pod=~\"$pod\"}[$__rate_interval])) by (name,le))",
           "format": "time_series",
           "hide": false,
           "instant": false,
           "interval": "",
-          "legendFormat": "P90",
+          "legendFormat": "P95",
           "range": true,
           "refId": "B"
         },
@@ -1274,7 +1296,7 @@
           "refId": "C"
         }
       ],
-      "title": "Queue Duration (P50, P90, P99)",
+      "title": "Queue Duration (P90, P95, P99)",
       "type": "timeseries"
     },
     {
@@ -1289,6 +1311,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1322,7 +1346,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -1357,11 +1382,11 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile(0.5, sum(rate(workqueue_work_duration_seconds_bucket{job=\"$job\",name=~\"$controller\",pod=~\"$pod\"}[$__rate_interval])) by (name,le))",
+          "expr": "histogram_quantile(0.9, sum(rate(workqueue_work_duration_seconds_bucket{job=\"$job\",name=~\"$controller\",pod=~\"$pod\"}[$__rate_interval])) by (name,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
-          "legendFormat": "P50",
+          "legendFormat": "P90",
           "range": true,
           "refId": "A"
         },
@@ -1372,12 +1397,12 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile(0.9, sum(rate(workqueue_work_duration_seconds_bucket{job=\"$job\",name=~\"$controller\",pod=~\"$pod\"}[$__rate_interval])) by (name,le))",
+          "expr": "histogram_quantile(0.95, sum(rate(workqueue_work_duration_seconds_bucket{job=\"$job\",name=~\"$controller\",pod=~\"$pod\"}[$__rate_interval])) by (name,le))",
           "format": "time_series",
           "hide": false,
           "instant": false,
           "interval": "",
-          "legendFormat": "P90",
+          "legendFormat": "P95",
           "range": true,
           "refId": "B"
         },
@@ -1398,7 +1423,7 @@
           "refId": "C"
         }
       ],
-      "title": "Work Duration (P50, P90, P99)",
+      "title": "Work Duration (P90, P95, P99)",
       "type": "timeseries"
     },
     {
@@ -1413,6 +1438,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -1446,7 +1473,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -1495,7 +1523,7 @@
     }
   ],
   "refresh": "10s",
-  "schemaVersion": 37,
+  "schemaVersion": 38,
   "style": "dark",
   "tags": [
     "controller-runtime"

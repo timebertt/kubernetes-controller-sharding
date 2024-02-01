@@ -66,7 +66,8 @@ func CreateWebsite(ctx context.Context, c client.Client, opts ...GenerateOption)
 		return err
 	}
 	if len(themeList.Items) == 0 {
-		return fmt.Errorf("no themes found, cannot create website")
+		log.V(1).Info("No themes found, skipping creation")
+		return nil
 	}
 
 	namespaceList := &corev1.NamespaceList{}

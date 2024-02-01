@@ -484,6 +484,13 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
+	workers := 15
+	if !mgr.IsSharded() {
+		// When comparing singleton vs sharded setups, the singleton will fail to verify the SLOs because it has too few
+		// website workers. Increase the worker count to allow comparing the setups.
+		workers = 50
+	}
+
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		For(&webhostingv1alpha1.Website{}, builder.Sharded{}, builder.WithPredicates(
 			// trigger on spec change and annotation changes (manual trigger for testing purposes)
@@ -506,7 +513,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: 15,
+			MaxConcurrentReconciles: workers,
 		}).
 		Build(SilenceConflicts(r))
 	if err != nil {

@@ -37,10 +37,10 @@ spec:
           periodSeconds: 10
         resources:
           limits:
-            cpu: 2000m
-            memory: 1Gi
+            cpu: "4"
+            memory: 512Mi
           requests:
-            cpu: 1500m
+            cpu: "2"
             memory: 256Mi
       restartPolicy: Never
       securityContext:

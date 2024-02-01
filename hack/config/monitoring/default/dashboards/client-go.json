@@ -546,7 +546,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile($percentile, sum(rate(rest_client_request_size_bytes_bucket{job=\"$job\",pod=~\"$pod\"}[$__rate_interval])) by (pod,le))",
+          "expr": "histogram_quantile($percentile/100, sum(rate(rest_client_request_size_bytes_bucket{job=\"$job\",pod=~\"$pod\"}[$__rate_interval])) by (pod,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -641,7 +641,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile($percentile, sum(rate(rest_client_request_size_bytes_bucket{job=\"$job\",pod=~\"$pod\",verb=~\"$verb\"}[$__rate_interval])) by (verb,le))",
+          "expr": "histogram_quantile($percentile/100, sum(rate(rest_client_request_size_bytes_bucket{job=\"$job\",pod=~\"$pod\",verb=~\"$verb\"}[$__rate_interval])) by (verb,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -665,6 +665,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -698,7 +700,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -733,7 +736,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile($percentile, sum(rate(rest_client_response_size_bytes_bucket{job=\"$job\",pod=~\"$pod\"}[$__rate_interval])) by (pod,le))",
+          "expr": "histogram_quantile($percentile/100, sum(rate(rest_client_response_size_bytes_bucket{job=\"$job\",pod=~\"$pod\"}[$__rate_interval])) by (pod,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -757,6 +760,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -790,7 +795,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -825,7 +831,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile($percentile, sum(rate(rest_client_response_size_bytes_bucket{job=\"$job\",pod=~\"$pod\",verb=~\"$verb\"}[$__rate_interval])) by (verb,le))",
+          "expr": "histogram_quantile($percentile/100, sum(rate(rest_client_response_size_bytes_bucket{job=\"$job\",pod=~\"$pod\",verb=~\"$verb\"}[$__rate_interval])) by (verb,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -862,6 +868,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -895,7 +903,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -930,7 +939,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile($percentile, sum(rate(rest_client_rate_limiter_duration_seconds_bucket{job=\"$job\",pod=~\"$pod\",verb=~\"$verb\"}[$__rate_interval])) by (pod,le))",
+          "expr": "histogram_quantile($percentile/100, sum(rate(rest_client_rate_limiter_duration_seconds_bucket{job=\"$job\",pod=~\"$pod\",verb=~\"$verb\"}[$__rate_interval])) by (pod,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -954,6 +963,8 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -987,7 +998,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -1022,7 +1034,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile($percentile, sum(rate(rest_client_rate_limiter_duration_seconds_bucket{job=\"$job\",pod=~\"$pod\",verb=~\"$verb\"}[$__rate_interval])) by (verb,le))",
+          "expr": "histogram_quantile($percentile/100, sum(rate(rest_client_rate_limiter_duration_seconds_bucket{job=\"$job\",pod=~\"$pod\",verb=~\"$verb\"}[$__rate_interval])) by (verb,le))",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -1036,7 +1048,7 @@
     }
   ],
   "refresh": "10s",
-  "schemaVersion": 37,
+  "schemaVersion": 38,
   "style": "dark",
   "tags": [
     "controller-runtime"
@@ -1188,7 +1200,7 @@
         "current": {
           "selected": true,
           "text": "99",
-          "value": "0.99"
+          "value": "99"
         },
         "hide": 0,
         "includeAll": false,
@@ -1197,21 +1209,21 @@
         "options": [
           {
             "selected": false,
-            "text": "50",
-            "value": "0.5"
+            "text": "90",
+            "value": "90"
           },
           {
             "selected": false,
-            "text": "90",
-            "value": "0.9"
+            "text": "95",
+            "value": "95"
           },
           {
             "selected": true,
             "text": "99",
-            "value": "0.99"
+            "value": "99"
           }
         ],
-        "query": "50,90,99",
+        "query": "90,95,99",
         "queryValue": "",
         "skipUrlSync": false,
         "type": "custom"

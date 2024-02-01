@@ -5,6 +5,7 @@ resources:
 - experiment-scheduling.yaml
 - scale-up-worker-experiment.yaml
 - webhosting-operator-scheduling.yaml
+- guaranteed-resources.yaml
 
 images:
 - name: pause
