@@ -70,5 +70,5 @@ spec:
           path: "/spec/tolerations/-"
           value: {"key":"high-cpu","operator":"Equal","value":"true","effect":"NoSchedule"}        
         - op: add
-          path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms/-"
-          value: {"matchExpressions": [{"key":"high-cpu","operator":"In","values":["true"]}]}
+          path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms"
+          value: [{"matchExpressions": [{"key":"high-cpu","operator":"In","values":["true"]}]}]
