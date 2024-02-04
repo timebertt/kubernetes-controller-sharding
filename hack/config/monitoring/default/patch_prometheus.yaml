@@ -5,6 +5,7 @@ metadata:
   namespace: monitoring
 spec:
   replicas: 1 # don't need HA for our purposes
+  evaluationInterval: 15s
   alerting: null
   resources:
     requests:
