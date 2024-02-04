@@ -78,3 +78,22 @@ spec:
         - op: add
           path: /spec/template/spec/containers/0/command/-
           value: "--kube-api-burst=2200"
+  # disable HTTP2 in kube-controller-manager's so that API requests are distributed across API server instances
+  - name: disable-http2
+    match:
+      any:
+      - resources:
+          kinds:
+          - Deployment
+          names:
+          - kube-controller-manager
+    mutate:
+      patchStrategicMerge:
+        spec:
+          template:
+            spec:
+              containers:
+              - name: kube-controller-manager
+                env:
+                - name: DISABLE_HTTP2
+                  value: "true"
