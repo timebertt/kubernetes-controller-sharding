@@ -44,11 +44,14 @@ rules:
   - create
   - delete
 - apiGroups:
-  - ""
+  - apps
   resources:
-  - pods
+  - deployments
   verbs:
-  - deletecollection
+  - get
+  - list
+  - watch
+  - patch
 - apiGroups:
   - coordination.k8s.io
   resources:

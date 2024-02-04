@@ -90,17 +90,19 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.3.2",
+      "pluginVersion": "9.5.3",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(kube_website_info{namespace=~\"$project\"}) or vector(0)",
+          "expr": "sum(namespace_run:kube_website_info:sum{namespace=~\"$project\"}) or vector(0)",
           "interval": "",
           "legendFormat": "",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -165,7 +167,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "9.3.2",
+      "pluginVersion": "9.5.3",
       "targets": [
         {
           "datasource": {
@@ -174,7 +176,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "(sum(kube_website_status_phase{namespace=~\"$project\",phase=\"Ready\"}) or vector(0)) / (sum(kube_website_status_phase{namespace=~\"$project\"}) or vector(0)) * 100",
+          "expr": "(sum(namespace_phase:kube_website_status_phase:sum{namespace=~\"$project\",phase=\"Ready\"}) or vector(0)) / (sum(namespace_phase:kube_website_status_phase:sum{namespace=~\"$project\"}) or vector(0)) * 100",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -234,17 +236,19 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.3.2",
+      "pluginVersion": "9.5.3",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "editorMode": "code",
           "exemplar": true,
           "expr": "sum(max(kube_theme_info) without (instance, pod)) or vector(0)",
           "interval": "",
           "legendFormat": "",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -300,17 +304,19 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.3.2",
+      "pluginVersion": "9.5.3",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "editorMode": "code",
           "exemplar": true,
           "expr": "sum(kube_namespace_status_phase{namespace=~\"project-.+\"}) or vector(0)",
           "interval": "",
           "legendFormat": "",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -368,7 +374,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
-            "spanNulls": true,
+            "spanNulls": false,
             "stacking": {
               "group": "A",
               "mode": "normal"
@@ -422,10 +428,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(kube_website_info{namespace=~\"$project\"} or 0*sum(kube_namespace_status_phase{namespace=~\"$project\"}) by (namespace)) by (namespace)",
+          "expr": "sum(namespace_run:kube_website_info:sum{namespace=~\"$project\"} or 0*sum(kube_namespace_status_phase{namespace=~\"$project\"}) by (namespace)) by (namespace)",
           "interval": "",
           "legendFormat": "{{namespace}}",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -466,7 +474,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
-            "spanNulls": true,
+            "spanNulls": false,
             "stacking": {
               "group": "A",
               "mode": "normal"
@@ -520,10 +528,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(max(kube_website_info{namespace=~\"$project\"}) without (instance, pod) or 0*max(kube_theme_info{}) by (theme)) by (theme)",
+          "expr": "sum(sum(namespace_theme:kube_website_info:sum{namespace=~\"$project\"}) by (theme) or 0*max(kube_theme_info{}) by (theme)) by (theme)",
           "interval": "",
           "legendFormat": "{{namespace}}",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -630,6 +640,21 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Terminating"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
           }
         ]
       },
@@ -660,164 +685,16 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(kube_website_status_phase{namespace=~\"$project\"}) by (phase)",
+          "expr": "sum(namespace_phase:kube_website_info:sum{namespace=~\"$project\"}) by (phase)",
           "interval": "",
           "legendFormat": "{{phase}}",
+          "range": true,
           "refId": "A"
         }
       ],
       "title": "Websites per Phase",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 100,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineStyle": {
-              "fill": "solid"
-            },
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Error"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Ready"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Pending"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "orange",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 15
-      },
-      "id": 15,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "exemplar": true,
-          "expr": "(sum(kube_website_info{namespace=~\"$project\"} unless on(uid) kube_website_info{namespace=~\"$project\"} offset $__rate_interval) and min(up{job=\"webhosting-operator\"} offset $__rate_interval) == 1) or vector(0)",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Creation",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "exemplar": true,
-          "expr": "-(sum(kube_website_info{namespace=~\"$project\"} offset $__rate_interval unless on(uid) kube_website_info{namespace=~\"$project\"}) and min(up{job=\"webhosting-operator\"}) == 1) or vector(0)",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Deletion",
-          "refId": "B"
-        }
-      ],
-      "title": "Website Churn Rate",
       "type": "timeseries"
     },
     {
@@ -850,7 +727,9 @@
           },
           "custom": {
             "align": "auto",
-            "displayMode": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
             "inspect": false
           },
           "links": [],
@@ -906,7 +785,9 @@
       },
       "id": 19,
       "options": {
+        "cellHeight": "sm",
         "footer": {
+          "countRows": false,
           "fields": "",
           "reducer": [
             "sum"
@@ -915,15 +796,16 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "9.3.2",
+      "pluginVersion": "9.5.3",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "P1809F7CD0C75ACF3"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(kube_website_info{namespace=~\"$project\"} * on(theme) group_left(color, font_family) max(kube_theme_info) without (instance, pod)) by (namespace, theme, website, color, font_family)",
+          "expr": "sum(kube_website_info{namespace=~\"$project\", website!~\"experiment-.+\"} * on(theme) group_left(color, font_family) max(kube_theme_info) without (instance, pod)) by (namespace, theme, website, color, font_family)",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -957,7 +839,7 @@
     }
   ],
   "refresh": "10s",
-  "schemaVersion": 37,
+  "schemaVersion": 38,
   "style": "dark",
   "tags": [
     "webhosting-operator"
@@ -1015,7 +897,7 @@
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {},

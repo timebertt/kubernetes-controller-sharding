@@ -56,3 +56,10 @@ patches:
     kind: Deployment
     name: kube-state-metrics
     namespace: monitoring
+- path: patch_kubestatemetrics_servicemonitor.yaml
+  target:
+    group: monitoring.coreos.com
+    version: v1
+    kind: ServiceMonitor
+    name: kube-state-metrics
+    namespace: monitoring
