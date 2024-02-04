@@ -687,7 +687,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(namespace_phase:kube_website_info:sum{namespace=~\"$project\"}) by (phase)",
+          "expr": "sum(namespace_phase:kube_website_status_phase:sum{namespace=~\"$project\"}) by (phase)",
           "interval": "",
           "legendFormat": "{{phase}}",
           "range": true,
