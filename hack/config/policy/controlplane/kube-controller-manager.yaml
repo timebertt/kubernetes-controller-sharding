@@ -6,6 +6,61 @@ metadata:
 spec:
   failurePolicy: Ignore
   rules:
+  # set static requests/limits on kube-controller-manager to ensure similar evaluation environment between load test runs
+  - name: resources
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          selector:
+            matchLabels:
+              app: kubernetes
+              role: controller-manager
+    mutate:
+      patchStrategicMerge:
+        spec:
+          containers:
+          - name: kube-controller-manager
+            resources:
+              requests:
+                cpu: 6000m
+                memory: 6Gi
+              limits:
+                cpu: 6000m
+                memory: 6Gi
+  - name: disable-vpa
+    match:
+      any:
+      - resources:
+          kinds:
+          - VerticalPodAutoscaler
+          names:
+          - kube-controller-manager-vpa
+    mutate:
+      patchStrategicMerge:
+        spec:
+          updatePolicy:
+            updateMode: Off
+  # schedule kube-controller-manager on high-cpu worker pool for stable performance
+  - name: add-scheduling-constraints
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          selector:
+            matchLabels:
+              app: kubernetes
+              role: controller-manager
+    mutate:
+      patchesJson6902: |-
+        - op: add
+          path: "/spec/tolerations/-"
+          value: {"key":"high-cpu","operator":"Equal","value":"true","effect":"NoSchedule"}        
+        - op: add
+          path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms"
+          value: [{"matchExpressions": [{"key":"high-cpu","operator":"In","values":["true"]}]}]
   # increases kube-controller-manager's client-side rate limits to speed up garbage collection after executing load tests
   - name: increase-rate-limits
     match:
