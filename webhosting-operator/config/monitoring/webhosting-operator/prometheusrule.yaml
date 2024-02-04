@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: webhosting-operator
+spec:
+  groups:
+  - name: webhosting-website.rules
+    rules:
+    - record: namespace_run:kube_website_info:sum
+      expr: sum by (namespace, run_id) (kube_website_info)
+    - record: namespace_theme:kube_website_info:sum
+      expr: sum by (namespace, theme) (kube_website_info)
+    - record: namespace_phase:kube_website_status_phase:sum
+      expr: sum by (namespace, phase) (kube_website_status_phase)
