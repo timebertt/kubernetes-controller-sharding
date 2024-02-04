@@ -117,7 +117,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "count(kube_website_info{run_id=~\"$run_id\"}) by (run_id)",
+          "expr": "sum(namespace_run:kube_website_info:sum{run_id=~\"$run_id\"}) by (run_id)",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
