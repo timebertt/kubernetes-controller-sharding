@@ -43,13 +43,18 @@ import (
 var (
 	metricLabels = []string{"run_id"}
 
+	// NOTE: upper bound 5 is the SLO. Align buckets with SLO so that when p99 estimation grows above SLO we are sure
+	// that p99 is actually above SLO.
+	// See https://prometheus.io/docs/practices/histograms/#errors-of-quantile-estimation
+	buckets = []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10}
+
 	websiteReconciliationLatency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "experiment",
 		Subsystem: "website",
 		Name:      "reconciliation_duration_seconds",
 		Help: "Latency from Website creation or spec update until the generation is observed as ready by a watch. " +
 			"This is an SLI for controller performance.",
-		Buckets: prometheus.ExponentialBuckets(0.025, 2, 14),
+		Buckets: buckets,
 	}, metricLabels)
 	websiteBackfilledGenerations = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "experiment",
@@ -64,7 +69,7 @@ var (
 		Name:      "watch_latency_seconds",
 		Help: "Latency from Website transition time until observed by a watch event in experiment. " +
 			"This metric serves as an indicator for how experiment itself is performing to ensure accurate measurements.",
-		Buckets: prometheus.ExponentialBuckets(0.025, 2, 14),
+		Buckets: buckets,
 	}, metricLabels)
 )
 

@@ -11,4 +11,4 @@ patches:
   patch: |
     - op: add
       path: /spec/template/spec/containers/0/args/-
-      value: reconcile
+      value: scale-out

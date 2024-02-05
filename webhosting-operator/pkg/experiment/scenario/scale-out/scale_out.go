@@ -1,5 +1,5 @@
 /*
-Copyright 2022 Tim Ebert.
+Copyright 2024 Tim Ebert.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,14 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package basic
+package scale_out
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"golang.org/x/time/rate"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
@@ -30,7 +32,7 @@ import (
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/scenario/base"
 )
 
-const ScenarioName = "basic"
+const ScenarioName = "scale-out"
 
 func init() {
 	s := &scenario{}
@@ -47,14 +49,13 @@ type scenario struct {
 }
 
 func (s *scenario) Description() string {
-	return "Basic load test scenario (15m) that creates roughly 9k websites"
+	return "Scenario for testing scale-out with high churn rate"
 }
 
 func (s *scenario) LongDescription() string {
-	return `The ` + ScenarioName + ` scenario combines several operations typical for a lively operator environment:
-- website creation: 10800 over 15m
-- website deletion: 1800 over 15m
-- website spec changes: 1/m per object, max 150/s
+	return `The ` + ScenarioName + ` scenario is designed to overload 5 webhosting-operator instances with 5 workers within 15m:
+- website creation: 9000 over 15m
+- website spec changes: 2/m per object, max 300/s
 `
 }
 
@@ -73,41 +74,58 @@ func (s *scenario) Prepare(ctx context.Context) error {
 }
 
 func (s *scenario) Run(ctx context.Context) error {
-	// website-generator: creates about 10800 websites over  15 minutes
-	// website-deleter:   deletes about  1800 websites over  15 minutes
-	// => in total, there will be about  9000 websites after 15 minutes
+	// website-generator: creates about 9000 websites over 15 minutes
 	if err := (&generator.Every{
 		Name: "website-generator",
 		Do: func(ctx context.Context, c client.Client) error {
 			return generator.CreateWebsite(ctx, c, generator.WithLabels(s.Labels))
 		},
-		Rate: rate.Limit(12),
+		Rate: rate.Limit(10),
 	}).AddToManager(s.Manager); err != nil {
 		return fmt.Errorf("error adding website-generator: %w", err)
 	}
 
-	if err := (&generator.Every{
-		Name: "website-deleter",
-		Do: func(ctx context.Context, c client.Client) error {
-			return generator.DeleteWebsite(ctx, c, s.Labels)
-		},
-		Rate: rate.Limit(2),
-	}).AddToManager(s.Manager); err != nil {
-		return fmt.Errorf("error adding website-deleter: %w", err)
-	}
-
-	// trigger individual spec changes for website once per minute
-	// => peaks at about 150 spec changes per second at the end of the experiment
+	// trigger individual spec changes for website twice per minute
+	// => peaks at about 300 spec changes per second at the end of the experiment
 	// (triggers roughly double the reconciliation rate in website controller because of deployment watches)
 	if err := (&generator.ForEach[*webhostingv1alpha1.Website]{
 		Name: "website-mutator",
 		Do: func(ctx context.Context, c client.Client, obj *webhostingv1alpha1.Website) error {
 			return client.IgnoreNotFound(generator.MutateWebsite(ctx, c, obj, s.Labels))
 		},
-		Every: time.Minute,
+		Every:   30 * time.Second,
+		Workers: 20,
 	}).AddToManager(s.Manager); err != nil {
 		return fmt.Errorf("error adding website-mutator: %w", err)
 	}
 
 	return s.Wait(ctx, 15*time.Minute)
+}
+
+func (s *scenario) waitForReadyWebsites(ctx context.Context) error {
+	s.Log.Info("Waiting until all websites are ready")
+
+	var lastError error
+	if err := wait.PollUntilContextTimeout(ctx, 2*time.Second, 2*time.Minute, false, func(ctx context.Context) (done bool, err error) {
+		websiteList := &webhostingv1alpha1.WebsiteList{}
+		if err := s.Client.List(ctx, websiteList, client.MatchingLabels(s.Labels)); err != nil {
+			return true, err
+		}
+
+		for _, website := range websiteList.Items {
+			phase := website.Status.Phase
+			if phase != webhostingv1alpha1.PhaseReady {
+				lastError = fmt.Errorf("website %s is in phase %q", client.ObjectKeyFromObject(&website), phase)
+				return false, nil
+			}
+		}
+
+		return true, nil
+	}); err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return lastError
+		}
+		return err
+	}
+	return nil
 }

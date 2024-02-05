@@ -21,6 +21,8 @@ spec:
         env:
         - name: DISABLE_HTTP2
           value: "true"
+        - name: WEBSITE_CONCURRENT_SYNCS
+          value: "15"
         ports:
         - name: metrics
           containerPort: 8080

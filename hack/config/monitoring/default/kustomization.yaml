@@ -34,7 +34,7 @@ secretGenerator:
 
 patches:
 - path: patch_grafana_admin.yaml
-- path: patch_prometheus_resources.yaml
+- path: patch_prometheus.yaml
 - path: patch_grafana_networkpolicy.yaml
   target:
     group: networking.k8s.io

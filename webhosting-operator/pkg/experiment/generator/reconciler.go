@@ -24,6 +24,7 @@ import (
 	"golang.org/x/time/rate"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,7 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/ratelimiter"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -121,14 +121,20 @@ func (r *ForEach[T]) AddToManager(mgr manager.Manager) error {
 		}).
 		Watches(
 			r.obj,
-			// we should not enqueue directly on creation, but only after Every has passed for the first time
-			delayingHandler(&handler.EnqueueRequestForObject{}, r.Every),
-			builder.WithPredicates(predicate.Funcs{
-				CreateFunc:  func(event.CreateEvent) bool { return true },
-				DeleteFunc:  func(event.DeleteEvent) bool { return false },
-				UpdateFunc:  func(event.UpdateEvent) bool { return false },
-				GenericFunc: func(event.GenericEvent) bool { return false },
-			}),
+			&handler.Funcs{
+				// only enqueue create events, after that we reconcile periodically
+				CreateFunc: func(ctx context.Context, e event.CreateEvent, q workqueue.RateLimitingInterface) {
+					if e.Object == nil {
+						return
+					}
+
+					// we should not enqueue directly on creation, but only after Every has passed for the first time
+					q.AddAfter(reconcile.Request{NamespacedName: types.NamespacedName{
+						Name:      e.Object.GetName(),
+						Namespace: e.Object.GetNamespace(),
+					}}, r.Every)
+				},
+			},
 		).
 		Complete(StopOnContextCanceled(r))
 }
@@ -154,32 +160,4 @@ func (r *ForEach[T]) Reconcile(ctx context.Context, request reconcile.Request) (
 func unlimitedRateLimiter() ratelimiter.RateLimiter {
 	// if no limiter is given, MaxOfRateLimiter returns 0 for When and NumRequeues => unlimited
 	return &workqueue.MaxOfRateLimiter{}
-}
-
-// delayingHandler wraps the given EventHandler and delays all Add calls to the queue by the given delay.
-func delayingHandler(h handler.EventHandler, d time.Duration) handler.EventHandler {
-	return handler.Funcs{
-		CreateFunc: func(ctx context.Context, e event.CreateEvent, q workqueue.RateLimitingInterface) {
-			h.Create(ctx, e, delayingQueue{q, d})
-		},
-		UpdateFunc: func(ctx context.Context, e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-			h.Update(ctx, e, delayingQueue{q, d})
-		},
-		DeleteFunc: func(ctx context.Context, e event.DeleteEvent, q workqueue.RateLimitingInterface) {
-			h.Delete(ctx, e, delayingQueue{q, d})
-		},
-		GenericFunc: func(ctx context.Context, e event.GenericEvent, q workqueue.RateLimitingInterface) {
-			h.Generic(ctx, e, delayingQueue{q, d})
-		},
-	}
-}
-
-// delayingQueue delays all Add calls by calling AddAfter with delay.
-type delayingQueue struct {
-	workqueue.RateLimitingInterface
-	delay time.Duration
-}
-
-func (d delayingQueue) Add(item any) {
-	d.AddAfter(item, d.delay)
 }

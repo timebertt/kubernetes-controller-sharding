@@ -53,6 +53,10 @@ spec:
               limits:
                 cpu: 12000m
                 memory: 12Gi
+            # set GOMAXPROCS to CPU quota to minimize goroutine scheduling contention (CPU throttling)
+            env:
+            - name: GOMAXPROCS
+              value: "12"
   # schedule kube-apiserver on high-cpu worker pool for stable performance
   - name: add-scheduling-constraints
     match:
@@ -70,5 +74,5 @@ spec:
           path: "/spec/tolerations/-"
           value: {"key":"high-cpu","operator":"Equal","value":"true","effect":"NoSchedule"}        
         - op: add
-          path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms/-"
-          value: {"matchExpressions": [{"key":"high-cpu","operator":"In","values":["true"]}]}
+          path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms"
+          value: [{"matchExpressions": [{"key":"high-cpu","operator":"In","values":["true"]}]}]

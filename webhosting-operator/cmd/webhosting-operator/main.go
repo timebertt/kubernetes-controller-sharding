@@ -24,6 +24,7 @@ import (
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus/collectors"
+	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -84,6 +85,15 @@ func main() {
 	if err := opts.Complete(); err != nil {
 		setupLog.Error(err, "unable to load config")
 		os.Exit(1)
+	}
+
+	// This is like importing the automaxprocs package for its init func (it will in turn call maxprocs.Set).
+	// Here we pass a custom logger, so that the result of the library gets logged to the same logger we use for the
+	// component itself.
+	if _, err := maxprocs.Set(maxprocs.Logger(func(s string, i ...interface{}) {
+		setupLog.Info(fmt.Sprintf(s, i...))
+	})); err != nil {
+		setupLog.Error(err, "Failed to set GOMAXPROCS")
 	}
 
 	// replace deprecated legacy go collector
