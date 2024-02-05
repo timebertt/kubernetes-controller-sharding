@@ -21,6 +21,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"os"
+	"strconv"
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -486,10 +488,8 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	workers := 15
-	if !mgr.IsSharded() {
-		// When comparing singleton vs sharded setups, the singleton will fail to verify the SLOs because it has too few
-		// website workers. Increase the worker count to allow comparing the setups.
-		workers = 50
+	if override, err := strconv.ParseInt(os.Getenv("WEBSITE_CONCURRENT_SYNCS"), 10, 32); err == nil {
+		workers = int(override)
 	}
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
