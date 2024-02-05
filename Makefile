@@ -154,6 +154,7 @@ export SKAFFOLD_FILENAME = hack/config/skaffold.yaml
 deploy up dev down: export SKAFFOLD_LABEL = skaffold.dev/run-id=sharding
 # use dedicated ghcr repo for dev images to prevent spamming the "production" image repo
 up dev: export SKAFFOLD_DEFAULT_REPO ?= ghcr.io/timebertt/dev-images
+up dev: export SKAFFOLD_TAIL ?= true
 
 .PHONY: deploy
 deploy: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
@@ -161,7 +162,7 @@ deploy: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images and deploy everything t
 
 .PHONY: up
 up: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.
-	$(SKAFFOLD) run --port-forward=user --tail
+	$(SKAFFOLD) run
 
 .PHONY: dev
 dev: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Start continuous dev loop with skaffold.
