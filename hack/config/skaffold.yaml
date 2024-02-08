@@ -147,8 +147,6 @@ kind: Config
 metadata:
   name: sharder
 build:
-  tagPolicy:
-    inputDigest: {}
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/sharder
       ko:
@@ -191,8 +189,6 @@ kind: Config
 metadata:
   name: shard
 build:
-  tagPolicy:
-    inputDigest: {}
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/shard
       ko:
@@ -281,8 +277,6 @@ kind: Config
 metadata:
   name: profiling
 build:
-  tagPolicy:
-    inputDigest: {}
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/janitor
       ko:
