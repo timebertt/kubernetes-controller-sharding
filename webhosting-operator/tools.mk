@@ -56,7 +56,7 @@ $(SKAFFOLD): $(call tool_version_file,$(SKAFFOLD),$(SKAFFOLD_VERSION))
 
 YQ := $(TOOLS_BIN_DIR)/yq
 # renovate: datasource=github-tags depName=mikefarah/yq
-YQ_VERSION ?= v4.40.6
+YQ_VERSION ?= v4.40.7
 $(YQ): $(call tool_version_file,$(YQ),$(YQ_VERSION))
 	curl -Lo $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(shell uname -s | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 	chmod +x $(YQ)
