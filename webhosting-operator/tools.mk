@@ -18,26 +18,26 @@ $(TOOLS_BIN_DIR)/.version_%:
 	@touch $@
 
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
-# renovate: datasource=github-tags depName=kubernetes-sigs/controller-tools
+# renovate: datasource=github-releases depName=kubernetes-sigs/controller-tools
 CONTROLLER_GEN_VERSION ?= v0.14.0
 $(CONTROLLER_GEN): $(call tool_version_file,$(CONTROLLER_GEN),$(CONTROLLER_GEN_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION)
 
 KIND := $(TOOLS_BIN_DIR)/kind
-# renovate: datasource=github-tags depName=kubernetes-sigs/kind
+# renovate: datasource=github-releases depName=kubernetes-sigs/kind
 KIND_VERSION ?= v0.21.0
 $(KIND): $(call tool_version_file,$(KIND),$(KIND_VERSION))
 	curl -Lo $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 	chmod +x $(KIND)
 
 KO := $(TOOLS_BIN_DIR)/ko
-# renovate: datasource=github-tags depName=ko-build/ko
+# renovate: datasource=github-releases depName=ko-build/ko
 KO_VERSION ?= v0.15.1
 $(KO): $(call tool_version_file,$(KO),$(KO_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install github.com/google/ko@$(KO_VERSION)
 
 KUBECTL := $(TOOLS_BIN_DIR)/kubectl
-# renovate: datasource=github-tags depName=kubectl packageName=kubernetes/kubernetes
+# renovate: datasource=github-releases depName=kubectl packageName=kubernetes/kubernetes
 KUBECTL_VERSION ?= v1.29.1
 $(KUBECTL): $(call tool_version_file,$(KUBECTL),$(KUBECTL_VERSION))
 	curl -Lo $(KUBECTL) https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/$(shell uname -s | tr '[:upper:]' '[:lower:]')/$(shell uname -m | sed 's/x86_64/amd64/')/kubectl
@@ -48,14 +48,14 @@ $(SETUP_ENVTEST): go.mod
 	go build -o $(SETUP_ENVTEST) sigs.k8s.io/controller-runtime/tools/setup-envtest
 
 SKAFFOLD := $(TOOLS_BIN_DIR)/skaffold
-# renovate: datasource=github-tags depName=GoogleContainerTools/skaffold
+# renovate: datasource=github-releases depName=GoogleContainerTools/skaffold
 SKAFFOLD_VERSION ?= v2.10.1
 $(SKAFFOLD): $(call tool_version_file,$(SKAFFOLD),$(SKAFFOLD_VERSION))
 	curl -Lo $(SKAFFOLD) https://storage.googleapis.com/skaffold/releases/$(SKAFFOLD_VERSION)/skaffold-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/')
 	chmod +x $(SKAFFOLD)
 
 YQ := $(TOOLS_BIN_DIR)/yq
-# renovate: datasource=github-tags depName=mikefarah/yq
+# renovate: datasource=github-releases depName=mikefarah/yq
 YQ_VERSION ?= v4.40.7
 $(YQ): $(call tool_version_file,$(YQ),$(YQ_VERSION))
 	curl -Lo $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(shell uname -s | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')

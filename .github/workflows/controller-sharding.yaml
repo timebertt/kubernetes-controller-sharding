@@ -41,7 +41,7 @@ jobs:
   images:
     runs-on: ubuntu-latest
     env:
-      # renovate: datasource=github-tags depName=ko-build/ko
+      # renovate: datasource=github-releases depName=ko-build/ko
       KO_VERSION: v0.15.1
     steps:
     - uses: actions/checkout@v4
