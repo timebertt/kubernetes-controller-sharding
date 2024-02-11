@@ -26,10 +26,10 @@ import (
 	"github.com/hashicorp/go-multierror"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -39,25 +39,22 @@ import (
 
 var log = logf.Log
 
-// EmitN returns a source that emits exactly n events (reconcile.Request). The source ignores predicates.
+// EmitN returns a source that emits exactly n reconcile requests with the given delay.
+// The source ignores event handler and predicates.
 // Use it with the controller builder:
 //
-//	WatchesRawSource(EmitN(n), &handler.EnqueueRequestForObject{})
+//	WatchesRawSource(EmitN(n), nil)
 //
 // Or a plain controller:
 //
-//	Watch(EmitN(n), &handler.EnqueueRequestForObject{})
-func EmitN(n int) source.Source {
-	return source.Func(func(ctx context.Context, eventHandler handler.EventHandler, queue workqueue.RateLimitingInterface, _ ...predicate.Predicate) error {
+//	Watch(EmitN(n), nil)
+func EmitN(n int, delay time.Duration) source.Source {
+	return source.Func(func(ctx context.Context, _ handler.EventHandler, queue workqueue.RateLimitingInterface, _ ...predicate.Predicate) error {
 		for i := 0; i < n; i++ {
-			ev := event.GenericEvent{Object: &metav1.PartialObjectMetadata{
-				ObjectMeta: metav1.ObjectMeta{
-					// use different object names, otherwise queue will merge the requests
-					Name: fmt.Sprintf("request-%d", n),
-				},
-			}}
-
-			eventHandler.Generic(ctx, ev, queue)
+			queue.AddAfter(reconcile.Request{NamespacedName: types.NamespacedName{
+				// use different object names, otherwise queue will merge the requests
+				Name: fmt.Sprintf("request-%d", n),
+			}}, delay)
 		}
 
 		return nil
