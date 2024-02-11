@@ -2,7 +2,7 @@
   <configuration default="false" name="experiment (kind)" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$/webhosting-operator" />
-    <parameters value="reconcile" />
+    <parameters value="basic" />
     <envs>
       <env name="KUBECONFIG" value="$PROJECT_DIR$/hack/kind_kubeconfig.yaml" />
     </envs>

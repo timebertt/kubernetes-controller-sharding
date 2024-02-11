@@ -19,5 +19,6 @@ package all
 
 import (
 	_ "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/scenario/basic"
+	_ "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/scenario/chaos"
 	_ "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/scenario/scale-out"
 )

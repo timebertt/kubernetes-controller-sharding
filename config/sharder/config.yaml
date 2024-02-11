@@ -1,5 +1,8 @@
 apiVersion: config.sharding.timebertt.dev/v1alpha1
 kind: SharderConfig
+clientConnection:
+  qps: 1000
+  burst: 1200
 webhook:
   config:
     annotations:

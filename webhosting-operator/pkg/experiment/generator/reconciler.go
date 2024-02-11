@@ -55,18 +55,30 @@ func (r *Every) AddToManager(mgr manager.Manager) error {
 		r.Client = mgr.GetClient()
 	}
 
+	initialDelay := time.Duration(0)
 	workers := defaultReconcileWorkers
 	if r.Workers > 0 {
 		workers = r.Workers
+	}
+
+	var rateLimiter ratelimiter.RateLimiter = &workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(r.Rate, int(r.Rate))}
+	if r.Rate < 1 {
+		// Special case for controllers running less frequent than every second:
+		// The token bucket rate limiter would not allow any events as burst is less than 1.
+		// Also delay the first request when starting the scenario.
+		every := time.Duration(1 / float64(r.Rate) * float64(time.Second))
+		rateLimiter = constantDelayRateLimiter(every)
+		initialDelay = every
+		workers = 1
 	}
 
 	return builder.ControllerManagedBy(mgr).
 		Named(r.Name).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: workers,
-			RateLimiter:             &workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(r.Rate, int(r.Rate))},
+			RateLimiter:             rateLimiter,
 		}).
-		WatchesRawSource(EmitN(workers), nil).
+		WatchesRawSource(EmitN(workers, initialDelay), nil).
 		Complete(StopOnContextCanceled(r))
 }
 
@@ -161,3 +173,12 @@ func unlimitedRateLimiter() ratelimiter.RateLimiter {
 	// if no limiter is given, MaxOfRateLimiter returns 0 for When and NumRequeues => unlimited
 	return &workqueue.MaxOfRateLimiter{}
 }
+
+var _ ratelimiter.RateLimiter = constantDelayRateLimiter(0)
+
+// constantDelayRateLimiter delays all requests with a constant duration.
+type constantDelayRateLimiter time.Duration
+
+func (d constantDelayRateLimiter) When(interface{}) time.Duration { return time.Duration(d) }
+func (d constantDelayRateLimiter) Forget(interface{})             {}
+func (d constantDelayRateLimiter) NumRequeues(interface{}) int    { return 0 }
