@@ -19,6 +19,7 @@ package sharder
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
@@ -27,6 +28,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -92,25 +94,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{}, err
 	}
 
-	allErrs := &multierror.Error{
-		ErrorFormat: utilerrors.FormatErrors,
-	}
-
-	// resync all ring resources
-	for _, ringResource := range clusterRing.Spec.Resources {
-		allErrs = multierror.Append(allErrs,
-			r.resyncResource(ctx, log, ringResource.GroupResource, clusterRing, namespaces, hashRing, shards, false),
-		)
-
-		for _, controlledResource := range ringResource.ControlledResources {
-			allErrs = multierror.Append(allErrs,
-				r.resyncResource(ctx, log, controlledResource, clusterRing, namespaces, hashRing, shards, true),
-			)
-		}
-	}
-
-	// collect all errors and return a combined error if any occurred
-	if err := allErrs.ErrorOrNil(); err != nil {
+	// resync all resources in the ring
+	if err := r.resyncClusterRing(ctx, log, clusterRing, namespaces, hashRing, shards); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -142,18 +127,85 @@ func (r *Reconciler) getSelectedNamespaces(ctx context.Context, clusterRing *sha
 	return namespaceSet, err
 }
 
-func (r *Reconciler) resyncResource(
+type objectToMove struct {
+	drain           bool
+	gr              metav1.GroupResource
+	gvk             schema.GroupVersionKind
+	key             client.ObjectKey
+	resourceVersion string
+	currentShard    string
+}
+
+func (r *Reconciler) resyncClusterRing(
 	ctx context.Context,
 	log logr.Logger,
+	clusterRing *shardingv1alpha1.ClusterRing,
+	namespaces sets.Set[string],
+	hashRing *consistenthash.Ring,
+	shards leases.Shards,
+) error {
+	const concurrency = 100
+	var (
+		wg   sync.WaitGroup
+		errs = make(chan error)
+		work = make(chan objectToMove, concurrency)
+	)
+
+	// find all objects that need to be moved or drained, add them to work queue
+	wg.Add(1)
+	go func() {
+		for _, ringResource := range clusterRing.Spec.Resources {
+			errs <- r.resyncResource(ctx, ringResource.GroupResource, clusterRing, namespaces, hashRing, shards, false, work)
+
+			for _, controlledResource := range ringResource.ControlledResources {
+				errs <- r.resyncResource(ctx, controlledResource, clusterRing, namespaces, hashRing, shards, true, work)
+			}
+		}
+
+		close(work)
+		wg.Done()
+	}()
+
+	// read from work queue and perform drains and movements
+	for i := 0; i < concurrency; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			for processNextWorkItem(ctx, log, r.Client, work, errs, clusterRing) {
+			}
+		}()
+	}
+
+	// wait for all processors and collect all errors
+	go func() {
+		wg.Wait()
+		close(errs)
+	}()
+
+	allErrs := &multierror.Error{
+		ErrorFormat: utilerrors.FormatErrors,
+	}
+	for err := range errs {
+		if err != nil {
+			allErrs = multierror.Append(allErrs, err)
+		}
+	}
+
+	// return a combined error if any occurred
+	return allErrs.ErrorOrNil()
+}
+
+func (r *Reconciler) resyncResource(
+	ctx context.Context,
 	gr metav1.GroupResource,
 	ring sharding.Ring,
 	namespaces sets.Set[string],
 	hashRing *consistenthash.Ring,
 	shards leases.Shards,
 	controlled bool,
+	work chan<- objectToMove,
 ) error {
-	log = log.WithValues("resource", gr)
-
 	gvks, err := r.Client.RESTMapper().KindsFor(schema.GroupVersionResource{Group: gr.Group, Resource: gr.Resource})
 	if err != nil {
 		return fmt.Errorf("error determining kinds for resource %q: %w", gr.String(), err)
@@ -172,7 +224,7 @@ func (r *Reconciler) resyncResource(
 				return nil
 			}
 
-			allErrs = multierror.Append(allErrs, r.resyncObject(ctx, log, gr, obj.(*metav1.PartialObjectMetadata), ring, hashRing, shards, controlled))
+			allErrs = multierror.Append(allErrs, r.resyncObject(gr, obj.(*metav1.PartialObjectMetadata), ring, hashRing, shards, controlled, work))
 			return nil
 		},
 		// List a recent version from the API server's watch cache by setting resourceVersion=0. This reduces the load on etcd
@@ -190,17 +242,14 @@ func (r *Reconciler) resyncResource(
 }
 
 func (r *Reconciler) resyncObject(
-	ctx context.Context,
-	log logr.Logger,
 	gr metav1.GroupResource,
 	obj *metav1.PartialObjectMetadata,
 	ring sharding.Ring,
 	hashRing *consistenthash.Ring,
 	shards leases.Shards,
 	controlled bool,
+	work chan<- objectToMove,
 ) error {
-	log = log.WithValues("object", client.ObjectKeyFromObject(obj))
-
 	keyFunc := sharding.KeyForObject
 	if controlled {
 		keyFunc = sharding.KeyForController
@@ -230,37 +279,106 @@ func (r *Reconciler) resyncObject(
 		return nil
 	}
 
+	workItem := objectToMove{
+		gr:              gr,
+		gvk:             obj.GroupVersionKind(),
+		key:             client.ObjectKeyFromObject(obj),
+		resourceVersion: obj.ResourceVersion,
+		currentShard:    currentShard,
+	}
+
 	if currentShard != "" && currentShard != desiredShard && shards.ByID(currentShard).State.IsAvailable() && !controlled {
 		// If the object should be moved and the current shard is still available, we need to drain it.
 		// We only drain non-controlled objects, the controller's main object is used as a synchronization point for
 		// preventing concurrent reconciliations.
-		log.V(1).Info("Draining object from shard", "currentShard", currentShard)
-
-		patch := client.MergeFromWithOptions(obj.DeepCopy(), client.MergeFromWithOptimisticLock{})
-		metav1.SetMetaDataLabel(&obj.ObjectMeta, ring.LabelDrain(), "true")
-		if err := r.Client.Patch(ctx, obj, patch); err != nil {
-			return fmt.Errorf("error draining %s %q: %w", gr.String(), client.ObjectKeyFromObject(obj), err)
-		}
-
-		shardingmetrics.DrainsTotal.WithLabelValues(
-			shardingv1alpha1.KindClusterRing, ring.GetNamespace(), ring.GetName(),
-			gr.Group, gr.Resource,
-		).Inc()
-
-		// object will go through the sharder webhook when shard removes the drain label, which will perform the assignment
-		return nil
+		workItem.drain = true
 	}
 
 	// At this point, the object is either unassigned or the current shard is not available.
 	// We send a (potentially empty) patch to trigger an assignment by the sharder webhook.
-	log.V(1).Info("Moving object")
+	work <- workItem
+	return nil
+}
 
-	patch := client.MergeFromWithOptions(obj.DeepCopy(), client.MergeFromWithOptimisticLock{})
-	// remove drain label if it is still present, this might happen when trying to drain an object from a shard that
-	// just got unavailable
-	delete(obj.Labels, ring.LabelShard())
-	delete(obj.Labels, ring.LabelDrain())
-	if err := r.Client.Patch(ctx, obj, patch); err != nil {
+func processNextWorkItem(
+	ctx context.Context,
+	log logr.Logger,
+	c client.Writer,
+	work <-chan objectToMove,
+	errs chan<- error,
+	ring sharding.Ring,
+) bool {
+	select {
+	case <-ctx.Done():
+		return false
+	case w, ok := <-work:
+		if !ok {
+			return false
+		}
+
+		obj := &metav1.PartialObjectMetadata{}
+		obj.SetGroupVersionKind(w.gvk)
+		obj.SetName(w.key.Name)
+		obj.SetNamespace(w.key.Namespace)
+		obj.SetResourceVersion(w.resourceVersion)
+
+		log = log.WithValues("resource", w.gr, "object", w.key)
+		if w.drain {
+			log.V(1).Info("Draining object from shard", "currentShard", w.currentShard)
+			errs <- drainObject(ctx, c, obj, w.gr, ring)
+		} else {
+			log.V(1).Info("Moving object")
+			errs <- moveObject(ctx, c, obj, w.gr, ring)
+		}
+	}
+
+	return true
+}
+
+func drainObject(
+	ctx context.Context,
+	c client.Writer,
+	obj *metav1.PartialObjectMetadata,
+	gr metav1.GroupResource,
+	ring sharding.Ring,
+) error {
+	patch := fmt.Sprintf(
+		// - use optimistic locking by including the object's current resourceVersion
+		// - add drain label; object will go through the sharder webhook when shard removes the drain label, which will
+		//   perform the assignment
+		`{"metadata":{"resourceVersion":"%s","labels":{"%s":"true"}}}`,
+		obj.ResourceVersion, ring.LabelDrain(),
+	)
+
+	if err := c.Patch(ctx, obj, client.RawPatch(types.MergePatchType, []byte(patch))); err != nil {
+		return fmt.Errorf("error draining %s %q: %w", gr.String(), client.ObjectKeyFromObject(obj), err)
+	}
+
+	shardingmetrics.MovementsTotal.WithLabelValues(
+		shardingv1alpha1.KindClusterRing, ring.GetNamespace(), ring.GetName(),
+		gr.Group, gr.Resource,
+	).Inc()
+
+	return nil
+}
+
+func moveObject(
+	ctx context.Context,
+	c client.Writer,
+	obj *metav1.PartialObjectMetadata,
+	gr metav1.GroupResource,
+	ring sharding.Ring,
+) error {
+	patch := fmt.Sprintf(
+		// - use optimistic locking by including the object's current resourceVersion
+		// - remove shard label
+		// - remove drain label if it is still present, this might happen when trying to drain an object from a shard that
+		//   just got unavailable
+		`{"metadata":{"resourceVersion":"%s","labels":{"%s":null,"%s":null}}}`,
+		obj.ResourceVersion, ring.LabelShard(), ring.LabelDrain(),
+	)
+
+	if err := c.Patch(ctx, obj, client.RawPatch(types.MergePatchType, []byte(patch))); err != nil {
 		return fmt.Errorf("error triggering assignment for %s %q: %w", gr.String(), client.ObjectKeyFromObject(obj), err)
 	}
 
