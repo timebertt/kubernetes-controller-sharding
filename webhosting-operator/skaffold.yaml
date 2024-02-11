@@ -24,6 +24,8 @@ kind: Config
 metadata:
   name: webhosting-operator
 build:
+  tagPolicy:
+    inputDigest: {}
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator
       ko:
@@ -104,6 +106,8 @@ profiles:
     activation:
       - env: EXPERIMENT_SCENARIO=.+
     build:
+      tagPolicy:
+        inputDigest: {}
       artifacts:
         - image: ghcr.io/timebertt/kubernetes-controller-sharding/experiment
           ko:
