@@ -12,10 +12,10 @@ See [Getting Started With Controller Sharding](docs/getting-started.md) for a qu
 ## About ℹ️
 
 I started this project as part of my Master's studies in Computer Science at the [DHBW Center for Advanced Studies](https://www.cas.dhbw.de/) (CAS).
-I completed a study project ("half-time thesis") about this topic. I'm currently working on my Master's thesis to evolve the project based on the first iteration.
+I completed a study project ("half-time thesis") on this topic and evolved it in my Master's thesis.
 
 - Download and read the study project (first paper) here: [thesis-controller-sharding](https://github.com/timebertt/thesis-controller-sharding)
-- Download and read the Master's thesis (second paper) here (WIP): [masters-thesis-controller-sharding](https://github.com/timebertt/masters-thesis-controller-sharding)
+- Download and read the Master's thesis (second paper) here: [masters-thesis-controller-sharding](https://github.com/timebertt/masters-thesis-controller-sharding)
 
 This repository contains the implementation belonging to the scientific work: the actual sharding implementation, a sample operator using controller sharding, a monitoring and continuous profiling setup, and some tools for development and evaluation purposes.
 
