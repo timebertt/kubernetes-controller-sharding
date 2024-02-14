@@ -71,9 +71,3 @@ See [Design](docs/design.md) for more details on the sharding architecture and d
 ## Discussion 💬
 
 Feel free to contact me on the [Kubernetes Slack](https://kubernetes.slack.com/) ([get an invitation](https://slack.k8s.io/)): [@timebertt](https://kubernetes.slack.com/team/UF8C35Z0D).
-
-## TODO 🧑‍💻
-
-- [ ] implement more tests: unit, integration, e2e tests
-- [ ] add `ClusterRing` API validation
-- [ ] implement a custom generic sharding-exporter

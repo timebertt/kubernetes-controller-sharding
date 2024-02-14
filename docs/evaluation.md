@@ -1,6 +1,7 @@
 # Evaluating the Sharding Mechanism
 
 This guide describes how the sharding mechanism implemented in this repository is evaluated and outlines the key results of the evaluation performed in the associated [Master's thesis](https://github.com/timebertt/masters-thesis-controller-sharding).
+Please refer to the thesis' evaluation section for more details.
 
 ## Components
 
@@ -90,18 +91,14 @@ make -C webhosting-operator up SKAFFOLD_MODULE=experiment EXPERIMENT_SCENARIO=ba
 make -C webhosting-operator deploy SKAFFOLD_MODULE=experiment EXPERIMENT_SCENARIO=basic TAG=latest
 ```
 
-All scenarios put load on webhosting-operator by creating and manipulating a large amount of `Website` objects.
-However, create soo many `Websites` would waste immense compute power just to run thousands of dummy websites.
+All scenarios put load on webhosting-operator by creating and mutating a large amount of `Website` objects.
+However, creating soo many `Websites` would waste immense compute power just to run thousands of dummy websites.
 Hence, webhosting-operator creates `Deployments` of `Websites` in load tests with `spec.replicas=0`.
 It also doesn't expose `Websites` created in load tests via `Ingress` objects by setting `spec.ingressClassName=fake`.
 Otherwise, this would overload the ingress controller, which is not what the experiment is actually supposed to load test.
 
 When running load test experiments on the cluster, a `ServiceMonitor` is created to instruct prometheus to scrape `experiment`.
-As the tool is based on controller-runtime as well, the controller-runtime dashboards can be used for visualizing the load test scenario and verifying that the tool is able to generate the desired load.
-
-After executing a load test experiment, the [measure](../webhosting-operator/cmd/measure) tool can be used for retrieving the key metrics from Prometheus.
-It takes a configurable set of measurements in the form of Prometheus queries and stores them in CSV-formatted files for further analysis (with `numpy`) and visualization (with `matplotlib`).
-Please see the [results directory](https://github.com/timebertt/masters-thesis-controller-sharding/tree/main/results) in the Master's thesis' repository for the exact measurements taken.
+As the tool is based on controller-runtime as well, the controller-runtime metrics can be used for visualizing the load test scenario and verifying that the tool is able to generate the desired load.
 
 ## Experiment Setup
 
@@ -124,14 +121,54 @@ kubectl apply --server-side -k hack/config/policy/controlplane
 In addition to the described components, [kyverno](https://github.com/kyverno/kyverno) is deployed to the cluster itself (shoot cluster) and to the control plane (seed cluster).
 In the cluster itself, kyverno policies are used for scheduling the sharder and webhosting-operator to the dedicated `sharding` worker pool and experiment to the dedicated `experiment` worker pool.
 This makes sure that these components run on machines isolated from other system components and don't content for compute resources during load tests.
-Furthermore, kyverno policies are added to the control plane to ensure a static size of etcd and kube-apiserver (static requests/limits to disable vertical autoscaling, 4 replicas of kube-apiserver to disable horizontal autoscaling) and schedule them to a dedicated worker pool with more CPU cores per machine.
-This is done to make load test experiments more stable and and their results more reproducible.
 
-## Key Results
+Furthermore, kyverno policies are added to the control plane to ensure a static size of etcd, kube-apiserver, and kube-controller-manager (requests=limits for guaranteed resources, disable vertical autoscaling, 4 replicas of kube-apiserver to disable horizontal autoscaling) and schedule them to a dedicated worker pool using a non-overcommit flavor with more CPU cores per machine.
+This is done to make load test experiments more stable and their results more reproducible.
 
-> [!NOTE]
-> These are preliminary results from a first set of test runs.  
-> TODO: update these once the full evaluation is completed.
+## Measurements
+
+After executing a load test experiment, the [measure](../webhosting-operator/cmd/measure) tool is used for retrieving the key metrics from Prometheus.
+It takes a configurable set of measurements in the form of Prometheus queries and stores them in CSV-formatted files for further analysis (with numpy/pandas) and visualization (with matplotlib).
+Please see the [results directory](https://github.com/timebertt/masters-thesis-controller-sharding/tree/main/results) in the Master's thesis' repository for the exact measurements taken.
+
+The scale of the controller setup is measured in two dimensions:
+
+1. The number of API objects that the controller watches and reconciles.
+2. The churn rate of API objects, i.e., the rate of object creations, updates, and deletions.
+
+## SLIs / SLOs
+
+To consider a controller setup as performing adequately, the following SLOs
+need to be satisfied:
+
+1. The time of enqueuing object keys for reconciliation for every controller, measured as the 99th percentile per cluster-day, is at maximum 1 second.
+2. The latency of realizing the desired state of objects for every controller, excluding reconciliation time of controlled objects, until observed by a watch request, measured as the 99th percentile per cluster-day, is at maximum x, where x depends on the controller.
+
+In case of the `Website` controller, 5 is chosen for x.
+
+```yaml
+queries:
+- name: latency-queue # SLO 1
+  type: instant
+  slo: 1
+  query: |
+    histogram_quantile(0.99, sum by (le) (rate(
+      workqueue_queue_duration_seconds_bucket{
+        job="webhosting-operator", name="website"
+      }[$__range]
+    )))
+- name: latency-reconciliation # SLO 2
+  type: instant
+  slo: 5
+  query: |
+    histogram_quantile(0.99, sum by (le) (rate(
+      experiment_website_reconciliation_duration_seconds_bucket{
+        job="experiment"
+      }[$__range]
+    )))
+```
+
+## Comparison
 
 The following graphs show the generated load and compare the resulting CPU, memory, and network usage of the components in three different setups when running the `basic` experiment scenario (~9k websites created over 15m):
 
@@ -139,15 +176,28 @@ The following graphs show the generated load and compare the resulting CPU, memo
 - internal sharder: 3 webhosting-operator pods (3 shards, 1 acts as the sharder) (the old approach, first iteration for the study project)
 - singleton: 1 webhosting-operator pod (traditional leader election setup without sharding)
 
-![Generated load](assets/load.svg)
+![Generated load in basic scenario](assets/comparison-load.svg)
 
-![CPU comparison](assets/comparison-cpu.svg)
+![CPU comparison in basic scenario](assets/comparison-cpu.svg)
 
-![Memory comparison](assets/comparison-memory.svg)
+![Memory comparison in basic scenario](assets/comparison-memory.svg)
 
-![Network comparison](assets/comparison-network.svg)
+![Network comparison in basic scenario](assets/comparison-network.svg)
 
 The new external sharding approach proves to scale best.
 The individual shards consume about a third of the singleton controller's usage (close to optimum).
 Also, the sharder pods consume a low static amount of resources. 
 Most importantly, the sharder's resource usage is independent of the number of sharded objects.
+
+## Horizontal Scalability
+
+To evaluate the horizontal scalability of the sharding mechanism (external sharder), the maximum load capacity is determined for different numbers of instances (1, 2, 3, 4, 5).
+While the load increases, cumulative SLIs from the start of the experiment are calculated.
+When the cumulative SLI grows above the SLO, the current count and churn rate are the maximum load capacity.
+As shown in the last plot, the system's capacity increases almost linearly with the number of added instances.
+
+![Generated load in scale-out scenario](assets/scale-out-load.svg)
+
+![Cumulative controller SLIs in scale-out scenario](assets/scale-out-slis.svg)
+
+![Load capacity increase with added instances in scale-out scenario](assets/scale-out-capacity.svg)
