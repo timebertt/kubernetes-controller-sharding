@@ -12,3 +12,7 @@ spec:
       expr: sum by (namespace, theme) (kube_website_info)
     - record: namespace_phase:kube_website_status_phase:sum
       expr: sum by (namespace, phase) (kube_website_status_phase)
+    - record: namespace_shard:kube_website_shard:sum
+      expr: sum by (namespace, shard) (kube_website_shard)
+    - record: namespace_shard_drain:kube_website_shard:sum
+      expr: sum by (namespace, shard, drain) (kube_website_shard)
