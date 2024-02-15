@@ -25,7 +25,7 @@ $(CONTROLLER_GEN): $(call tool_version_file,$(CONTROLLER_GEN),$(CONTROLLER_GEN_V
 
 KIND := $(TOOLS_BIN_DIR)/kind
 # renovate: datasource=github-releases depName=kubernetes-sigs/kind
-KIND_VERSION ?= v0.21.0
+KIND_VERSION ?= v0.22.0
 $(KIND): $(call tool_version_file,$(KIND),$(KIND_VERSION))
 	curl -Lo $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 	chmod +x $(KIND)
