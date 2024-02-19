@@ -17,21 +17,18 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# Friendly reminder if workspace location is not in $GOPATH
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-if [ "${SCRIPT_DIR}" != "$(realpath $GOPATH)/src/github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/hack" ]; then
-  cat <<EOF
-hack/update-codegen.sh does not work correctly if your workspace is outside GOPATH
-because of a know bug in k8s.io/code-generator, see https://github.com/kubernetes/kubernetes/issues/86753.
-Please move the workspace to $(realpath $GOPATH)/src/github.com/timebertt/kubernetes-controller-sharding.
-EOF
-  exit 1
-fi
 
 # fetch code-generator module to execute the scripts from the modcache (we don't vendor here)
 CODE_GENERATOR_DIR="$(go list -m -tags tools -f '{{ .Dir }}' k8s.io/code-generator)"
 
-rm -f ${GOPATH}/bin/*-gen
+# setup virtual GOPATH
+# k8s.io/code-generator does not work outside GOPATH, see https://github.com/kubernetes/kubernetes/issues/86753.
+source "$SCRIPT_DIR"/../../hack/vgopath-setup.sh
+
+# We need to explicitly pass GO111MODULE=off to k8s.io/code-generator as it is significantly slower otherwise,
+# see https://github.com/kubernetes/code-generator/issues/100.
+export GO111MODULE=off
 
 # config API
 
@@ -40,7 +37,7 @@ config_group() {
 
   bash "${CODE_GENERATOR_DIR}"/generate-internal-groups.sh \
       defaulter \
-      github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/client/componentconfig \
+      github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis \
       github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis \
       github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis \
       "config:v1alpha1" \

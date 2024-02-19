@@ -19,22 +19,11 @@ jobs:
   verify:
     runs-on: ubuntu-latest
 
-    # update-codegen requires the workspace to be placed in GOPATH.
-    # Set up env var, working directory, and check out at the correct path in GOPATH.
-    env:
-      GOPATH: /home/runner/work/kubernetes-controller-sharding/kubernetes-controller-sharding/go
-    defaults:
-      run:
-        working-directory: go/src/github.com/timebertt/kubernetes-controller-sharding
-
     steps:
     - uses: actions/checkout@v4
-      with:
-        path: go/src/github.com/timebertt/kubernetes-controller-sharding
     - uses: actions/setup-go@v5
       with:
-        go-version-file: go/src/github.com/timebertt/kubernetes-controller-sharding/go.mod
-        cache-dependency-path: go/src/github.com/timebertt/kubernetes-controller-sharding/go.sum
+        go-version-file: go.mod
     - name: Verify
       run: make verify
 

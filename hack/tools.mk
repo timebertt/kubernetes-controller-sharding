@@ -67,6 +67,12 @@ $(SKAFFOLD): $(call tool_version_file,$(SKAFFOLD),$(SKAFFOLD_VERSION))
 	curl -Lo $(SKAFFOLD) https://storage.googleapis.com/skaffold/releases/$(SKAFFOLD_VERSION)/skaffold-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/')
 	chmod +x $(SKAFFOLD)
 
+VGOPATH := $(TOOLS_BIN_DIR)/vgopath
+# renovate: datasource=github-releases depName=ironcore-dev/vgopath
+VGOPATH_VERSION ?= v0.1.4
+$(VGOPATH): $(call tool_version_file,$(VGOPATH),$(VGOPATH_VERSION))
+	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install github.com/ironcore-dev/vgopath@$(VGOPATH_VERSION)
+
 YQ := $(TOOLS_BIN_DIR)/yq
 # renovate: datasource=github-releases depName=mikefarah/yq
 YQ_VERSION ?= v4.41.1

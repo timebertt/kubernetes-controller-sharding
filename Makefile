@@ -55,7 +55,7 @@ generate-fast: $(CONTROLLER_GEN) modules ## Run all fast code generators
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/..."
 
 .PHONY: generate
-generate: generate-fast modules ## Run all code generators
+generate: $(VGOPATH) generate-fast modules ## Run all code generators
 	hack/update-codegen.sh
 
 .PHONY: fmt
