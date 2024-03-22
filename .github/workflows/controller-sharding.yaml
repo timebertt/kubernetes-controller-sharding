@@ -24,8 +24,24 @@ jobs:
     - uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
-    - name: Verify
-      run: make verify
+    - run: make verify
+
+  e2e-kind:
+    runs-on: ubuntu-latest
+    env:
+      ARTIFACTS: artifacts
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+    - run: make ci-e2e-kind
+    - uses: actions/upload-artifact@v3
+      with:
+        name: test-artifacts
+        path: artifacts
+        if-no-files-found: error
 
   images:
     runs-on: ubuntu-latest

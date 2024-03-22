@@ -70,6 +70,10 @@ test: $(SETUP_ENVTEST) ## Run tests.
 test-kyverno: $(KYVERNO) ## Run kyverno policy tests.
 	$(KYVERNO) test --remove-color -v 4 .
 
+.PHONY: test-e2e
+test-e2e: $(GINKGO) ## Run e2e tests.
+	ginkgo run --timeout=1h --poll-progress-after=60s --poll-progress-interval=30s --randomize-all --randomize-suites --keep-going --vv $(GINKGO_FLAGS) ./test/e2e/...
+
 .PHONY: skaffold-fix
 skaffold-fix: $(SKAFFOLD) ## Upgrade skaffold configuration to the latest apiVersion.
 	$(SKAFFOLD) fix --overwrite
@@ -104,6 +108,10 @@ verify-modules: modules ## Verify go module files are up to date.
 
 .PHONY: verify
 verify: verify-fmt verify-generate verify-modules check ## Verify everything (all verify-* rules + check).
+
+.PHONY: ci-e2e-kind
+ci-e2e-kind: $(KIND)
+	./hack/ci-e2e-kind.sh
 
 ##@ Build
 
