@@ -5,7 +5,7 @@ go 1.22.1
 require (
 	github.com/go-logr/logr v1.4.1
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/onsi/ginkgo/v2 v2.17.0
+	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.32.0
 	github.com/prometheus/client_golang v1.19.0
 	github.com/prometheus/common v0.51.1
