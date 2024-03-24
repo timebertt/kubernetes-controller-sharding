@@ -3,13 +3,13 @@
   extends: [
     "config:recommended",
     ":semanticCommitsDisabled",
-    ":automergeStableNonMajor",
-    ":automergePatch",
     "regexManagers:githubActionsVersions"
   ],
   labels: ["dependencies"],
   postUpdateOptions: ["gomodTidy"],
   automergeStrategy: "squash",
+  // required for automerging patch updates
+  separateMinorPatch: true,
   kubernetes: {
     fileMatch: ["\\.yaml$"]
   },
@@ -39,6 +39,18 @@
     }
   ],
   packageRules: [
+    {
+      // automerge non-major updates except 0.* versions
+      // similar to :automergeStableNonMajor preset, but also works for versioning schemes without range support
+      matchUpdateTypes: ["minor", "patch"],
+      matchCurrentVersion: "!/^v?0\\./",
+      automerge: true
+    },
+    {
+      // automerge patch updates
+      matchUpdateTypes: ["patch"],
+      automerge: true
+    },
     {
       // disable automerge for go minor updates
       matchDatasources: ["golang-version"],
