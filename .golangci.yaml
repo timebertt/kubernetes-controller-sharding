@@ -67,5 +67,9 @@ issues:
     - stylecheck
     text: "ST1003:.+func SetDefaults_"
   - linters:
+    - stylecheck
+    text: "ST1001: should not use dot imports"
+    path: "pkg/test"
+  - linters:
     - nolintlint
     text: "should be written without leading space"
