@@ -7,16 +7,11 @@ import (
 )
 
 // defaultK is the Komega used by the package global functions.
-var defaultK = &komega{ctx: context.Background()}
+var defaultK = &komega{}
 
 // SetClient sets the client used by the package global functions.
 func SetClient(c client.Client) {
 	defaultK.client = c
-}
-
-// SetContext sets the context used by the package global functions.
-func SetContext(c context.Context) {
-	defaultK.ctx = c
 }
 
 func checkDefaultClient() {
@@ -31,8 +26,8 @@ func checkDefaultClient() {
 //	deployment := appsv1.Deployment{ ... }
 //	gomega.Eventually(komega.Get(&deployment)).To(gomega.Succeed())
 //
-// By calling the returned function directly it can also be used with gomega.Expect(komega.Get(...)()).To(...)
-func Get(obj client.Object) func() error {
+// By calling the returned function directly it can also be used with gomega.Expect(komega.Get(...)(ctx)).To(...)
+func Get(obj client.Object) func(context.Context) error {
 	checkDefaultClient()
 	return defaultK.Get(obj)
 }
@@ -43,8 +38,8 @@ func Get(obj client.Object) func() error {
 //	deployments := v1.DeploymentList{ ... }
 //	gomega.Eventually(k.List(&deployments)).To(gomega.Succeed())
 //
-// By calling the returned function directly it can also be used as gomega.Expect(k.List(...)()).To(...)
-func List(list client.ObjectList, opts ...client.ListOption) func() error {
+// By calling the returned function directly it can also be used as gomega.Expect(k.List(...)(ctx)).To(...)
+func List(list client.ObjectList, opts ...client.ListOption) func(context.Context) error {
 	checkDefaultClient()
 	return defaultK.List(list, opts...)
 }
@@ -57,8 +52,8 @@ func List(list client.ObjectList, opts ...client.ListOption) func() error {
 //	  deployment.Spec.Replicas = 3
 //	})).To(gomega.Succeed())
 //
-// By calling the returned function directly it can also be used as gomega.Expect(k.Update(...)()).To(...)
-func Update(obj client.Object, f func(), opts ...client.UpdateOption) func() error {
+// By calling the returned function directly it can also be used as gomega.Expect(k.Update(...)(ctx)).To(...)
+func Update(obj client.Object, f func(), opts ...client.UpdateOption) func(context.Context) error {
 	checkDefaultClient()
 	return defaultK.Update(obj, f, opts...)
 }
@@ -71,8 +66,8 @@ func Update(obj client.Object, f func(), opts ...client.UpdateOption) func() err
 //	  deployment.Status.AvailableReplicas = 1
 //	})).To(gomega.Succeed())
 //
-// By calling the returned function directly it can also be used as gomega.Expect(k.UpdateStatus(...)()).To(...)
-func UpdateStatus(obj client.Object, f func(), opts ...client.SubResourceUpdateOption) func() error {
+// By calling the returned function directly it can also be used as gomega.Expect(k.UpdateStatus(...)(ctx)).To(...)
+func UpdateStatus(obj client.Object, f func(), opts ...client.SubResourceUpdateOption) func(context.Context) error {
 	checkDefaultClient()
 	return defaultK.UpdateStatus(obj, f, opts...)
 }
@@ -83,8 +78,8 @@ func UpdateStatus(obj client.Object, f func(), opts ...client.SubResourceUpdateO
 //	deployment := appsv1.Deployment{ ... }
 //	gomega.Eventually(k.Object(&deployment)).To(HaveField("Spec.Replicas", gomega.Equal(ptr.To(3))))
 //
-// By calling the returned function directly it can also be used as gomega.Expect(k.Object(...)()).To(...)
-func Object(obj client.Object) func() (client.Object, error) {
+// By calling the returned function directly it can also be used as gomega.Expect(k.Object(...)(ctx)).To(...)
+func Object(obj client.Object) func(context.Context) (client.Object, error) {
 	checkDefaultClient()
 	return defaultK.Object(obj)
 }
@@ -95,8 +90,8 @@ func Object(obj client.Object) func() (client.Object, error) {
 //	deployments := appsv1.DeploymentList{ ... }
 //	gomega.Eventually(k.ObjectList(&deployments)).To(HaveField("Items", HaveLen(1)))
 //
-// By calling the returned function directly it can also be used as gomega.Expect(k.ObjectList(...)()).To(...)
-func ObjectList(list client.ObjectList, opts ...client.ListOption) func() (client.ObjectList, error) {
+// By calling the returned function directly it can also be used as gomega.Expect(k.ObjectList(...)(ctx)).To(...)
+func ObjectList(list client.ObjectList, opts ...client.ListOption) func(context.Context) (client.ObjectList, error) {
 	checkDefaultClient()
 	return defaultK.ObjectList(list, opts...)
 }

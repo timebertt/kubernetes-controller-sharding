@@ -1,6 +1,7 @@
 package komega
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -11,6 +12,7 @@ import (
 
 func TestDefaultGet(t *testing.T) {
 	g := NewWithT(t)
+	ctx := context.Background()
 
 	fc := createFakeClient()
 	SetClient(fc)
@@ -21,19 +23,20 @@ func TestDefaultGet(t *testing.T) {
 			Name:      "test",
 		},
 	}
-	g.Eventually(Get(&fetched)).Should(Succeed())
+	g.Eventually(ctx, Get(&fetched)).Should(Succeed())
 
 	g.Expect(*fetched.Spec.Replicas).To(BeEquivalentTo(5))
 }
 
 func TestDefaultList(t *testing.T) {
 	g := NewWithT(t)
+	ctx := context.Background()
 
 	fc := createFakeClient()
 	SetClient(fc)
 
 	list := appsv1.DeploymentList{}
-	g.Eventually(List(&list)).Should(Succeed())
+	g.Eventually(ctx, List(&list)).Should(Succeed())
 
 	g.Expect(list.Items).To(HaveLen(1))
 	depl := exampleDeployment()
@@ -45,6 +48,7 @@ func TestDefaultList(t *testing.T) {
 
 func TestDefaultUpdate(t *testing.T) {
 	g := NewWithT(t)
+	ctx := context.Background()
 
 	fc := createFakeClient()
 	SetClient(fc)
@@ -52,18 +56,19 @@ func TestDefaultUpdate(t *testing.T) {
 	updateDeployment := appsv1.Deployment{
 		ObjectMeta: exampleDeployment().ObjectMeta,
 	}
-	g.Eventually(Update(&updateDeployment, func() {
+	g.Eventually(ctx, Update(&updateDeployment, func() {
 		updateDeployment.Annotations = map[string]string{"updated": "true"}
 	})).Should(Succeed())
 
 	fetched := appsv1.Deployment{
 		ObjectMeta: exampleDeployment().ObjectMeta,
 	}
-	g.Expect(Object(&fetched)()).To(HaveField("ObjectMeta.Annotations", HaveKeyWithValue("updated", "true")))
+	g.Eventually(ctx, Object(&fetched)).Should(HaveField("ObjectMeta.Annotations", HaveKeyWithValue("updated", "true")))
 }
 
 func TestDefaultUpdateStatus(t *testing.T) {
 	g := NewWithT(t)
+	ctx := context.Background()
 
 	fc := createFakeClient()
 	SetClient(fc)
@@ -71,18 +76,19 @@ func TestDefaultUpdateStatus(t *testing.T) {
 	updateDeployment := appsv1.Deployment{
 		ObjectMeta: exampleDeployment().ObjectMeta,
 	}
-	g.Eventually(UpdateStatus(&updateDeployment, func() {
+	g.Eventually(ctx, UpdateStatus(&updateDeployment, func() {
 		updateDeployment.Status.AvailableReplicas = 1
 	})).Should(Succeed())
 
 	fetched := appsv1.Deployment{
 		ObjectMeta: exampleDeployment().ObjectMeta,
 	}
-	g.Expect(Object(&fetched)()).To(HaveField("Status.AvailableReplicas", BeEquivalentTo(1)))
+	g.Eventually(ctx, Object(&fetched)).Should(HaveField("Status.AvailableReplicas", BeEquivalentTo(1)))
 }
 
 func TestDefaultObject(t *testing.T) {
 	g := NewWithT(t)
+	ctx := context.Background()
 
 	fc := createFakeClient()
 	SetClient(fc)
@@ -93,7 +99,7 @@ func TestDefaultObject(t *testing.T) {
 			Name:      "test",
 		},
 	}
-	g.Eventually(Object(&fetched)).Should(And(
+	g.Eventually(ctx, Object(&fetched)).Should(And(
 		Not(BeNil()),
 		HaveField("Spec.Replicas", Equal(ptr.To(int32(5)))),
 	))
@@ -101,12 +107,13 @@ func TestDefaultObject(t *testing.T) {
 
 func TestDefaultObjectList(t *testing.T) {
 	g := NewWithT(t)
+	ctx := context.Background()
 
 	fc := createFakeClient()
 	SetClient(fc)
 
 	list := appsv1.DeploymentList{}
-	g.Eventually(ObjectList(&list)).Should(And(
+	g.Eventually(ctx, ObjectList(&list)).Should(And(
 		Not(BeNil()),
 		HaveField("Items", And(
 			HaveLen(1),

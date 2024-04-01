@@ -302,7 +302,7 @@ func TestEqualObjectMatcher(t *testing.T) {
 			want: false,
 		},
 
-		// This tests specific behaviour in how Kubernetes marshals the zero value of metav1.Time{}.
+		// This tests specific behavior in how Kubernetes marshals the zero value of metav1.Time{}.
 		{
 			name: "Creation timestamp set to empty value on both original and modified",
 			original: &unstructured.Unstructured{

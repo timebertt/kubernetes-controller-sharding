@@ -26,7 +26,6 @@ import (
 // komega is a collection of utilites for writing tests involving a mocked
 // Kubernetes API.
 type komega struct {
-	ctx    context.Context
 	client client.Client
 }
 
@@ -36,82 +35,75 @@ var _ Komega = &komega{}
 func New(c client.Client) Komega {
 	return &komega{
 		client: c,
-		ctx:    context.Background(),
 	}
 }
 
-// WithContext returns a copy that uses the given context.
-func (k komega) WithContext(ctx context.Context) Komega {
-	k.ctx = ctx
-	return &k
-}
-
 // Get returns a function that fetches a resource and returns the occurring error.
-func (k *komega) Get(obj client.Object) func() error {
+func (k *komega) Get(obj client.Object) func(context.Context) error {
 	key := types.NamespacedName{
 		Name:      obj.GetName(),
 		Namespace: obj.GetNamespace(),
 	}
-	return func() error {
-		return k.client.Get(k.ctx, key, obj)
+	return func(ctx context.Context) error {
+		return k.client.Get(ctx, key, obj)
 	}
 }
 
 // List returns a function that lists resources and returns the occurring error.
-func (k *komega) List(obj client.ObjectList, opts ...client.ListOption) func() error {
-	return func() error {
-		return k.client.List(k.ctx, obj, opts...)
+func (k *komega) List(obj client.ObjectList, opts ...client.ListOption) func(context.Context) error {
+	return func(ctx context.Context) error {
+		return k.client.List(ctx, obj, opts...)
 	}
 }
 
 // Update returns a function that fetches a resource, applies the provided update function and then updates the resource.
-func (k *komega) Update(obj client.Object, updateFunc func(), opts ...client.UpdateOption) func() error {
+func (k *komega) Update(obj client.Object, updateFunc func(), opts ...client.UpdateOption) func(context.Context) error {
 	key := types.NamespacedName{
 		Name:      obj.GetName(),
 		Namespace: obj.GetNamespace(),
 	}
-	return func() error {
-		err := k.client.Get(k.ctx, key, obj)
+	return func(ctx context.Context) error {
+		err := k.client.Get(ctx, key, obj)
 		if err != nil {
 			return err
 		}
 		updateFunc()
-		return k.client.Update(k.ctx, obj, opts...)
+		return k.client.Update(ctx, obj, opts...)
 	}
 }
 
 // UpdateStatus returns a function that fetches a resource, applies the provided update function and then updates the resource's status.
-func (k *komega) UpdateStatus(obj client.Object, updateFunc func(), opts ...client.SubResourceUpdateOption) func() error {
+func (k *komega) UpdateStatus(obj client.Object, updateFunc func(), opts ...client.SubResourceUpdateOption) func(context.Context) error {
 	key := types.NamespacedName{
 		Name:      obj.GetName(),
 		Namespace: obj.GetNamespace(),
 	}
-	return func() error {
-		err := k.client.Get(k.ctx, key, obj)
+	return func(ctx context.Context) error {
+		err := k.client.Get(ctx, key, obj)
 		if err != nil {
 			return err
 		}
 		updateFunc()
-		return k.client.Status().Update(k.ctx, obj, opts...)
+		return k.client.Status().Update(ctx, obj, opts...)
 	}
 }
 
 // Object returns a function that fetches a resource and returns the object.
-func (k *komega) Object(obj client.Object) func() (client.Object, error) {
+func (k *komega) Object(obj client.Object) func(context.Context) (client.Object, error) {
 	key := types.NamespacedName{
 		Name:      obj.GetName(),
 		Namespace: obj.GetNamespace(),
 	}
-	return func() (client.Object, error) {
-		err := k.client.Get(k.ctx, key, obj)
+	return func(ctx context.Context) (client.Object, error) {
+		err := k.client.Get(ctx, key, obj)
 		return obj, err
 	}
 }
 
 // ObjectList returns a function that fetches a resource and returns the object.
-func (k *komega) ObjectList(obj client.ObjectList, opts ...client.ListOption) func() (client.ObjectList, error) {
-	return func() (client.ObjectList, error) {
-		err := k.client.List(k.ctx, obj, opts...)
+func (k *komega) ObjectList(obj client.ObjectList, opts ...client.ListOption) func(context.Context) (client.ObjectList, error) {
+	return func(ctx context.Context) (client.ObjectList, error) {
+		err := k.client.List(ctx, obj, opts...)
 		return obj, err
 	}
 }

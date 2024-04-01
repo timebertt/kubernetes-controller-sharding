@@ -29,15 +29,15 @@ type Komega interface {
 	// It can be used with gomega.Eventually() like this
 	//   deployment := appsv1.Deployment{ ... }
 	//   gomega.Eventually(k.Get(&deployment)).To(gomega.Succeed())
-	// By calling the returned function directly it can also be used with gomega.Expect(k.Get(...)()).To(...)
-	Get(client.Object) func() error
+	// By calling the returned function directly it can also be used with gomega.Expect(k.Get(...)(ctx)).To(...)
+	Get(client.Object) func(context.Context) error
 
 	// List returns a function that lists resources and returns the occurring error.
 	// It can be used with gomega.Eventually() like this
 	//   deployments := v1.DeploymentList{ ... }
 	//   gomega.Eventually(k.List(&deployments)).To(gomega.Succeed())
-	// By calling the returned function directly it can also be used as gomega.Expect(k.List(...)()).To(...)
-	List(client.ObjectList, ...client.ListOption) func() error
+	// By calling the returned function directly it can also be used as gomega.Expect(k.List(...)(ctx)).To(...)
+	List(client.ObjectList, ...client.ListOption) func(context.Context) error
 
 	// Update returns a function that fetches a resource, applies the provided update function and then updates the resource.
 	// It can be used with gomega.Eventually() like this:
@@ -45,8 +45,8 @@ type Komega interface {
 	//   gomega.Eventually(k.Update(&deployment, func() {
 	//     deployment.Spec.Replicas = 3
 	//   })).To(gomega.Succeed())
-	// By calling the returned function directly it can also be used as gomega.Expect(k.Update(...)()).To(...)
-	Update(client.Object, func(), ...client.UpdateOption) func() error
+	// By calling the returned function directly it can also be used as gomega.Expect(k.Update(...)(ctx)).To(...)
+	Update(client.Object, func(), ...client.UpdateOption) func(context.Context) error
 
 	// UpdateStatus returns a function that fetches a resource, applies the provided update function and then updates the resource's status.
 	// It can be used with gomega.Eventually() like this:
@@ -54,23 +54,20 @@ type Komega interface {
 	//   gomega.Eventually(k.Update(&deployment, func() {
 	//     deployment.Status.AvailableReplicas = 1
 	//   })).To(gomega.Succeed())
-	// By calling the returned function directly it can also be used as gomega.Expect(k.UpdateStatus(...)()).To(...)
-	UpdateStatus(client.Object, func(), ...client.SubResourceUpdateOption) func() error
+	// By calling the returned function directly it can also be used as gomega.Expect(k.UpdateStatus(...)(ctx)).To(...)
+	UpdateStatus(client.Object, func(), ...client.SubResourceUpdateOption) func(context.Context) error
 
 	// Object returns a function that fetches a resource and returns the object.
 	// It can be used with gomega.Eventually() like this:
 	//   deployment := appsv1.Deployment{ ... }
 	//   gomega.Eventually(k.Object(&deployment)).To(HaveField("Spec.Replicas", gomega.Equal(ptr.To(int32(3)))))
-	// By calling the returned function directly it can also be used as gomega.Expect(k.Object(...)()).To(...)
-	Object(client.Object) func() (client.Object, error)
+	// By calling the returned function directly it can also be used as gomega.Expect(k.Object(...)(ctx)).To(...)
+	Object(client.Object) func(context.Context) (client.Object, error)
 
 	// ObjectList returns a function that fetches a resource and returns the object.
 	// It can be used with gomega.Eventually() like this:
 	//   deployments := appsv1.DeploymentList{ ... }
 	//   gomega.Eventually(k.ObjectList(&deployments)).To(HaveField("Items", HaveLen(1)))
-	// By calling the returned function directly it can also be used as gomega.Expect(k.ObjectList(...)()).To(...)
-	ObjectList(client.ObjectList, ...client.ListOption) func() (client.ObjectList, error)
-
-	// WithContext returns a copy that uses the given context.
-	WithContext(context.Context) Komega
+	// By calling the returned function directly it can also be used as gomega.Expect(k.ObjectList(...)(ctx)).To(...)
+	ObjectList(client.ObjectList, ...client.ListOption) func(context.Context) (client.ObjectList, error)
 }
