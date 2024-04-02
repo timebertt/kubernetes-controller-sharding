@@ -1,9 +1,6 @@
 run:
   concurrency: 4
-  deadline: 10m
-
-  skip-files:
-  - "zz_generated\\..*\\.go$"
+  timeout: 10m
 
 linters:
   enable:
@@ -62,10 +59,17 @@ linters-settings:
     - name: unreachable-code
 
 issues:
+  exclude-files:
+  - "zz_generated\\..*\\.go$"
+
   exclude-rules:
   - linters:
     - stylecheck
     text: "ST1003:.+func SetDefaults_"
+  - linters:
+    - stylecheck
+    text: "ST1001: should not use dot imports"
+    path: "pkg/test"
   - linters:
     - nolintlint
     text: "should be written without leading space"

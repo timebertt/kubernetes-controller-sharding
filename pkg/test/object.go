@@ -1,7 +1,5 @@
-//go:build tools
-
 /*
-Copyright 2023 Tim Ebert.
+Copyright 2024 Tim Ebert.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,10 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package hack
+package test
 
 import (
-	_ "github.com/onsi/ginkgo/v2/ginkgo"
-	_ "k8s.io/code-generator"
-	_ "sigs.k8s.io/controller-runtime/tools/setup-envtest"
+	"crypto/sha256"
+	"encoding/hex"
+
+	"github.com/google/uuid"
 )
+
+// RandomSuffix generates a random string that is safe to use as a name suffix in tests.
+func RandomSuffix() string {
+	unique := uuid.New()
+	hash := sha256.Sum256(unique[:])
+	return hex.EncodeToString(hash[:])[:8]
+}

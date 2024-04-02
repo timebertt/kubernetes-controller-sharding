@@ -1,15 +1,16 @@
 TOOLS_BIN_DIR ?= hack/tools/bin
 export PATH := $(abspath $(TOOLS_BIN_DIR)):$(PATH)
 
-# Tool targets should declare go.mod as a prerequisite, if the tool's version is managed via go modules. This causes
-# make to rebuild the tool in the desired version, when go.mod is changed.
-# For tools where the version is not managed via go.mod, we use a file per tool and version as an indicator for make
-# whether we need to install the tool or a different version of the tool (make doesn't rerun the rule if the rule is
-# changed).
+# We use a file per tool and version as an indicator for make whether we need to install the tool or a different version
+# of the tool (make doesn't rerun the rule if the rule is changed).
 
-# Use this "function" to add the version file as a prerequisite for the tool target: e.g.
+# Use this "function" to add the version file as a prerequisite for the tool target, e.g.:
 #   $(KUBECTL): $(call tool_version_file,$(KUBECTL),$(KUBECTL_VERSION))
 tool_version_file = $(TOOLS_BIN_DIR)/.version_$(subst $(TOOLS_BIN_DIR)/,,$(1))_$(2)
+
+# Use this "function" to get the version of a go module from go.mod, e.g.:
+#   GINKGO_VERSION ?= $(call version_gomod,github.com/onsi/ginkgo/v2)
+version_gomod = $(shell go list -f '{{ .Version }}' -m $(1))
 
 # This target cleans up any previous version files for the given tool and creates the given version file.
 # This way, we can generically determine, which version was installed without calling each and every binary explicitly.
@@ -22,6 +23,11 @@ CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
 CONTROLLER_GEN_VERSION ?= v0.14.0
 $(CONTROLLER_GEN): $(call tool_version_file,$(CONTROLLER_GEN),$(CONTROLLER_GEN_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION)
+
+GINKGO := $(TOOLS_BIN_DIR)/ginkgo
+GINKGO_VERSION ?= $(call version_gomod,github.com/onsi/ginkgo/v2)
+$(GINKGO): $(call tool_version_file,$(GINKGO),$(GINKGO_VERSION))
+	go build -o $(GINKGO) github.com/onsi/ginkgo/v2/ginkgo
 
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
 # renovate: datasource=github-releases depName=golangci/golangci-lint

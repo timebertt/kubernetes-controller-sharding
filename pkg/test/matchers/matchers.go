@@ -1,7 +1,5 @@
-//go:build tools
-
 /*
-Copyright 2023 Tim Ebert.
+Copyright 2024 Tim Ebert.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,10 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package hack
+package matchers
 
 import (
-	_ "github.com/onsi/ginkgo/v2/ginkgo"
-	_ "k8s.io/code-generator"
-	_ "sigs.k8s.io/controller-runtime/tools/setup-envtest"
+	gomegatypes "github.com/onsi/gomega/types"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
+
+// BeNotFoundError checks if error is a NotFound error.
+func BeNotFoundError() gomegatypes.GomegaMatcher {
+	return &errorMatcher{
+		match:   apierrors.IsNotFound,
+		message: "NotFound",
+	}
+}

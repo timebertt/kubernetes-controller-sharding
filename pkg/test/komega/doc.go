@@ -1,7 +1,5 @@
-//go:build tools
-
 /*
-Copyright 2023 Tim Ebert.
+Copyright 2024 Tim Ebert.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package hack
-
-import (
-	_ "github.com/onsi/ginkgo/v2/ginkgo"
-	_ "k8s.io/code-generator"
-	_ "sigs.k8s.io/controller-runtime/tools/setup-envtest"
-)
+// Package komega is a modified version of sigs.k8s.io/controller-runtime/pkg/envtest/komega.
+// Instead of requiring users to set a global context, the returned functions accept a context to integrate nicely with
+// ginkgo's/gomega's timeout/interrupt handling and polling.
+// For this, users must pass a spec-specific context, e.g.:
+//
+//	It("...", func(ctx SpecContext) {
+//		Eventually(ctx, Get(...)).Should(Succeed())
+//	})
+package komega
