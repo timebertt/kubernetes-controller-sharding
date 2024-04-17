@@ -18,9 +18,9 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.4.0
 	k8s.io/api v0.29.4
 	k8s.io/apimachinery v0.29.4
-	k8s.io/client-go v0.29.3
-	k8s.io/code-generator v0.29.3
-	k8s.io/component-base v0.29.3
+	k8s.io/client-go v0.29.4
+	k8s.io/code-generator v0.29.4
+	k8s.io/component-base v0.29.4
 	k8s.io/klog/v2 v2.120.1
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57
 	sigs.k8s.io/controller-runtime v0.17.3
