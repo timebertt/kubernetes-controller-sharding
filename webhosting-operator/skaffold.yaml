@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: policy
@@ -19,13 +19,11 @@ profiles:
         defaultNamespace: ""
       statusCheck: false
 ---
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: webhosting-operator
 build:
-  tagPolicy:
-    inputDigest: {}
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator
       ko:
@@ -34,6 +32,8 @@ build:
             - go.mod
             - '**/*.go'
         main: ./cmd/webhosting-operator
+  tagPolicy:
+    inputDigest: {}
   local:
     concurrency: 0
 manifests:
@@ -97,7 +97,7 @@ profiles:
         # singleton controller without sharding for comparison
         value: config/manager/overlays/shoot/non-sharded
 ---
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: experiment
@@ -106,8 +106,6 @@ profiles:
     activation:
       - env: EXPERIMENT_SCENARIO=.+
     build:
-      tagPolicy:
-        inputDigest: {}
       artifacts:
         - image: ghcr.io/timebertt/kubernetes-controller-sharding/experiment
           ko:
@@ -116,6 +114,8 @@ profiles:
                 - go.mod
                 - '**/*.go'
             main: ./cmd/experiment
+      tagPolicy:
+        inputDigest: {}
       local:
         concurrency: 0
     manifests:
@@ -155,7 +155,7 @@ profiles:
                       exit 1
                     fi
 ---
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: monitoring
