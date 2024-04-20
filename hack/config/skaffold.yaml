@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: cert-manager
@@ -30,7 +30,7 @@ deploy:
                 done
                 exit 1
 ---
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: cert-manager-resources
@@ -46,7 +46,7 @@ deploy:
         - --force-conflicts
     defaultNamespace: ""
 ---
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: ingress-nginx
@@ -86,7 +86,7 @@ profiles:
         paths:
           - hack/config/ingress-nginx/shoot
 ---
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: kyverno
@@ -119,7 +119,7 @@ deploy:
                 done
                 exit 1
 ---
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: policy
@@ -142,13 +142,11 @@ profiles:
             - --force-conflicts
         defaultNamespace: ""
 ---
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: sharder
 build:
-  tagPolicy:
-    inputDigest: {}
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/sharder
       ko:
@@ -157,6 +155,8 @@ build:
             - go.mod
             - '**/*.go'
         main: ./cmd/sharder
+  tagPolicy:
+    inputDigest: {}
   local:
     concurrency: 0
 manifests:
@@ -186,13 +186,11 @@ profiles:
         path: /manifests/kustomize/paths/0
         value: hack/config/sharder/local
 ---
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: shard
 build:
-  tagPolicy:
-    inputDigest: {}
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/shard
       ko:
@@ -201,6 +199,8 @@ build:
             - go.mod
             - '**/*.go'
         main: ./cmd/shard
+  tagPolicy:
+    inputDigest: {}
   local:
     concurrency: 0
 manifests:
@@ -216,7 +216,7 @@ deploy:
         - --force-conflicts
     defaultNamespace: ""
 ---
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: monitoring-crds
@@ -232,7 +232,7 @@ deploy:
         - --force-conflicts
     defaultNamespace: ""
 ---
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: monitoring
@@ -276,13 +276,11 @@ profiles:
         path: /manifests/kustomize/paths/0
         value: hack/config/monitoring/shoot
 ---
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: profiling
 build:
-  tagPolicy:
-    inputDigest: {}
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/janitor
       ko:
@@ -291,6 +289,8 @@ build:
             - go.mod
             - ./hack/cmd/janitor/**/*.go
         main: ./hack/cmd/janitor
+  tagPolicy:
+    inputDigest: {}
   local:
     concurrency: 0
 manifests:
