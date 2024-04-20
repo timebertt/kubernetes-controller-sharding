@@ -48,6 +48,10 @@ clean-tools-bin: ## Empty the tools binary directory
 .PHONY: modules
 modules: ## Runs go mod to ensure modules are up to date.
 	go mod tidy
+	cd webhosting-operator && go mod tidy
+	@# regenerate go.work.sum
+	rm -f go.work.sum
+	go mod download
 
 .PHONY: generate-fast
 generate-fast: $(CONTROLLER_GEN) modules ## Run all fast code generators
