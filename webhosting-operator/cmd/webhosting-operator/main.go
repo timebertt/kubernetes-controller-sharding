@@ -27,6 +27,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap/zapcore"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -38,7 +42,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/config"
-	"sigs.k8s.io/controller-runtime/pkg/controller/sharding"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
@@ -48,6 +51,8 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
+	shardlease "github.com/timebertt/kubernetes-controller-sharding/pkg/shard/lease"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/routes"
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
@@ -110,7 +115,7 @@ func main() {
 
 	if err = (&webhosting.WebsiteReconciler{
 		Config: opts.config,
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(mgr, opts.enableSharding, opts.clusterRingName, opts.shardName); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Website")
 		os.Exit(1)
 	}
@@ -141,9 +146,12 @@ func main() {
 type options struct {
 	configFile string
 
-	restConfig     *rest.Config
-	config         *configv1alpha1.WebhostingOperatorConfig
-	managerOptions ctrl.Options
+	restConfig      *rest.Config
+	config          *configv1alpha1.WebhostingOperatorConfig
+	managerOptions  ctrl.Options
+	enableSharding  bool
+	clusterRingName string
+	shardName       string
 }
 
 func (o *options) AddFlags(fs *flag.FlagSet) {
@@ -254,18 +262,50 @@ func (o *options) applyOptionsOverrides() error {
 		}
 	}
 
-	o.managerOptions.Sharded = true
-	// allow disabling sharding via env var for evaluation
-	if shardingEnv, ok := os.LookupEnv("SHARDING_ENABLED"); ok {
-		o.managerOptions.Sharded, err = strconv.ParseBool(shardingEnv)
+	// allow enabling/disabling sharding via env var for evaluation
+	if shardingEnv, ok := os.LookupEnv("ENABLE_SHARDING"); ok {
+		o.enableSharding, err = strconv.ParseBool(shardingEnv)
 		if err != nil {
-			return fmt.Errorf("error parsing SHARDING_ENABLED env var: %w", err)
+			return fmt.Errorf("error parsing ENABLE_SHARDING env var: %w", err)
 		}
 	}
 
-	// allow overriding shard ID via env var
-	o.managerOptions.ShardID = os.Getenv("SHARD_ID")
-	o.managerOptions.ShardMode = sharding.Mode(os.Getenv("SHARD_MODE"))
+	if o.enableSharding {
+		if !o.managerOptions.LeaderElection {
+			return fmt.Errorf("sharding cannot be enabled if leader election is disabled")
+		}
+
+		// SHARD LEASE
+		o.clusterRingName = "webhosting-operator"
+		shardLease, err := shardlease.NewResourceLock(o.restConfig, nil, shardlease.Options{
+			ClusterRingName: o.clusterRingName,
+		})
+		if err != nil {
+			return fmt.Errorf("failed creating shard lease: %w", err)
+		}
+		o.shardName = shardLease.Identity()
+
+		// Use manager's leader election mechanism for maintaining the shard lease.
+		// With this, controllers will only run as long as manager holds the shard lease.
+		// After graceful termination, the shard lease will be released.
+		o.managerOptions.LeaderElectionResourceLockInterface = shardLease
+
+		// FILTERED WATCH CACHE
+		// Configure cache to only watch objects that are assigned to this shard.
+		shardLabelSelector := labels.SelectorFromSet(labels.Set{
+			shardingv1alpha1.LabelShard(shardingv1alpha1.KindClusterRing, "", o.clusterRingName): o.shardName,
+		})
+
+		// This operator watches sharded objects (Websites, etc.) as well as non-sharded objects (Themes),
+		// use cache.Options.ByObject to configure the label selector on object level.
+		o.managerOptions.Cache.ByObject = map[client.Object]cache.ByObject{
+			&webhostingv1alpha1.Website{}: {Label: shardLabelSelector},
+			&appsv1.Deployment{}:          {Label: shardLabelSelector},
+			&corev1.ConfigMap{}:           {Label: shardLabelSelector},
+			&corev1.Service{}:             {Label: shardLabelSelector},
+			&networkingv1.Ingress{}:       {Label: shardLabelSelector},
+		}
+	}
 
 	return nil
 }

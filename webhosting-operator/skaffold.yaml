@@ -63,12 +63,6 @@ profiles:
       - op: replace
         path: /manifests/kustomize/paths/0
         value: config/manager/overlays/debug
-  - name: sharder
-    patches:
-      - op: replace
-        path: /manifests/kustomize/paths/0
-        # legacy implementation for comparison: don't use external sharding implementation, run shards and sharder in operator
-        value: config/manager/overlays/sharder
   - name: non-sharded
     patches:
       - op: replace
@@ -85,11 +79,6 @@ profiles:
         path: /manifests/kustomize/paths/0
         # default configuration: only run operator shards and use external sharding implementation via ClusterRing
         value: config/manager/overlays/shoot/default
-  - name: shoot-sharder
-    patches:
-      - op: replace
-        path: /manifests/kustomize/paths/0
-        value: config/manager/overlays/shoot/sharder
   - name: shoot-non-sharded
     patches:
       - op: replace

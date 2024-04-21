@@ -9,9 +9,5 @@ spec:
       containers:
       - name: manager
         env:
-        # disable leader election and run as shard-only (sharder controller disabled), this will use the external
-        # sharder implementation
-        - name: LEADER_ELECT
-          value: "false"
-        - name: SHARD_MODE
-          value: "shard"
+        - name: ENABLE_SHARDING
+          value: "true"
