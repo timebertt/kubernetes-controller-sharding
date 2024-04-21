@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	goruntime "runtime"
 	"strconv"
@@ -41,16 +42,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/routes"
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/controllers/webhosting"
 	webhostingmetrics "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/metrics"
-	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils/routes"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -104,16 +106,6 @@ func main() {
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
-	}
-
-	if *opts.config.Debugging.EnableProfiling {
-		if err := (routes.Profiling{}).AddToManager(mgr); err != nil {
-			setupLog.Error(err, "failed adding profiling handlers to manager")
-			os.Exit(1)
-		}
-		if *opts.config.Debugging.EnableContentionProfiling {
-			goruntime.SetBlockProfileRate(1)
-		}
 	}
 
 	if err = (&webhosting.WebsiteReconciler{
@@ -229,7 +221,25 @@ func (o *options) applyConfigToOptions() {
 	}
 
 	o.managerOptions.HealthProbeBindAddress = o.config.Health.BindAddress
-	o.managerOptions.MetricsBindAddress = o.config.Metrics.BindAddress
+
+	if o.config.Metrics.BindAddress != "0" {
+		var extraHandlers map[string]http.Handler
+		if *o.config.Debugging.EnableProfiling {
+			extraHandlers = routes.ProfilingHandlers
+			if *o.config.Debugging.EnableContentionProfiling {
+				goruntime.SetBlockProfileRate(1)
+			}
+		}
+
+		o.managerOptions.Metrics = metricsserver.Options{
+			BindAddress: o.config.Metrics.BindAddress,
+			// TODO(timebertt): add AuthN/AuthZ to metrics endpoint and drop kube-rbac-proxy
+			// SecureServing: false,
+			// FilterProvider: filters.WithAuthenticationAndAuthorization,
+			ExtraHandlers: extraHandlers,
+		}
+	}
+
 	o.managerOptions.GracefulShutdownTimeout = pointer.Duration(o.config.GracefulShutdownTimeout.Duration)
 }
 

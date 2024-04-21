@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -103,7 +104,9 @@ func main() {
 			mgr, err = ctrl.NewManager(restConfig, ctrl.Options{
 				Scheme:                 scheme,
 				HealthProbeBindAddress: ":8081",
-				MetricsBindAddress:     ":8080",
+				Metrics: metricsserver.Options{
+					BindAddress: ":8080",
+				},
 				// disable leader election
 				LeaderElection: false,
 
