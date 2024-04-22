@@ -24,6 +24,8 @@ linters-settings:
     alias:
     - pkg: github.com/timebertt/kubernetes-controller-sharding/apis/(\w+)/(v[\w\d]+)
       alias: $1$2
+    - pkg: github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/(\w+)/(v[\w\d]+)
+      alias: $1$2
     - pkg: k8s.io/api/(\w+)/(v[\w\d]+)
       alias: $1$2
     - pkg: k8s.io/apimachinery/pkg/apis/(\w+)/(v[\w\d]+)
