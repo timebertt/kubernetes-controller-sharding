@@ -40,6 +40,11 @@
   ],
   packageRules: [
     {
+      // disable update of dependency on the main module
+      matchPackageNames: ["github.com/timebertt/kubernetes-controller-sharding"],
+      enabled: false
+    },
+    {
       // automerge non-major updates except 0.* versions
       // similar to :automergeStableNonMajor preset, but also works for versioning schemes without range support
       matchUpdateTypes: ["minor", "patch"],
