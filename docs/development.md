@@ -26,6 +26,8 @@ Note that you might need to push images to a remote registry though.
 The development setup reuses the deployment manifests of the main sharding components developed in this repository, located in [`config`](../config).
 See [Install the Sharding Components](installation.md).
 
+It also includes the [example shard](../pkg/shard) (see [Implement Sharding in Your Controller](implement-sharding.md)) and the [webhosting-operator](../webhosting-operator/README.md) (see [Evaluating the Sharding Mechanism](evaluation.md)).
+
 Apart from this, the development setup also includes some external components, located in [`hack/config`](../hack/config).
 This includes [cert-manager](https://cert-manager.io/), [ingress-nginx](https://kubernetes.github.io/ingress-nginx/), [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus), [kyverno](https://kyverno.io/), and [parca](https://parca.dev/).
 These components are installed for a seamless development and testing experience but also for this project's [Evaluation](evaluation.md) on a remote cluster in the cloud.
