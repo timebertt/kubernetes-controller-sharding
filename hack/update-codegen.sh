@@ -37,18 +37,16 @@ sharder_config_group() {
   echo "Generating sharder config API group"
 
   kube::codegen::gen_helpers \
-      --input-pkg-root github.com/timebertt/kubernetes-controller-sharding/pkg/apis \
-      --output-base "${GOPATH}/src" \
-      --boilerplate "${SCRIPT_DIR}/boilerplate.go.txt"
+      --boilerplate "${SCRIPT_DIR}/boilerplate.go.txt" \
+      "${SCRIPT_DIR}/../pkg/apis"
 }
 
 webhosting_config_group() {
   echo "Generating webhosting-operator config API group"
 
   kube::codegen::gen_helpers \
-      --input-pkg-root github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis \
-      --output-base "${GOPATH}/src" \
-      --boilerplate "${SCRIPT_DIR}/boilerplate.go.txt"
+      --boilerplate "${SCRIPT_DIR}/boilerplate.go.txt" \
+      "${SCRIPT_DIR}/../webhosting-operator/pkg/apis"
 }
 
 sharder_config_group
