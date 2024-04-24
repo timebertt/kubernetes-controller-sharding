@@ -1,0 +1,30 @@
+name: e2e
+
+on:
+  push:
+    branches:
+    - main
+    tags:
+    - v*
+    paths-ignore:
+    - "**.md"
+  pull_request:
+
+jobs:
+  e2e-kind:
+    runs-on: ubuntu-latest
+    env:
+      ARTIFACTS: artifacts
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+    - run: make ci-e2e-kind
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: e2e-artifacts
+        path: artifacts
+        if-no-files-found: error
