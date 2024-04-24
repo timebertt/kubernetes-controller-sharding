@@ -10,7 +10,7 @@ require (
 	github.com/prometheus/client_golang v1.19.0
 	github.com/prometheus/common v0.53.0
 	github.com/spf13/cobra v1.8.0
-	github.com/timebertt/kubernetes-controller-sharding v0.0.0
+	github.com/timebertt/kubernetes-controller-sharding v0.3.0
 	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/zap v1.27.0
 	golang.org/x/time v0.5.0
