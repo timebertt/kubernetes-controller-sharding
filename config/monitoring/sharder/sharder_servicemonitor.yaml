@@ -12,6 +12,7 @@ spec:
     port: metrics
     scheme: https
     bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    honorLabels: true
     interval: 10s
     scrapeTimeout: 10s
     tlsConfig:

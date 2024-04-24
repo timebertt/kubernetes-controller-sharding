@@ -69,7 +69,7 @@ type MetricsEndpoint struct {
 	// BindAddress is the TCP address that the controller should bind to
 	// for serving prometheus metrics.
 	// It can be set to "0" to disable the metrics serving.
-	// Defaults to 127.0.0.1:8080
+	// Defaults to :8080
 	// +optional
 	BindAddress string `json:"bindAddress,omitempty"`
 }
