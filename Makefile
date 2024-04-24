@@ -6,6 +6,8 @@ GHCR_REPO ?= ghcr.io/timebertt/kubernetes-controller-sharding
 SHARDER_IMG ?= $(GHCR_REPO)/sharder:$(TAG)
 SHARD_IMG ?= $(GHCR_REPO)/shard:$(TAG)
 JANITOR_IMG ?= $(GHCR_REPO)/janitor:$(TAG)
+WEBHOSTING_OPERATOR_IMG ?= $(GHCR_REPO)/webhosting-operator:$(TAG)
+EXPERIMENT_IMG ?= $(GHCR_REPO)/experiment:$(TAG)
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.27
@@ -40,7 +42,7 @@ help: ## Display this help.
 include hack/tools.mk
 
 .PHONY: clean-tools-bin
-clean-tools-bin: ## Empty the tools binary directory
+clean-tools-bin: ## Empty the tools binary directory.
 	rm -rf $(TOOLS_BIN_DIR)/*
 
 ##@ Development
@@ -48,14 +50,23 @@ clean-tools-bin: ## Empty the tools binary directory
 .PHONY: modules
 modules: ## Runs go mod to ensure modules are up to date.
 	go mod tidy
+	cd webhosting-operator && go mod tidy
+	@# regenerate go.work.sum
+	rm -f go.work.sum
+	go mod download
 
 .PHONY: generate-fast
-generate-fast: $(CONTROLLER_GEN) modules ## Run all fast code generators
+generate-fast: $(CONTROLLER_GEN) modules ## Run all fast code generators for the main module.
 	$(CONTROLLER_GEN) rbac:roleName=sharder crd paths="./pkg/..." output:rbac:artifacts:config=config/rbac output:crd:artifacts:config=config/crds
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/..."
 
+.PHONY: generate-fast-webhosting
+generate-fast-webhosting: $(CONTROLLER_GEN) modules ## Run all fast code generators for the webhosting-operator module.
+	$(CONTROLLER_GEN) rbac:roleName=operator crd paths="./webhosting-operator/..." output:rbac:artifacts:config=webhosting-operator/config/manager/rbac output:crd:artifacts:config=webhosting-operator/config/manager/crds
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./webhosting-operator/..."
+
 .PHONY: generate
-generate: $(VGOPATH) generate-fast modules ## Run all code generators
+generate: $(VGOPATH) generate-fast generate-fast-webhosting modules ## Run all code generators.
 	hack/update-codegen.sh
 
 .PHONY: fmt
@@ -64,7 +75,7 @@ fmt: ## Run go fmt against code.
 
 .PHONY: test
 test: $(SETUP_ENVTEST) ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test -race ./cmd/... ./pkg/...
+	KUBEBUILDER_ASSETS="$(shell $(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test -race ./cmd/... ./pkg/... ./webhosting-operator/pkg/...
 
 .PHONY: test-kyverno
 test-kyverno: $(KYVERNO) ## Run kyverno policy tests.
@@ -139,7 +150,7 @@ images: export KO_DOCKER_REPO = $(GHCR_REPO)
 .PHONY: images
 images: $(KO) ## Build and push container images using ko.
 	$(KO) build --push=$(PUSH) --sbom none --base-import-paths -t $(TAG) --platform linux/amd64,linux/arm64 \
-		./cmd/sharder ./cmd/shard ./hack/cmd/janitor
+		./cmd/sharder ./cmd/shard ./hack/cmd/janitor ./webhosting-operator/cmd/webhosting-operator
 
 ##@ Deployment
 
@@ -166,7 +177,7 @@ up dev: export SKAFFOLD_TAIL ?= true
 
 .PHONY: deploy
 deploy: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
-	$(SKAFFOLD) deploy -i $(SHARDER_IMG) -i $(SHARD_IMG) -i $(JANITOR_IMG)
+	$(SKAFFOLD) deploy -i $(SHARDER_IMG) -i $(SHARD_IMG) -i $(JANITOR_IMG) -i $(WEBHOSTING_OPERATOR_IMG) -i $(EXPERIMENT_IMG)
 
 .PHONY: up
 up: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.

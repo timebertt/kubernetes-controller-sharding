@@ -37,7 +37,7 @@ type WebsiteExporter struct {
 
 func (e *WebsiteExporter) AddToManager(mgr manager.Manager) error {
 	if e.Reader == nil {
-		e.Reader = mgr.GetShardedCache()
+		e.Reader = mgr.GetCache()
 	}
 
 	return mgr.Add(e)

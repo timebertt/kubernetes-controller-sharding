@@ -10,7 +10,7 @@ spec:
       containers:
       - name: manager
         env:
-        - name: SHARDING_ENABLED
+        - name: ENABLE_SHARDING
           value: "false"
         # When comparing singleton vs sharded setups, the singleton will fail to verify the SLOs because it has too few
         # website workers. Increase the worker count to allow comparing the setups.

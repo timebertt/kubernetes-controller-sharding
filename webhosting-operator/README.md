@@ -3,14 +3,9 @@
 webhosting-operator is a simple operator developed using [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder).
 It is built for demonstrating and evaluating the implemented sharding mechanisms for Kubernetes controllers, see [Evaluating the Sharding Mechanism](../docs/evaluation.md).
 
-The webhosting-operator is developed in a dedicated Go module so that dependencies of the actual sharding components can be managed independently of the example operator.
-Also, webhosting-operator does not reuse the sharder components implemented in the main module as described in [Implement Sharding in Your Controller](../docs/implement-sharding.md).
-In fact, webhosting-operator doesn't have a Go dependency on the main module at all.
+The webhosting-operator is developed in a dedicated Go module so that its dependencies don't leak into the main module which also contains the shard library.
+The webhosting-operator reuses the sharder components from the shard library as described in [Implement Sharding in Your Controller](../docs/implement-sharding.md).
 
-The reason for this is, that webhosting-operator was already used for evaluation of the project's first iteration that ran an internal sharder ("sidecar controller") in one of the shards (via leader election), implemented in my [controller-runtime fork](https://github.com/timebertt/controller-runtime/tree/sharding-0.15).
-The "legacy" controller-runtime implementation is now compatible with the external sharder from this repository however, i.e., you can run webhosting-operator shards for a `ClusterRing` by setting the `SHARD_MODE=shard` and `LEADER_ELECT=false` env vars.
-
-In the future, webhosting-operator could be adapted to follow the [Implement Sharding in Your Controller](../docs/implement-sharding.md) guide and reuse sharder components of the main module.
 For now, the webhosting-operator is kept in the same repository for simple evaluation of the project.
 However, it might be extracted into a dedicated repository later on if necessary.
 

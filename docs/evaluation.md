@@ -9,14 +9,14 @@ The evaluation setup builds upon the [Development and Testing Setup](development
 To demonstrate and evaluate the implemented sharding mechanisms using a fully functioning controller, a dedicated example operator was developed: the [webhosting-operator](../webhosting-operator/README.md).
 While the webhosting-operator is developed in the same repository, it only serves as an example.
 
-After deploying the sharding components using `make deploy` or `make up`, the webhosting-operator can be deployed in a similar manner along with the other evaluation components.
-Assuming you're in the repository's root directory:
+When deploying the sharding components using `make deploy` or `make up`, the webhosting-operator is automatically deployed along with the other evaluation components.
+Assuming you're in the repository's root directory, you can deploy the webhosting-operator using:
 
 ```bash
 # deploy the webhosting-operator using pre-built images
-make -C webhosting-operator deploy TAG=latest
+make deploy SKAFFOLD_MODULE=webhosting-operator TAG=latest
 # alternatively, build and deploy fresh images
-make -C webhosting-operator up
+make up SKAFFOLD_MODULE=webhosting-operator
 ```
 
 To perform a quick test of the webhosting-operator, create some example `Website` objects:
@@ -57,8 +57,7 @@ In addition to creating the preconfigured websites, you can also generate some m
 
 ```bash
 # create a random number of websites per project namespace (up to 50 each)
-$ cd webhosting-operator
-$ go run ./cmd/samples-generator
+$ go run ./webhosting-operator/cmd/samples-generator
 created 32 Websites in project "project-foo"
 ```
 
@@ -67,8 +66,7 @@ created 32 Websites in project "project-foo"
 The [experiment](./cmd/experiment) tool allows executing different scenarios for load testing the webhosting-operator, which are used for evaluating the sharding mechanism:
 
 ```text
-$ cd webhosting-operator
-$ go run ./cmd/experiment -h
+$ go run ./webhosting-operator/cmd/experiment -h
 Usage:
   experiment [command]
 
@@ -85,10 +83,10 @@ A load test scenario can be executed using one of these commands:
 go run ./cmd/experiment basic
 
 # build the experiment image and run the basic scenario as a Job on the cluster
-make -C webhosting-operator up SKAFFOLD_MODULE=experiment EXPERIMENT_SCENARIO=basic
+make up SKAFFOLD_MODULE=experiment EXPERIMENT_SCENARIO=basic
 
 # use a pre-built experiment image to run the basic scenario as a Job on the cluster
-make -C webhosting-operator deploy SKAFFOLD_MODULE=experiment EXPERIMENT_SCENARIO=basic TAG=latest
+make deploy SKAFFOLD_MODULE=experiment EXPERIMENT_SCENARIO=basic TAG=latest
 ```
 
 All scenarios put load on webhosting-operator by creating and mutating a large amount of `Website` objects.

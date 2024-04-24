@@ -21,6 +21,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 # fetch code-generator module to execute the scripts from the modcache (we don't vendor here)
 CODE_GENERATOR_DIR="$(go list -m -tags tools -f '{{ .Dir }}' k8s.io/code-generator)"
+source "${CODE_GENERATOR_DIR}"/kube_codegen.sh
 
 # setup virtual GOPATH
 # k8s.io/code-generator does not work outside GOPATH, see https://github.com/kubernetes/kubernetes/issues/86753.
@@ -30,12 +31,10 @@ source "$SCRIPT_DIR"/vgopath-setup.sh
 # see https://github.com/kubernetes/code-generator/issues/100.
 export GO111MODULE=off
 
-# config API
+# sharder config API
 
-config_group() {
-  echo "Generating config API group"
-
-  source "${CODE_GENERATOR_DIR}"/kube_codegen.sh
+sharder_config_group() {
+  echo "Generating sharder config API group"
 
   kube::codegen::gen_helpers \
       --input-pkg-root github.com/timebertt/kubernetes-controller-sharding/pkg/apis \
@@ -43,4 +42,14 @@ config_group() {
       --boilerplate "${SCRIPT_DIR}/boilerplate.go.txt"
 }
 
-config_group
+webhosting_config_group() {
+  echo "Generating webhosting-operator config API group"
+
+  kube::codegen::gen_helpers \
+      --input-pkg-root github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis \
+      --output-base "${GOPATH}/src" \
+      --boilerplate "${SCRIPT_DIR}/boilerplate.go.txt"
+}
+
+sharder_config_group
+webhosting_config_group

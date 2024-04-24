@@ -2,25 +2,29 @@ apiVersion: core.gardener.cloud/v1beta1
 kind: Shoot
 metadata:
   name: sharding
-  namespace: garden-timebertt
+  namespace: garden-ixywdlfvei-ccknp
 spec:
   addons:
     kubernetesDashboard:
       enabled: false
-    nginxIngress:
-      enabled: false
   cloudProfileName: stackit
+  controlPlane:
+    highAvailability:
+      failureTolerance:
+        type: zone
   extensions:
   - type: shoot-yawol
+  hibernation:
+    schedules:
+    - start: "0 6 * * *"
+      location: Europe/Berlin
   kubernetes:
     enableStaticTokenKubeconfig: false
     kubeControllerManager:
-      nodeCIDRMaskSize: 20
+      nodeCIDRMaskSize: 24
     kubeProxy:
       mode: IPTables
     version: "1.27"
-    verticalPodAutoscaler:
-      enabled: true
   maintenance:
     autoUpdate:
       kubernetesVersion: true
@@ -30,15 +34,21 @@ spec:
       end: 040000+0200
   networking:
     nodes: 10.250.0.0/16
-    pods: 100.96.0.0/11
-    services: 100.64.0.0/13
+    pods: 100.64.0.0/13
+    services: 100.82.0.0/16
+    providerConfig:
+      apiVersion: calico.networking.extensions.gardener.cloud/v1alpha1
+      kind: NetworkConfig
+      backend: bird
+      ipv4:
+        mode: Always
+        pool: ipip
     type: calico
   provider:
     controlPlaneConfig:
       apiVersion: openstack.provider.extensions.gardener.cloud/v1alpha1
       kind: ControlPlaneConfig
       loadBalancerProvider: yawol
-      zone: eu01-2
     infrastructureConfig:
       apiVersion: openstack.provider.extensions.gardener.cloud/v1alpha1
       kind: InfrastructureConfig
@@ -52,6 +62,7 @@ spec:
       cri:
         name: containerd
       machine:
+        architecture: amd64
         image:
           name: coreos
         type: g1a.8d
@@ -65,12 +76,13 @@ spec:
         size: 50Gi
         type: storage_premium_perf1
       zones:
-      - eu01-2
+      - eu01-3
     # runs sharding components and webhosting-operator
     - name: sharding
       cri:
         name: containerd
       machine:
+        architecture: amd64
         image:
           name: coreos
         type: g1a.8d
@@ -90,12 +102,13 @@ spec:
         size: 50Gi
         type: storage_premium_perf1
       zones:
-      - eu01-2
+      - eu01-3
     # runs experiment (optional)
     - name: experiment
       cri:
         name: containerd
       machine:
+        architecture: amd64
         image:
           name: coreos
         type: g1a.8d
@@ -115,7 +128,7 @@ spec:
         size: 50Gi
         type: storage_premium_perf1
       zones:
-      - eu01-2
-  purpose: development
+      - eu01-3
+  purpose: production
   region: RegionOne
-  secretBindingName: timebertt
+  secretBindingName: q5bzeseo8o

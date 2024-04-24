@@ -18,7 +18,7 @@ spec:
         - --google-zone-visibility=public
         - --policy=sync
         - --registry=txt
-        - --txt-owner-id=shoot--timebertt--sharding-0ed260ae-7e79-45a3-8e6d-2f30c68a4e42-ond-1d3ea8
+        - --txt-owner-id=shoot--ixywdlfvei--sharding-6d6c9d25-cab4-42ef-8a5b-8692bf615a15-ske
         - --interval=1m
         # ensure the records are not owned by short-lived acme solvers managed by cert-manager or website ingresses
         - --label-filter=acme.cert-manager.io/http01-solver!=true,app!=website

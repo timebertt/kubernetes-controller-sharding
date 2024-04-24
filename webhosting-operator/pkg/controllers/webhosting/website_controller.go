@@ -48,6 +48,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	shardcontroller "github.com/timebertt/kubernetes-controller-sharding/pkg/shard/controller"
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/config/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/controllers/webhosting/templates"
@@ -56,11 +57,10 @@ import (
 
 // WebsiteReconciler reconciles a Website object.
 type WebsiteReconciler struct {
-	Client        client.Client
-	ShardedClient client.Client
-	Scheme        *runtime.Scheme
-	Recorder      record.EventRecorder
-	logger        logr.Logger
+	Client   client.Client
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
+	logger   logr.Logger
 
 	Config *configv1alpha1.WebhostingOperatorConfig
 }
@@ -84,7 +84,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	log.V(1).Info("reconciling website")
 
 	website := &webhostingv1alpha1.Website{}
-	if err := r.ShardedClient.Get(ctx, req.NamespacedName, website); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, website); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("Object is gone, stop reconciling")
 			return ctrl.Result{}, nil
@@ -105,7 +105,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if !apiequality.Semantic.DeepEqual(before.Status, website.Status) {
 		website.Status.LastTransitionTime = ptr.To(metav1.NowMicro())
 
-		if err := r.ShardedClient.Status().Update(ctx, website); err != nil {
+		if err := r.Client.Status().Update(ctx, website); err != nil {
 			// unable to update status, requeue with backoff
 			if reconcileErr != nil {
 				// if a reconcile error happened as well, prefer this error
@@ -157,7 +157,7 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 	if err != nil {
 		return r.recordError(website, "ReconcilerError", "Error computing ConfigMap: %v", err)
 	}
-	if err := r.ShardedClient.Patch(ctx, configMap, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, configMap, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 		return r.recordError(website, "ReconcilerError", "Error applying ConfigMap: %v", err)
 	}
 
@@ -165,7 +165,7 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 	if err != nil {
 		return r.recordError(website, "ReconcilerError", "Error computing Service: %v", err)
 	}
-	if err := r.ShardedClient.Patch(ctx, service, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, service, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 		return r.recordError(website, "ReconcilerError", "Error applying Service: %v", err)
 	}
 
@@ -173,7 +173,7 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 	if err != nil {
 		return r.recordError(website, "ReconcilerError", "Error computing Ingress: %v", err)
 	}
-	if err := r.ShardedClient.Patch(ctx, ingress, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, ingress, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 		return r.recordError(website, "ReconcilerError", "Error applying Ingress: %v", err)
 	}
 
@@ -181,7 +181,7 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 	if err != nil {
 		return r.recordError(website, "ReconcilerError", "Error computing Deployment: %v", err)
 	}
-	if err := r.ShardedClient.Patch(ctx, deployment, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, deployment, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 		return r.recordError(website, "ReconcilerError", "Error applying Deployment: %v", err)
 	}
 
@@ -467,12 +467,9 @@ func calculateConfigMapChecksum(configMap *corev1.ConfigMap) (string, error) {
 const websiteThemeField = "spec.theme"
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager, enableSharding bool, clusterRingName, shardName string) error {
 	if r.Client == nil {
 		r.Client = mgr.GetClient()
-	}
-	if r.ShardedClient == nil {
-		r.ShardedClient = mgr.GetShardedClient()
 	}
 	if r.Scheme == nil {
 		r.Scheme = mgr.GetScheme()
@@ -481,7 +478,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		r.Recorder = mgr.GetEventRecorderFor("website-controller")
 	}
 
-	if err := mgr.GetShardedCache().IndexField(context.TODO(), &webhostingv1alpha1.Website{}, websiteThemeField, func(obj client.Object) []string {
+	if err := mgr.GetCache().IndexField(context.TODO(), &webhostingv1alpha1.Website{}, websiteThemeField, func(obj client.Object) []string {
 		return []string{obj.(*webhostingv1alpha1.Website).Spec.Theme}
 	}); err != nil {
 		return err
@@ -492,21 +489,38 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		workers = int(override)
 	}
 
+	var (
+		// trigger on spec change and annotation changes (manual trigger for testing purposes)
+		websitePredicate = predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{})
+		reconciler       = SilenceConflicts(r)
+	)
+
+	if enableSharding {
+		// ACKNOWLEDGE DRAIN OPERATIONS
+		// Use the shardcontroller package as helpers for:
+		// - a predicate that triggers when the drain label is present (even if the actual predicates don't trigger)
+		websitePredicate = shardcontroller.Predicate(clusterRingName, shardName, websitePredicate)
+
+		// - wrapping the actual reconciler a reconciler that handles the drain operation for us
+		reconciler = shardcontroller.NewShardedReconciler(mgr).
+			For(&webhostingv1alpha1.Website{}).
+			InClusterRing(clusterRingName).
+			WithShardName(shardName).
+			MustBuild(reconciler)
+	}
+
 	c, err := ctrl.NewControllerManagedBy(mgr).
-		For(&webhostingv1alpha1.Website{}, builder.Sharded{}, builder.WithPredicates(
-			// trigger on spec change and annotation changes (manual trigger for testing purposes)
-			predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{})),
-		).
+		For(&webhostingv1alpha1.Website{}, builder.WithPredicates(websitePredicate)).
 		// watch deployments in order to update phase on relevant changes
 		// watch deployments for relevant changes to reconcile them back if changed
-		Owns(&appsv1.Deployment{}, builder.Sharded{}, builder.WithPredicates(predicate.Or(
+		Owns(&appsv1.Deployment{}, builder.WithPredicates(predicate.Or(
 			predicate.GenerationChangedPredicate{},
 			DeploymentAvailabilityChanged,
 		))).
 		// watch owned objects for relevant changes to reconcile them back if changed
-		Owns(&corev1.ConfigMap{}, builder.Sharded{}, builder.WithPredicates(ConfigMapDataChanged)).
-		Owns(&corev1.Service{}, builder.Sharded{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Owns(&networkingv1.Ingress{}, builder.Sharded{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Owns(&corev1.ConfigMap{}, builder.WithPredicates(ConfigMapDataChanged)).
+		Owns(&corev1.Service{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Owns(&networkingv1.Ingress{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		// watch themes to roll out theme changes to all referencing websites
 		Watches(
 			&webhostingv1alpha1.Theme{},
@@ -516,7 +530,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: workers,
 		}).
-		Build(SilenceConflicts(r))
+		Build(reconciler)
 	if err != nil {
 		return err
 	}
@@ -529,7 +543,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // MapThemeToWebsites maps a theme to all websites that use it.
 func (r *WebsiteReconciler) MapThemeToWebsites(ctx context.Context, theme client.Object) []reconcile.Request {
 	websiteList := &webhostingv1alpha1.WebsiteList{}
-	if err := r.ShardedClient.List(ctx, websiteList, client.MatchingFields{websiteThemeField: theme.GetName()}); err != nil {
+	if err := r.Client.List(ctx, websiteList, client.MatchingFields{websiteThemeField: theme.GetName()}); err != nil {
 		r.logger.Error(err, "failed to list websites belonging to theme", "theme", client.ObjectKeyFromObject(theme))
 		return []reconcile.Request{}
 	}

@@ -1,4 +1,4 @@
-name: webhosting-operator
+name: images
 
 on:
   push:
@@ -6,28 +6,9 @@ on:
     - main
     tags:
     - v*
-    paths:
-    - "webhosting-operator/**"
-    - ".github/workflows/webhosting-operator.yaml"
-    - "!**.md"
   pull_request:
-    paths:
-    - "webhosting-operator/**"
-    - ".github/workflows/webhosting-operator.yaml"
 
 jobs:
-  verify:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v5
-      with:
-        go-version-file: webhosting-operator/go.mod
-        cache-dependency-path: webhosting-operator/go.sum
-    - name: Verify
-      run: make -C webhosting-operator verify
-
   images:
     runs-on: ubuntu-latest
     env:
@@ -40,8 +21,7 @@ jobs:
         fetch-depth: 0
     - uses: actions/setup-go@v5
       with:
-        go-version-file: webhosting-operator/go.mod
-        cache-dependency-path: webhosting-operator/go.sum
+        go-version-file: go.mod
     - uses: ko-build/setup-ko@v0.6
       with:
         version: ${{ env.KO_VERSION }}
@@ -51,12 +31,25 @@ jobs:
     - name: ko build
       run: |
         set -ex
-        cd ./webhosting-operator
 
+        # prepare .ko.yaml to inject build settings into all images
         entrypoints=(
-          ./cmd/experiment
-          ./cmd/webhosting-operator
+          ./cmd/sharder
+          ./cmd/shard
+          ./hack/cmd/janitor
+          ./webhosting-operator/cmd/experiment
+          ./webhosting-operator/cmd/webhosting-operator
         )
+        
+        echo builds: > .ko.yaml
+        for entrypoint in "${entrypoints[@]}" ; do
+        cat >> .ko.yaml <<EOF
+        - main: $entrypoint
+          ldflags:
+          - |
+            {{.Env.LDFLAGS}}
+        EOF
+        done
 
         ko build --push=${{ github.event_name != 'pull_request' }} --sbom none --base-import-paths \
           --tags "${{ steps.meta.outputs.tags }}" --image-label "${{ steps.meta.outputs.labels }}" \
