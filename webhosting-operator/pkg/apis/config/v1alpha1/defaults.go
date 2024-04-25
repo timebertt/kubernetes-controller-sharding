@@ -88,6 +88,6 @@ func SetDefaults_HealthEndpoint(obj *HealthEndpoint) {
 
 func SetDefaults_MetricsEndpoint(obj *MetricsEndpoint) {
 	if obj.BindAddress == "" {
-		obj.BindAddress = "127.0.0.1:8080"
+		obj.BindAddress = ":8080"
 	}
 }

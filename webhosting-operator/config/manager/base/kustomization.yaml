@@ -23,12 +23,7 @@ images:
 resources:
 - namespace.yaml
 - manager.yaml
+- service.yaml
 - ../crds
 - ../rbac
-- auth_proxy_service.yaml
-- auth_proxy_role.yaml
-- auth_proxy_role_binding.yaml
-
-# Protect the /metrics endpoint by putting it behind auth.
-patches:
-- path: manager_auth_proxy_patch.yaml
+- metrics_auth.yaml

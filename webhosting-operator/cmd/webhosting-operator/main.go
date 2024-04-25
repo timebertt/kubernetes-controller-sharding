@@ -46,6 +46,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -241,11 +242,10 @@ func (o *options) applyConfigToOptions() {
 		}
 
 		o.managerOptions.Metrics = metricsserver.Options{
-			BindAddress: o.config.Metrics.BindAddress,
-			// TODO(timebertt): add AuthN/AuthZ to metrics endpoint and drop kube-rbac-proxy
-			// SecureServing: false,
-			// FilterProvider: filters.WithAuthenticationAndAuthorization,
-			ExtraHandlers: extraHandlers,
+			SecureServing:  true,
+			BindAddress:    o.config.Metrics.BindAddress,
+			FilterProvider: filters.WithAuthenticationAndAuthorization,
+			ExtraHandlers:  extraHandlers,
 		}
 	}
 
