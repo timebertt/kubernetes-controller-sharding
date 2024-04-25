@@ -20,11 +20,8 @@ import (
 	"context"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
-
-const fieldOwner = client.FieldOwner("webhosting-operator")
 
 // SilenceConflicts wraps a reconciler to not return conflict errors. The requests is requeued with exponential backoff
 // as if an error was returned but the error will not be logged.
