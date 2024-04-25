@@ -40,7 +40,7 @@ const ControllerName = "clusterring"
 // AddToManager adds Reconciler to the given manager.
 func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 	if r.Client == nil {
-		r.Client = mgr.GetClient()
+		r.Client = client.WithFieldOwner(mgr.GetClient(), ControllerName+"-controller")
 	}
 	if r.Recorder == nil {
 		r.Recorder = mgr.GetEventRecorderFor(ControllerName + "-controller")

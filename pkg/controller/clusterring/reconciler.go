@@ -46,8 +46,6 @@ import (
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/webhook/sharder"
 )
 
-const fieldOwner = client.FieldOwner(ControllerName + "-controller")
-
 //+kubebuilder:rbac:groups=sharding.timebertt.dev,resources=clusterrings,verbs=get;list;watch
 //+kubebuilder:rbac:groups=sharding.timebertt.dev,resources=clusterrings/status,verbs=update;patch
 //+kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations,verbs=create;patch
@@ -214,7 +212,7 @@ func (r *Reconciler) reconcileWebhooks(ctx context.Context, clusterRing *shardin
 
 	webhookConfig.Webhooks = []admissionregistrationv1.MutatingWebhook{webhook}
 
-	return r.Client.Patch(ctx, webhookConfig, client.Apply, fieldOwner)
+	return r.Client.Patch(ctx, webhookConfig, client.Apply)
 }
 
 // RuleForResource returns the sharder's webhook rule for the given resource.

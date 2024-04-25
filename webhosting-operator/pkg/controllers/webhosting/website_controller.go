@@ -155,7 +155,7 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 	if err != nil {
 		return r.recordError(website, "ReconcilerError", "Error computing ConfigMap: %v", err)
 	}
-	if err := r.Client.Patch(ctx, configMap, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, configMap, client.Apply, client.ForceOwnership); err != nil {
 		return r.recordError(website, "ReconcilerError", "Error applying ConfigMap: %v", err)
 	}
 
@@ -163,7 +163,7 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 	if err != nil {
 		return r.recordError(website, "ReconcilerError", "Error computing Service: %v", err)
 	}
-	if err := r.Client.Patch(ctx, service, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, service, client.Apply, client.ForceOwnership); err != nil {
 		return r.recordError(website, "ReconcilerError", "Error applying Service: %v", err)
 	}
 
@@ -171,7 +171,7 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 	if err != nil {
 		return r.recordError(website, "ReconcilerError", "Error computing Ingress: %v", err)
 	}
-	if err := r.Client.Patch(ctx, ingress, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, ingress, client.Apply, client.ForceOwnership); err != nil {
 		return r.recordError(website, "ReconcilerError", "Error applying Ingress: %v", err)
 	}
 
@@ -179,7 +179,7 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 	if err != nil {
 		return r.recordError(website, "ReconcilerError", "Error computing Deployment: %v", err)
 	}
-	if err := r.Client.Patch(ctx, deployment, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+	if err := r.Client.Patch(ctx, deployment, client.Apply, client.ForceOwnership); err != nil {
 		return r.recordError(website, "ReconcilerError", "Error applying Deployment: %v", err)
 	}
 
@@ -462,18 +462,21 @@ func calculateConfigMapChecksum(configMap *corev1.ConfigMap) (string, error) {
 	return hex.EncodeToString(checksum[:]), nil
 }
 
-const websiteThemeField = "spec.theme"
+const (
+	ControllerName    = "website"
+	websiteThemeField = "spec.theme"
+)
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager, enableSharding bool, clusterRingName, shardName string) error {
 	if r.Client == nil {
-		r.Client = mgr.GetClient()
+		r.Client = client.WithFieldOwner(mgr.GetClient(), ControllerName+"-controller")
 	}
 	if r.Scheme == nil {
 		r.Scheme = mgr.GetScheme()
 	}
 	if r.Recorder == nil {
-		r.Recorder = mgr.GetEventRecorderFor("website-controller")
+		r.Recorder = mgr.GetEventRecorderFor(ControllerName + "-controller")
 	}
 
 	if err := mgr.GetCache().IndexField(context.TODO(), &webhostingv1alpha1.Website{}, websiteThemeField, func(obj client.Object) []string {
@@ -508,6 +511,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager, enableSharding bo
 	}
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
+		Named(ControllerName).
 		For(&webhostingv1alpha1.Website{}, builder.WithPredicates(websitePredicate)).
 		// watch deployments in order to update phase on relevant changes
 		// watch deployments for relevant changes to reconcile them back if changed
