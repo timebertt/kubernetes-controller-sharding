@@ -20,7 +20,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"math/rand"
 	"os"
 	"time"
 
@@ -32,7 +31,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -63,8 +62,6 @@ func init() {
 }
 
 func main() {
-	rand.Seed(time.Now().Unix())
-
 	zapOpts := zap.Options{
 		Development: true,
 		TimeEncoder: zapcore.RFC3339TimeEncoder,
@@ -111,7 +108,7 @@ func main() {
 				LeaderElection: false,
 
 				Controller: config.Controller{
-					RecoverPanic: pointer.Bool(true),
+					RecoverPanic: ptr.To(true),
 				},
 			})
 			if err != nil {

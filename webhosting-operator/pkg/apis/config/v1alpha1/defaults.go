@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -76,7 +76,7 @@ func SetDefaults_DebuggingConfiguration(obj *componentbaseconfigv1alpha1.Debuggi
 	componentbaseconfigv1alpha1.RecommendedDebuggingConfiguration(obj)
 
 	if obj.EnableContentionProfiling == nil {
-		obj.EnableContentionProfiling = pointer.Bool(false)
+		obj.EnableContentionProfiling = ptr.To(false)
 	}
 }
 

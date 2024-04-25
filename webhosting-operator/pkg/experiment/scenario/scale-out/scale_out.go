@@ -14,16 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scale_out
+package scaleout
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	"golang.org/x/time/rate"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
@@ -100,32 +98,4 @@ func (s *scenario) Run(ctx context.Context) error {
 	}
 
 	return s.Wait(ctx, 15*time.Minute)
-}
-
-func (s *scenario) waitForReadyWebsites(ctx context.Context) error {
-	s.Log.Info("Waiting until all websites are ready")
-
-	var lastError error
-	if err := wait.PollUntilContextTimeout(ctx, 2*time.Second, 2*time.Minute, false, func(ctx context.Context) (done bool, err error) {
-		websiteList := &webhostingv1alpha1.WebsiteList{}
-		if err := s.Client.List(ctx, websiteList, client.MatchingLabels(s.Labels)); err != nil {
-			return true, err
-		}
-
-		for _, website := range websiteList.Items {
-			phase := website.Status.Phase
-			if phase != webhostingv1alpha1.PhaseReady {
-				lastError = fmt.Errorf("website %s is in phase %q", client.ObjectKeyFromObject(&website), phase)
-				return false, nil
-			}
-		}
-
-		return true, nil
-	}); err != nil {
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			return lastError
-		}
-		return err
-	}
-	return nil
 }

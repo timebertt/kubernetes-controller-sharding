@@ -72,6 +72,7 @@ generate: $(VGOPATH) generate-fast generate-fast-webhosting modules ## Run all c
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
+	cd webhosting-operator && go fmt ./...
 
 .PHONY: test
 test: $(SETUP_ENVTEST) ## Run tests.
@@ -94,7 +95,7 @@ skaffold-fix: $(SKAFFOLD) ## Upgrade skaffold configuration to the latest apiVer
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT) ## Run golangci-lint against code.
-	$(GOLANGCI_LINT) run ./...
+	$(GOLANGCI_LINT) run ./... ./webhosting-operator/...
 
 .PHONY: check
 check: lint test test-kyverno ## Check everything (lint + test + test-kyverno).

@@ -207,11 +207,11 @@ func run(ctx context.Context, c v1.API) error {
 	}
 
 	if slosChecked {
-		if slosMet {
-			fmt.Println("✅ SLO verifications succeeded")
-		} else {
+		if !slosMet {
 			return fmt.Errorf("❌ SLO verifications failed")
 		}
+
+		fmt.Println("✅ SLO verifications succeeded")
 	} else {
 		fmt.Println("ℹ️ No SLOs defined")
 	}
@@ -347,7 +347,7 @@ func (q Query) writeResult(data metricData) error {
 		return err
 	}
 
-	fmt.Printf("Succesfully written output to %s\n", fileName)
+	fmt.Printf("Successfully written output to %s\n", fileName)
 	return nil
 }
 

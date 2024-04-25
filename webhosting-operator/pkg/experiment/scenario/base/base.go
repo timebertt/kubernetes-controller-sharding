@@ -121,7 +121,7 @@ func (s *Scenario) Start(ctx context.Context) (err error) {
 	// give monitoring stack some time to observe objects
 	select {
 	case <-ctx.Done():
-		s.Log.Info("Scenario cancelled")
+		s.Log.Info("Scenario canceled")
 		return ctx.Err()
 	case <-time.After(30 * time.Second):
 	}
@@ -257,6 +257,7 @@ func (s *Scenario) waitForShardLeases(ctx context.Context) error {
 		for _, lease := range leaseList.Items {
 			state := lease.Labels["alpha.sharding.timebertt.dev/state"]
 			if state != "ready" {
+				// nolint:gosec // pointer doesn't outlive the loop iteration
 				lastError = fmt.Errorf("shard lease %s is in state %q", client.ObjectKeyFromObject(&lease), state)
 				return false, nil
 			}
@@ -272,11 +273,11 @@ func (s *Scenario) waitForShardLeases(ctx context.Context) error {
 	return nil
 }
 
-// Wait does blocks until the given duration has passed or returns an error when the context is cancelled.
+// Wait does blocks until the given duration has passed or returns an error when the context is canceled.
 func (s *Scenario) Wait(ctx context.Context, d time.Duration) error {
 	select {
 	case <-ctx.Done():
-		s.Log.Info("Scenario cancelled")
+		s.Log.Info("Scenario canceled")
 		return ctx.Err()
 	case <-time.After(d):
 	}

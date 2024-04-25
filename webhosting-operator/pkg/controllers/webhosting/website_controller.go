@@ -36,7 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -150,7 +149,6 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 	}
 
 	serverName := calculateServerName(website)
-	log = log.WithValues("theme", website.Spec.Theme, "serverName", serverName)
 
 	// create downstream objects
 	configMap, err := r.ConfigMapForWebsite(serverName, website, theme)
@@ -308,7 +306,7 @@ func (r *WebsiteReconciler) IngressForWebsite(serverName string, website *webhos
 	if isGeneratedByExperiment(website) {
 		// don't actually expose website ingresses in load tests
 		// use fake ingress class to prevent overloading ingress controller (this is not what we want to load test)
-		ingress.Spec.IngressClassName = pointer.String("fake")
+		ingress.Spec.IngressClassName = ptr.To("fake")
 	}
 
 	return ingress, ctrl.SetControllerReference(website, ingress, r.Scheme)
@@ -369,8 +367,8 @@ func (r *WebsiteReconciler) DeploymentForWebsite(serverName string, website *web
 			Selector: &metav1.LabelSelector{
 				MatchLabels: getLabelsForServer(website.Name, serverName),
 			},
-			Replicas:             pointer.Int32(1),
-			RevisionHistoryLimit: pointer.Int32(2),
+			Replicas:             ptr.To[int32](1),
+			RevisionHistoryLimit: ptr.To[int32](2),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: getLabelsForServer(website.Name, serverName),
@@ -428,7 +426,7 @@ func (r *WebsiteReconciler) DeploymentForWebsite(serverName string, website *web
 	if isGeneratedByExperiment(website) {
 		// don't actually run website pods in load tests
 		// otherwise, we would need an immense amount of compute power for running dummy websites
-		deployment.Spec.Replicas = pointer.Int32(0)
+		deployment.Spec.Replicas = ptr.To[int32](0)
 	}
 
 	return deployment, ctrl.SetControllerReference(website, deployment, r.Scheme)

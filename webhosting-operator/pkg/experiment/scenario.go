@@ -50,7 +50,7 @@ func RegisterScenario(s Scenario) {
 
 // GetAllScenarios returns all registered scenarios.
 func GetAllScenarios() []Scenario {
-	var all []Scenario
+	all := make([]Scenario, 0, len(registry))
 	for _, s := range registry {
 		all = append(all, s)
 	}
