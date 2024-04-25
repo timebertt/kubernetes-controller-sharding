@@ -66,7 +66,7 @@ func (r *Every) AddToManager(mgr manager.Manager) error {
 			MaxConcurrentReconciles: workers,
 			RateLimiter:             &workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(r.Rate, int(r.Rate))},
 		}).
-		WatchesRawSource(EmitN(workers), &handler.EnqueueRequestForObject{}).
+		WatchesRawSource(EmitN(workers)).
 		Complete(StopOnContextCanceled(r))
 }
 
