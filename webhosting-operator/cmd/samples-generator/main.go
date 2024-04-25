@@ -83,7 +83,7 @@ func generateSamples(ctx context.Context, c client.Client) error {
 		return err
 	}
 
-	var themes []string
+	themes := make([]string, 0, len(themeList.Items))
 	for _, theme := range themeList.Items {
 		themes = append(themes, theme.Name)
 	}
@@ -104,6 +104,7 @@ func generateSamples(ctx context.Context, c client.Client) error {
 	for _, namespace := range namespaceList.Items {
 		project := namespace.Name
 
+		// nolint:gosec // doesn't need to be cryptographically secure
 		websiteCount := rand.Intn(50) + 1
 		if count > 0 {
 			websiteCount = count

@@ -22,6 +22,7 @@ import (
 
 // PickRandom picks a random element from the given slice.
 func PickRandom[T any](in []T) T {
+	// nolint:gosec // doesn't need to be cryptographically secure
 	return in[rand.Intn(len(in))]
 }
 
@@ -30,6 +31,7 @@ func RandomName(n int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyz"
 	result := make([]byte, n)
 	for i := range result {
+		// nolint:gosec // doesn't need to be cryptographically secure
 		result[i] = charset[rand.Intn(len(charset))]
 	}
 	return string(result)

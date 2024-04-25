@@ -31,6 +31,7 @@ func main() {
 			http.Error(w, fmt.Sprintf("internal server error: %v", err), http.StatusInternalServerError)
 		}
 	})
+	// nolint:gosec // this is just for testing
 	if err := http.ListenAndServe(":9090", nil); err != nil {
 		panic(err)
 	}

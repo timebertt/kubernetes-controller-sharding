@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	goruntime "runtime"
 	"strconv"
 
@@ -37,7 +38,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -105,7 +106,7 @@ func main() {
 
 	// replace deprecated legacy go collector
 	metrics.Registry.Unregister(collectors.NewGoCollector())
-	metrics.Registry.MustRegister(collectors.NewGoCollector(collectors.WithGoCollections(collectors.GoRuntimeMetricsCollection)))
+	metrics.Registry.MustRegister(collectors.NewGoCollector(collectors.WithGoCollectorRuntimeMetrics(collectors.GoRuntimeMetricsRule{Matcher: regexp.MustCompile("/.*")})))
 
 	mgr, err := ctrl.NewManager(opts.restConfig, opts.managerOptions)
 	if err != nil {
@@ -193,7 +194,7 @@ func (o *options) Complete() error {
 			DefaultTransform: dropUnwantedMetadata,
 		},
 		Controller: config.Controller{
-			RecoverPanic: pointer.Bool(true),
+			RecoverPanic: ptr.To(true),
 		},
 	}
 
@@ -223,9 +224,9 @@ func (o *options) applyConfigToOptions() {
 		o.managerOptions.LeaderElectionResourceLock = leaderElection.ResourceLock
 		o.managerOptions.LeaderElectionID = leaderElection.ResourceName
 		o.managerOptions.LeaderElectionNamespace = leaderElection.ResourceNamespace
-		o.managerOptions.LeaseDuration = pointer.Duration(leaderElection.LeaseDuration.Duration)
-		o.managerOptions.RenewDeadline = pointer.Duration(leaderElection.RenewDeadline.Duration)
-		o.managerOptions.RetryPeriod = pointer.Duration(leaderElection.RetryPeriod.Duration)
+		o.managerOptions.LeaseDuration = ptr.To(leaderElection.LeaseDuration.Duration)
+		o.managerOptions.RenewDeadline = ptr.To(leaderElection.RenewDeadline.Duration)
+		o.managerOptions.RetryPeriod = ptr.To(leaderElection.RetryPeriod.Duration)
 	}
 
 	o.managerOptions.HealthProbeBindAddress = o.config.Health.BindAddress
@@ -248,7 +249,7 @@ func (o *options) applyConfigToOptions() {
 		}
 	}
 
-	o.managerOptions.GracefulShutdownTimeout = pointer.Duration(o.config.GracefulShutdownTimeout.Duration)
+	o.managerOptions.GracefulShutdownTimeout = ptr.To(o.config.GracefulShutdownTimeout.Duration)
 }
 
 func (o *options) applyOptionsOverrides() error {
