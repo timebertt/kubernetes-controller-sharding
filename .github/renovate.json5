@@ -132,8 +132,9 @@
       enabled: false
     },
     {
-      // kind k8s version should be updated together with shoot k8s version
+      // kind minor k8s version should be updated together with shoot k8s version
       matchPackageNames: ["kindest/node"],
+      matchUpdateTypes: ["minor"],
       enabled: false
     },
     {
