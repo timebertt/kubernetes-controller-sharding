@@ -3,3 +3,8 @@ kind: Kustomization
 
 resources:
 - https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.yaml
+
+patches:
+# lower the webhook timeouts to make the webhooks compliant with gardener's requirements
+- path: patch-validatingwebhook.yaml
+- path: patch-mutatingwebhook.yaml
