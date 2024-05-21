@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # renovate: datasource=github-releases depName=ko-build/ko
-      KO_VERSION: v0.15.3
+      KO_VERSION: v0.15.4
     steps:
     - uses: actions/checkout@v4
       with:
