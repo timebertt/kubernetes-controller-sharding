@@ -66,7 +66,6 @@ func CleanupProjects(ctx context.Context, c client.Client, labels map[string]str
 	}
 
 	for _, namespace := range namespaceList.Items {
-		// nolint:gosec // pointer doesn't outlive the loop iteration
 		if err := c.Delete(ctx, &namespace); err != nil {
 			return err
 		}

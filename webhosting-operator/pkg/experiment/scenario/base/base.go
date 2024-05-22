@@ -257,7 +257,6 @@ func (s *Scenario) waitForShardLeases(ctx context.Context) error {
 		for _, lease := range leaseList.Items {
 			state := lease.Labels["alpha.sharding.timebertt.dev/state"]
 			if state != "ready" {
-				// nolint:gosec // pointer doesn't outlive the loop iteration
 				lastError = fmt.Errorf("shard lease %s is in state %q", client.ObjectKeyFromObject(&lease), state)
 				return false, nil
 			}
