@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-- https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.yaml
+- https://github.com/cert-manager/cert-manager/releases/download/v1.15.0/cert-manager.yaml
 
 patches:
 # lower the webhook timeouts to make the webhooks compliant with gardener's requirements
