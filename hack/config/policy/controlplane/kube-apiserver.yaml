@@ -72,7 +72,7 @@ spec:
       patchesJson6902: |-
         - op: add
           path: "/spec/tolerations/-"
-          value: {"key":"high-cpu","operator":"Equal","value":"true","effect":"NoSchedule"}        
+          value: {"key":"high-cpu","operator":"Equal","value":"true","effect":"NoSchedule"}
         - op: add
           path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms"
           value: [{"matchExpressions": [{"key":"high-cpu","operator":"In","values":["true"]}]}]

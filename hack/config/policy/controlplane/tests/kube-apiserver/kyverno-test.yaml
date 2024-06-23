@@ -1,4 +1,7 @@
-name: kube-apiserver
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: kube-apiserver
 policies:
 - ../../kube-apiserver.yaml
 resources:
@@ -9,23 +12,23 @@ resources:
 # spec.replicas=0 -> expect skip
 - kube-apiserver-hibernated.yaml
 results:
-- policy: kube-apiserver
+- policy: shoot--timebertt--sharding/kube-apiserver
   rule: replicas
-  resource: kube-apiserver-awake
-  namespace: shoot--timebertt--sharding
+  resources:
+  - shoot--timebertt--sharding/kube-apiserver-awake
   kind: Deployment
   result: pass
   patchedResource: kube-apiserver-awake_expected.yaml
-- policy: kube-apiserver
+- policy: shoot--timebertt--sharding/kube-apiserver
   rule: replicas
-  resource: kube-apiserver-null
-  namespace: shoot--timebertt--sharding
+  resources:
+  - shoot--timebertt--sharding/kube-apiserver-null
   kind: Deployment
   result: pass
   patchedResource: kube-apiserver-null_expected.yaml
-- policy: kube-apiserver
+- policy: shoot--timebertt--sharding/kube-apiserver
   rule: replicas
-  resource: kube-apiserver-hibernated
-  namespace: shoot--timebertt--sharding
+  resources:
+  - shoot--timebertt--sharding/kube-apiserver-hibernated
   kind: Deployment
   result: skip

@@ -1,4 +1,7 @@
-name: kube-apiserver-scale-hibernated
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: kube-apiserver-scale-hibernated
 policies:
 - ../../kube-apiserver-scale.yaml
 resources:
@@ -6,9 +9,9 @@ resources:
 - scale.yaml
 variables: variables.yaml
 results:
-- policy: kube-apiserver-scale
+- policy: shoot--timebertt--sharding/kube-apiserver-scale
   rule: replicas-scale
-  resource: kube-apiserver
-  namespace: shoot--timebertt--sharding
+  resources:
+  - shoot--timebertt--sharding/kube-apiserver
   kind: Scale
   result: skip
