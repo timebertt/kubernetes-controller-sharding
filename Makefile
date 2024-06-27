@@ -47,8 +47,8 @@ clean-tools-bin: ## Empty the tools binary directory.
 
 ##@ Development
 
-.PHONY: modules
-modules: ## Runs go mod to ensure modules are up to date.
+.PHONY: tidy
+tidy: ## Runs go mod to ensure modules are up to date.
 	go mod tidy
 	cd webhosting-operator && go mod tidy
 	@# regenerate go.work.sum
@@ -56,17 +56,17 @@ modules: ## Runs go mod to ensure modules are up to date.
 	go mod download
 
 .PHONY: generate-fast
-generate-fast: $(CONTROLLER_GEN) modules ## Run all fast code generators for the main module.
+generate-fast: $(CONTROLLER_GEN) tidy ## Run all fast code generators for the main module.
 	$(CONTROLLER_GEN) rbac:roleName=sharder crd paths="./pkg/..." output:rbac:artifacts:config=config/rbac output:crd:artifacts:config=config/crds
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/..."
 
 .PHONY: generate-fast-webhosting
-generate-fast-webhosting: $(CONTROLLER_GEN) modules ## Run all fast code generators for the webhosting-operator module.
+generate-fast-webhosting: $(CONTROLLER_GEN) tidy ## Run all fast code generators for the webhosting-operator module.
 	$(CONTROLLER_GEN) rbac:roleName=operator crd paths="./webhosting-operator/..." output:rbac:artifacts:config=webhosting-operator/config/manager/rbac output:crd:artifacts:config=webhosting-operator/config/manager/crds
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./webhosting-operator/..."
 
 .PHONY: generate
-generate: $(VGOPATH) generate-fast generate-fast-webhosting modules ## Run all code generators.
+generate: $(VGOPATH) generate-fast generate-fast-webhosting tidy ## Run all code generators.
 	hack/update-codegen.sh
 
 .PHONY: fmt
@@ -103,7 +103,7 @@ check: lint test test-kyverno ## Check everything (lint + test + test-kyverno).
 .PHONY: verify-fmt
 verify-fmt: fmt ## Verify go code is formatted.
 	@if !(git diff --quiet HEAD); then \
-		echo "unformatted files are out of date, please run 'make fmt'"; exit 1; \
+		echo "unformatted files detected, please run 'make fmt'"; exit 1; \
 	fi
 
 .PHONY: verify-generate
@@ -112,14 +112,14 @@ verify-generate: generate ## Verify generated files are up to date.
 		echo "generated files are out of date, please run 'make generate'"; exit 1; \
 	fi
 
-.PHONY: verify-modules
-verify-modules: modules ## Verify go module files are up to date.
-	@if !(git diff --quiet HEAD -- go.sum go.mod); then \
-		echo "go module files are out of date, please run 'make modules'"; exit 1; \
+.PHONY: verify-tidy
+verify-tidy: tidy ## Verify go module files are up to date.
+	@if !(git diff --quiet HEAD -- go.work.sum go.{mod,sum} webhosting-operator/go.{mod,sum}); then \
+		echo "go module files are out of date, please run 'make tidy'"; exit 1; \
 	fi
 
 .PHONY: verify
-verify: verify-fmt verify-generate verify-modules check ## Verify everything (all verify-* rules + check).
+verify: verify-tidy verify-fmt verify-generate check ## Verify everything (all verify-* rules + check).
 
 .PHONY: ci-e2e-kind
 ci-e2e-kind: $(KIND)
