@@ -22,7 +22,7 @@ require (
 	k8s.io/code-generator v0.30.2
 	k8s.io/component-base v0.30.2
 	k8s.io/klog/v2 v2.130.1
-	k8s.io/utils v0.0.0-20240710235135-d4aae2beeffc
+	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
 	sigs.k8s.io/controller-runtime v0.18.4
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20240116072139-11e5a5e261ac // v0.17.0
 )
