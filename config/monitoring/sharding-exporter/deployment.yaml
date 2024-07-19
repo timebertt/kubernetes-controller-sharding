@@ -18,7 +18,7 @@ spec:
         - --telemetry-port=8082
         - --custom-resource-state-only
         - --custom-resource-state-config-file=/etc/kube-state-metrics/config/config.yaml
-        image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.12.0
+        image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0
         name: sharding-exporter
         resources:
           limits:
