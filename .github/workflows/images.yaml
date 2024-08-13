@@ -36,7 +36,6 @@ jobs:
         entrypoints=(
           ./cmd/sharder
           ./cmd/shard
-          ./hack/cmd/janitor
           ./webhosting-operator/cmd/experiment
           ./webhosting-operator/cmd/webhosting-operator
         )

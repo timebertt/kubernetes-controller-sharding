@@ -282,41 +282,30 @@ apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: profiling
-build:
-  artifacts:
-    - image: ghcr.io/timebertt/kubernetes-controller-sharding/janitor
-      ko:
-        dependencies:
-          paths:
-            - go.mod
-            - ./hack/cmd/janitor/**/*.go
-        main: ./hack/cmd/janitor
-  tagPolicy:
-    inputDigest: {}
-  local:
-    concurrency: 0
-manifests:
-  kustomize:
-    paths:
-      - hack/config/profiling
-  hooks:
-    before:
-      - host:
-          command:
-            - hack/config/profiling/ensure-admin-password.sh
-deploy:
-  kubectl:
-    flags:
-      apply:
-        - --server-side
-        - --force-conflicts
-    defaultNamespace: ""
-portForward:
-  - resourceType: service
-    resourceName: parca
-    namespace: parca
-    port: http
-    localPort: 7071
+profiles:
+- name: profiling
+  manifests:
+    kustomize:
+      paths:
+        - hack/config/profiling
+    hooks:
+      before:
+        - host:
+            command:
+              - hack/config/profiling/ensure-admin-password.sh
+  deploy:
+    kubectl:
+      flags:
+        apply:
+          - --server-side
+          - --force-conflicts
+      defaultNamespace: ""
+  portForward:
+    - resourceType: service
+      resourceName: parca
+      namespace: parca
+      port: http
+      localPort: 7071
 ---
 apiVersion: skaffold/v4beta10
 kind: Config

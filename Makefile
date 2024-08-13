@@ -5,7 +5,6 @@ TAG ?= latest
 GHCR_REPO ?= ghcr.io/timebertt/kubernetes-controller-sharding
 SHARDER_IMG ?= $(GHCR_REPO)/sharder:$(TAG)
 SHARD_IMG ?= $(GHCR_REPO)/shard:$(TAG)
-JANITOR_IMG ?= $(GHCR_REPO)/janitor:$(TAG)
 WEBHOSTING_OPERATOR_IMG ?= $(GHCR_REPO)/webhosting-operator:$(TAG)
 EXPERIMENT_IMG ?= $(GHCR_REPO)/experiment:$(TAG)
 
@@ -151,7 +150,7 @@ images: export KO_DOCKER_REPO = $(GHCR_REPO)
 .PHONY: images
 images: $(KO) ## Build and push container images using ko.
 	$(KO) build --push=$(PUSH) --sbom none --base-import-paths -t $(TAG) --platform linux/amd64,linux/arm64 \
-		./cmd/sharder ./cmd/shard ./hack/cmd/janitor ./webhosting-operator/cmd/webhosting-operator
+		./cmd/sharder ./cmd/shard ./webhosting-operator/cmd/webhosting-operator
 
 ##@ Deployment
 
@@ -178,7 +177,7 @@ up dev: export SKAFFOLD_TAIL ?= true
 
 .PHONY: deploy
 deploy: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
-	$(SKAFFOLD) deploy -i $(SHARDER_IMG) -i $(SHARD_IMG) -i $(JANITOR_IMG) -i $(WEBHOSTING_OPERATOR_IMG) -i $(EXPERIMENT_IMG)
+	$(SKAFFOLD) deploy -i $(SHARDER_IMG) -i $(SHARD_IMG) -i $(WEBHOSTING_OPERATOR_IMG) -i $(EXPERIMENT_IMG)
 
 .PHONY: up
 up: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.
