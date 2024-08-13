@@ -128,9 +128,9 @@ NAME               TYPE     DATA   AGE    CLUSTERRING-50D858E0-EXAMPLE
 secret/dummy-foo   Opaque   0      3s     shard-5fc87c9fb7-kfb2z
 ```
 
-## Monitoring and Continuous Profiling
+## Monitoring
 
-When using the skaffold-based setup, you also get a full monitoring and continuous profiling setup for observing and analyzing the components' resource usage.
+When using the skaffold-based setup, you also get a full monitoring setup for observing and analyzing the components' resource usage.
 
 To access the monitoring dashboards and metrics in Grafana, simply forward its port and open http://localhost:3000/ in your browser:
 
@@ -142,6 +142,14 @@ The password for Grafana's `admin` user is written to `hack/config/monitoring/de
 
 Be sure to check out the controller-runtime dashboard: http://localhost:3000/d/PuCBL3zVz/controller-runtime-controllers
 
+## Continuous Profiling
+
+To dig deeper into the components' resource usage, you can deploy the continuous profiling setup based on [Parca](https://parca.dev/):
+
+```bash
+make up SKAFFOLD_MODULE=profiling SKAFFOLD_PROFILE=profiling
+```
+
 To access the profiling data in Parca, simply forward its port and open http://localhost:7070/ in your browser:
 
 ```bash
@@ -149,3 +157,11 @@ kubectl -n parca port-forward svc/parca 7070 &
 ```
 
 For accessing Parca through its `Ingress`, use the basic auth password for the `parca` user from `hack/config/profiling/parca_password.secret.txt`.
+
+Note that the Parca deployment doesn't implement retention for profiling data.
+I.e., the Parca data volume will grow infinitely as long as Parca is running.
+To shut down Parca after analyzing the collected profiles and destroying the persistent volume use the following command:
+
+```bash
+make down SKAFFOLD_MODULE=profiling SKAFFOLD_PROFILE=profiling
+```
