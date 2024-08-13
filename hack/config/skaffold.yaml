@@ -282,19 +282,6 @@ apiVersion: skaffold/v4beta10
 kind: Config
 metadata:
   name: profiling
-build:
-  artifacts:
-    - image: ghcr.io/timebertt/kubernetes-controller-sharding/janitor
-      ko:
-        dependencies:
-          paths:
-            - go.mod
-            - ./hack/cmd/janitor/**/*.go
-        main: ./hack/cmd/janitor
-  tagPolicy:
-    inputDigest: {}
-  local:
-    concurrency: 0
 manifests:
   kustomize:
     paths:
