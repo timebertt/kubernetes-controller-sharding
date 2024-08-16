@@ -9,14 +9,18 @@ jobs:
   post-update:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write
-
     steps:
     - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.RENOVATE_TOKEN }}
     - uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
+
+    - name: debug
+      run: |
+        echo "${{ github.actor }}"
+        echo "${{ github.actor_id }}"
 
     # Some dependency updates might require updating go.work.sum.
     # Automatically run `make tidy` on renovate branches as long as renovate doesn't know how to handle go workspaces.
@@ -24,6 +28,8 @@ jobs:
     # Run `make generate` and commit all changes if any.
     - run: make tidy generate
     - uses: stefanzweifel/git-auto-commit-action@v5
+      # safety: prevent triggering infinite loop of this action
+      if: github.actor != 'github-actions[bot]'
       with:
         commit_message: make tidy generate
         commit_user_name: renovate[bot]
