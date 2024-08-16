@@ -1,0 +1,31 @@
+name: renovate
+
+on:
+  push:
+    branches:
+    - renovate/*
+
+jobs:
+  post-update:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+
+    # Some dependency updates might require updating go.work.sum.
+    # Automatically run `make tidy` on renovate branches as long as renovate doesn't know how to handle go workspaces.
+    # Some dependency updates might require re-running code generation.
+    # Run `make generate` and commit all changes if any.
+    - run: make tidy generate
+    - uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: make tidy generate
+        commit_user_name: renovate[bot]
+        commit_user_email: 29139614+renovate[bot]@users.noreply.github.com
+        commit_author: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>
