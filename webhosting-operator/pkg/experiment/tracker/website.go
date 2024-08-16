@@ -145,7 +145,7 @@ func (w *WebsiteTracker) AddToManager(mgr manager.Manager) error {
 // This reduces the number of requeues we need to do for waiting for the ready timestamp to arrive in the tracker.
 func (w *WebsiteTracker) websiteHandler() handler.EventHandler {
 	return handler.Funcs{
-		UpdateFunc: func(_ context.Context, e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+		UpdateFunc: func(_ context.Context, e event.UpdateEvent, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 			website, ok := e.ObjectNew.(*webhostingv1alpha1.Website)
 			if !ok {
 				return
