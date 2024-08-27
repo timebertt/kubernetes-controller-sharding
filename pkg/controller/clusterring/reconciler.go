@@ -86,8 +86,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	}
 
 	shards := leases.ToShards(leaseList.Items, r.Clock.Now())
-	clusterRing.Status.Shards = int32(len(shards))
-	clusterRing.Status.AvailableShards = int32(len(shards.AvailableShards()))
+	clusterRing.Status.Shards = int32(len(shards))                            // nolint:gosec
+	clusterRing.Status.AvailableShards = int32(len(shards.AvailableShards())) // nolint:gosec
 
 	// update status if necessary
 	return reconcile.Result{}, r.updateStatusSuccess(ctx, clusterRing, before)
