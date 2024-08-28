@@ -8,7 +8,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.20.1
 	github.com/onsi/gomega v1.34.2
 	github.com/prometheus/client_golang v1.20.2
-	github.com/prometheus/common v0.56.0
+	github.com/prometheus/common v0.57.0
 	github.com/spf13/cobra v1.8.1
 	github.com/timebertt/kubernetes-controller-sharding v0.0.0
 	go.uber.org/automaxprocs v1.5.3
