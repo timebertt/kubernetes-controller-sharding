@@ -5,11 +5,11 @@ namespace: external-dns
 
 images:
 - name: registry.k8s.io/external-dns/external-dns
-  newTag: v0.14.2
+  newTag: v0.15.0
 
 resources:
 - namespace.yaml
-- https://github.com/kubernetes-sigs/external-dns//kustomize?ref=v0.14.2
+- https://github.com/kubernetes-sigs/external-dns//kustomize?ref=v0.15.0
 
 patches:
 - path: patch-deployment.yaml
