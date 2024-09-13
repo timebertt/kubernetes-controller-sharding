@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/instance: k8s
     app.kubernetes.io/name: prometheus
     app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: 2.46.0
+    app.kubernetes.io/version: 2.54.1
     prometheus: k8s
     role: alert-rules
   name: prometheus-k8s-prometheus-rules
@@ -35,6 +35,16 @@ spec:
       expr: |
         increase(prometheus_sd_refresh_failures_total{job="prometheus-k8s",namespace="monitoring"}[10m]) > 0
       for: 20m
+      labels:
+        severity: warning
+    - alert: PrometheusKubernetesListWatchFailures
+      annotations:
+        description: Kubernetes service discovery of Prometheus {{$labels.namespace}}/{{$labels.pod}} is experiencing {{ printf "%.0f" $value }} failures with LIST/WATCH requests to the Kubernetes API in the last 5 minutes.
+        runbook_url: https://runbooks.prometheus-operator.dev/runbooks/prometheus/prometheuskuberneteslistwatchfailures
+        summary: Requests in Kubernetes SD are failing.
+      expr: |
+        increase(prometheus_sd_kubernetes_failures_total{job="prometheus-k8s",namespace="monitoring"}[5m]) > 0
+      for: 15m
       labels:
         severity: warning
     - alert: PrometheusNotificationQueueRunningFull
@@ -108,7 +118,7 @@ spec:
         summary: Prometheus is not ingesting samples.
       expr: |
         (
-          rate(prometheus_tsdb_head_samples_appended_total{job="prometheus-k8s",namespace="monitoring"}[5m]) <= 0
+          sum without(type) (rate(prometheus_tsdb_head_samples_appended_total{job="prometheus-k8s",namespace="monitoring"}[5m])) <= 0
         and
           (
             sum without(scrape_job) (prometheus_target_metadata_cache_entries{job="prometheus-k8s",namespace="monitoring"}) > 0
