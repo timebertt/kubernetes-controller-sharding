@@ -15,10 +15,10 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/time v0.8.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.30.6
-	k8s.io/apimachinery v0.30.6
-	k8s.io/client-go v0.30.6
-	k8s.io/component-base v0.30.6
+	k8s.io/api v0.30.7
+	k8s.io/apimachinery v0.30.7
+	k8s.io/client-go v0.30.7
+	k8s.io/component-base v0.30.7
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20241104163129-6fe5fd82f078
 	sigs.k8s.io/controller-runtime v0.18.5
