@@ -9,7 +9,7 @@ images:
 
 resources:
 - namespace.yaml
-- https://github.com/kubernetes-sigs/external-dns//kustomize?ref=v0.15.0
+- https://github.com/kubernetes-sigs/external-dns//kustomize?ref=v0.15.1
 
 patches:
 - path: patch-deployment.yaml
