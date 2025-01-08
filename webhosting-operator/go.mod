@@ -17,11 +17,11 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.30.8
 	k8s.io/apimachinery v0.30.8
-	k8s.io/client-go v0.30.7
-	k8s.io/component-base v0.30.7
+	k8s.io/client-go v0.30.8
+	k8s.io/component-base v0.30.8
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
-	sigs.k8s.io/controller-runtime v0.18.6
+	sigs.k8s.io/controller-runtime v0.18.7
 )
 
 replace github.com/timebertt/kubernetes-controller-sharding => ../
