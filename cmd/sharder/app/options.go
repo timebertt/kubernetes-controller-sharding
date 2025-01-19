@@ -38,7 +38,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	controllerconfig "sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -117,9 +116,6 @@ func (o *options) complete() error {
 		Scheme: scheme,
 		// allows us to quickly handover leadership on restarts
 		LeaderElectionReleaseOnCancel: true,
-		Controller: controllerconfig.Controller{
-			RecoverPanic: ptr.To(true),
-		},
 	}
 	o.applyConfigToManagerOptions()
 	o.applyCacheOptions()

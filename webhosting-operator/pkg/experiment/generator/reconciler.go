@@ -33,7 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/ratelimiter"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -64,7 +63,7 @@ func (r *Every) AddToManager(mgr manager.Manager) error {
 		Named(r.Name).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: workers,
-			RateLimiter:             &workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(r.Rate, int(r.Rate))},
+			RateLimiter:             &workqueue.TypedBucketRateLimiter[reconcile.Request]{Limiter: rate.NewLimiter(r.Rate, int(r.Rate))},
 		}).
 		WatchesRawSource(EmitN(workers)).
 		Complete(StopOnContextCanceled(r))
@@ -123,7 +122,7 @@ func (r *ForEach[T]) AddToManager(mgr manager.Manager) error {
 			r.obj,
 			&handler.Funcs{
 				// only enqueue create events, after that we reconcile periodically
-				CreateFunc: func(ctx context.Context, e event.CreateEvent, q workqueue.RateLimitingInterface) {
+				CreateFunc: func(ctx context.Context, e event.CreateEvent, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 					if e.Object == nil {
 						return
 					}
@@ -157,7 +156,7 @@ func (r *ForEach[T]) Reconcile(ctx context.Context, request reconcile.Request) (
 }
 
 // unlimitedRateLimiter returns a RateLimiter that doesn't apply any rate limits to the workqueue.
-func unlimitedRateLimiter() ratelimiter.RateLimiter {
+func unlimitedRateLimiter() workqueue.TypedRateLimiter[reconcile.Request] {
 	// if no limiter is given, MaxOfRateLimiter returns 0 for When and NumRequeues => unlimited
-	return &workqueue.MaxOfRateLimiter{}
+	return &workqueue.TypedMaxOfRateLimiter[reconcile.Request]{}
 }

@@ -46,7 +46,7 @@ var log = logf.Log
 //
 //	Watch(EmitN(n), &handler.EnqueueRequestForObject{})
 func EmitN(n int) source.Source {
-	return source.Func(func(ctx context.Context, queue workqueue.RateLimitingInterface) error {
+	return source.TypedFunc[reconcile.Request](func(ctx context.Context, queue workqueue.TypedRateLimitingInterface[reconcile.Request]) error {
 		for i := 0; i < n; i++ {
 			queue.Add(reconcile.Request{NamespacedName: types.NamespacedName{
 				// use different object names, otherwise queue will merge the requests
