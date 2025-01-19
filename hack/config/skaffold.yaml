@@ -111,7 +111,7 @@ deploy:
               - |
                 for i in $(seq 1 20); do
                   # create dummy policy with dry-run enabled to test availability of webhook
-                  if kubectl create --raw "/apis/kyverno.io/v1/clusterpolicies?dryRun=All" -f <(echo '{"apiVersion": "kyverno.io/v1", "kind": "ClusterPolicy", "metadata": {"name": "test"}, "spec": {}}') >/dev/null ; then
+                  if kubectl create --dry-run=server -f <(yq '.metadata.name |= "test-kyverno"' hack/config/policy/shoot/sharder-scheduling.yaml) ; then
                     exit 0
                   fi
                   echo "Waiting until kyverno webhook is ready to handle policy creation"
