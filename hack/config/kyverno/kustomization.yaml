@@ -14,7 +14,7 @@ configMapGenerator:
   # overwrite default namespaceSelector for webhook configs to exclude kube-system
   # the second part makes gardeners care controller/webhook remediation happy
   - >-
-    webhooks=[{
+    webhooks={
       "namespaceSelector": {
         "matchExpressions": [{
           "key": "kubernetes.io/metadata.name",
@@ -26,4 +26,4 @@ configMapGenerator:
           "values": ["kube-system"]
         }]
       }
-    }]
+    }
