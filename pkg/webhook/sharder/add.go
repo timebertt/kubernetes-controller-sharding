@@ -52,7 +52,6 @@ func (h *Handler) AddToManager(mgr manager.Manager) error {
 	mgr.GetWebhookServer().Register(WebhookPathPrefix, &admission.Webhook{
 		Handler:         h,
 		WithContextFunc: NewContextWithRequestPath,
-		RecoverPanic:    true,
 	})
 	return nil
 }
