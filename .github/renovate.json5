@@ -1,176 +1,176 @@
 {
-  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
-    "config:recommended",
-    ":semanticCommitsDisabled",
-    "regexManagers:githubActionsVersions"
+    'config:recommended',
+    ':semanticCommitsDisabled',
+    'customManagers:githubActionsVersions',
   ],
-  labels: ["dependencies"],
-  postUpdateOptions: ["gomodTidy"],
-  automergeStrategy: "squash",
+  labels: ['dependencies'],
+  postUpdateOptions: ['gomodTidy'],
+  automergeStrategy: 'squash',
   // required for automerging patch updates
   separateMinorPatch: true,
   kubernetes: {
-    fileMatch: ["\\.yaml$"]
+    fileMatch: ['\\.yaml$'],
   },
   customManagers: [
     {
       // generic detection for install manifests from GitHub releases
-      customType: "regex",
-      fileMatch: ["kustomization\\.yaml$"],
-      matchStrings: ["https:\/\/github\\.com\/(?<depName>.*\/.*?)\/releases\/download\/(?<currentValue>.*?)\/"],
-      datasourceTemplate: "github-releases"
+      customType: 'regex',
+      fileMatch: ['kustomization\\.yaml$'],
+      matchStrings: ['https://github\\.com/(?<depName>.*/.*?)/releases/download/(?<currentValue>.*?)/'],
+      datasourceTemplate: 'github-releases',
     },
     {
       // generic detection for raw manifests from GitHub refs
-      customType: "regex",
-      fileMatch: ["kustomization\\.yaml$"],
-      matchStrings: ["https:\/\/raw.githubusercontent.com\/(?<depName>.*?/.*?)\/(?<currentValue>.*?)\/"],
-      datasourceTemplate: "github-releases"
+      customType: 'regex',
+      fileMatch: ['kustomization\\.yaml$'],
+      matchStrings: ['https://raw.githubusercontent.com/(?<depName>.*?/.*?)/(?<currentValue>.*?)/'],
+      datasourceTemplate: 'github-releases',
     },
     {
       // update `_VERSION` variables in Makefiles and scripts
       // inspired by `regexManagers:dockerfileVersions` preset
-      customType: "regex",
-      fileMatch: ["Makefile$", "\\.mk$", "\\.sh$"],
+      customType: 'regex',
+      fileMatch: ['Makefile$', '\\.mk$', '\\.sh$'],
       matchStrings: [
-        "# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s.+?_VERSION *[?:]?= *\"?(?<currentValue>.+?)\"?\\s"
-      ]
-    }
+        '# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s.+?_VERSION *[?:]?= *"?(?<currentValue>.+?)"?\\s',
+      ],
+    },
   ],
   packageRules: [
     {
       // disable update of dependency on the main module
-      matchPackageNames: ["github.com/timebertt/kubernetes-controller-sharding"],
-      enabled: false
+      matchPackageNames: ['github.com/timebertt/kubernetes-controller-sharding'],
+      enabled: false,
     },
     {
       // automerge non-major updates except 0.* versions
       // similar to :automergeStableNonMajor preset, but also works for versioning schemes without range support
-      matchUpdateTypes: ["minor", "patch"],
-      matchCurrentVersion: "!/^v?0\\./",
-      automerge: true
+      matchUpdateTypes: ['minor', 'patch'],
+      matchCurrentVersion: '!/^v?0\\./',
+      automerge: true,
     },
     {
       // automerge patch updates
-      matchUpdateTypes: ["patch"],
-      automerge: true
+      matchUpdateTypes: ['patch'],
+      automerge: true,
     },
     {
       // disable automerge for go minor updates
-      matchDatasources: ["golang-version"],
-      matchUpdateTypes: ["minor"],
-      automerge: false
+      matchDatasources: ['golang-version'],
+      matchUpdateTypes: ['minor'],
+      automerge: false,
     },
     {
       // bump k8s and controller-runtime go dependencies together
-      groupName: "k8s packages",
-      groupSlug: "k8s-go",
-      matchDatasources: ["go"],
-      matchPackagePrefixes: [
+      groupName: 'k8s packages',
+      groupSlug: 'k8s-go',
+      matchDatasources: ['go'],
+      matchPackageNames: [
         // from "group:kubernetes"
-        "k8s.io/api",
-        "k8s.io/apiextensions-apiserver",
-        "k8s.io/apimachinery",
-        "k8s.io/apiserver",
-        "k8s.io/cli-runtime",
-        "k8s.io/client-go",
-        "k8s.io/cloud-provider",
-        "k8s.io/cluster-bootstrap",
-        "k8s.io/code-generator",
-        "k8s.io/component-base",
-        "k8s.io/controller-manager",
-        "k8s.io/cri-api",
-        "k8s.io/csi-translation-lib",
-        "k8s.io/kube-aggregator",
-        "k8s.io/kube-controller-manager",
-        "k8s.io/kube-proxy",
-        "k8s.io/kube-scheduler",
-        "k8s.io/kubectl",
-        "k8s.io/kubelet",
-        "k8s.io/legacy-cloud-providers",
-        "k8s.io/metrics",
-        "k8s.io/mount-utils",
-        "k8s.io/pod-security-admission",
-        "k8s.io/sample-apiserver",
-        "k8s.io/sample-cli-plugin",
-        "k8s.io/sample-controller",
+        'k8s.io/api**',
+        'k8s.io/apiextensions-apiserver**',
+        'k8s.io/apimachinery**',
+        'k8s.io/apiserver**',
+        'k8s.io/cli-runtime**',
+        'k8s.io/client-go**',
+        'k8s.io/cloud-provider**',
+        'k8s.io/cluster-bootstrap**',
+        'k8s.io/code-generator**',
+        'k8s.io/component-base**',
+        'k8s.io/controller-manager**',
+        'k8s.io/cri-api**',
+        'k8s.io/csi-translation-lib**',
+        'k8s.io/kube-aggregator**',
+        'k8s.io/kube-controller-manager**',
+        'k8s.io/kube-proxy**',
+        'k8s.io/kube-scheduler**',
+        'k8s.io/kubectl**',
+        'k8s.io/kubelet**',
+        'k8s.io/legacy-cloud-providers**',
+        'k8s.io/metrics**',
+        'k8s.io/mount-utils**',
+        'k8s.io/pod-security-admission**',
+        'k8s.io/sample-apiserver**',
+        'k8s.io/sample-cli-plugin**',
+        'k8s.io/sample-controller**',
         // added packages
-        "sigs.k8s.io/controller-runtime"
-      ]
+        'sigs.k8s.io/controller-runtime**',
+      ],
     },
     {
       // disable automerge for k8s minor updates
-      matchPackagePrefixes: [
+      matchPackageNames: [
         // datasource=go
-        "k8s.io/", // includes more than the k8s-go group! (e.g., k8s.io/utils)
-        "sigs.k8s.io/controller-runtime",
+        'k8s.io/**', // includes more than the k8s-go group! (e.g., k8s.io/utils)
+        'sigs.k8s.io/controller-runtime**',
         // datasource=github-releases
-        "kubernetes/kubernetes",
-        "kubernetes-sigs/controller-tools"
+        'kubernetes/kubernetes**',
+        'kubernetes-sigs/controller-tools**',
       ],
-      matchUpdateTypes: ["minor"],
-      automerge: false
+      matchUpdateTypes: ['minor'],
+      automerge: false,
     },
     {
       // automerge k8s.io/utils updates
-      matchDatasources: ["go"],
-      matchPackageNames: ["k8s.io/utils"],
-      matchUpdateTypes: ["digest"],
-      automerge: true
+      matchDatasources: ['go'],
+      matchPackageNames: ['k8s.io/utils'],
+      matchUpdateTypes: ['digest'],
+      automerge: true,
     },
     {
       // setup-envtest is not tagged, don't create a PR for every commit in controller-runtime
-      matchDatasources: ["go"],
-      matchPackageNames: ["sigs.k8s.io/controller-runtime/tools/setup-envtest"],
-      enabled: false
+      matchDatasources: ['go'],
+      matchPackageNames: ['sigs.k8s.io/controller-runtime/tools/setup-envtest'],
+      enabled: false,
     },
     {
       // jsonpatch has to be kept in sync with k8s and controller-runtime dependencies
-      matchDatasources: ["go"],
-      matchPackagePrefixes: ["gomodules.xyz/jsonpatch"],
-      enabled: false
+      matchDatasources: ['go'],
+      matchPackageNames: ['gomodules.xyz/jsonpatch**'],
+      enabled: false,
     },
     {
       // kind minor k8s version should be updated together with shoot k8s version
-      matchPackageNames: ["kindest/node"],
-      matchUpdateTypes: ["minor"],
-      enabled: false
+      matchPackageNames: ['kindest/node'],
+      matchUpdateTypes: ['minor'],
+      enabled: false,
     },
     {
       // combine upgrade of manifests and image tag in one PR
-      groupName: "external-dns",
-      matchPackagePatterns: ["external-dns"]
+      groupName: 'external-dns',
+      matchPackageNames: ['/external-dns/'],
     },
     {
       // special case for ingress-nginx: version is prefixed with `controller-`
-      matchDatasources: ["github-releases"],
-      matchPackageNames: ["kubernetes/ingress-nginx"],
-      "versionCompatibility": "^(?<compatibility>.*)-(?<version>.+)$"
+      matchDatasources: ['github-releases'],
+      matchPackageNames: ['kubernetes/ingress-nginx'],
+      versionCompatibility: '^(?<compatibility>.*)-(?<version>.+)$',
     },
     {
       // manual action required: upgrading kube-prometheus is not fully automated yet
-      matchDatasources: ["github-releases"],
-      matchPackageNames: ["prometheus-operator/kube-prometheus"],
-      prHeader: "⚠️ Manual action required ⚠️\nPlease check this PR out and run `hack/config/monitoring/update.sh`."
+      matchDatasources: ['github-releases'],
+      matchPackageNames: ['prometheus-operator/kube-prometheus'],
+      prHeader: '⚠️ Manual action required ⚠️\nPlease check this PR out and run `hack/config/monitoring/update.sh`.',
     },
     {
       // kube-prometheus manifests are generated and managed by update.sh, disable renovate bumps
-      matchFileNames: ["hack/config/monitoring/{crds,kube-prometheus}/**"],
-      enabled: false
+      matchFileNames: ['hack/config/monitoring/{crds,kube-prometheus}/**'],
+      enabled: false,
     },
     // help renovate fetch changelogs for packages that don't have any sourceUrl metadata attached
     {
-      matchPackageNames: ["registry.k8s.io/prometheus-adapter/prometheus-adapter"],
-      customChangelogUrl: "https://github.com/kubernetes-sigs/prometheus-adapter"
+      matchPackageNames: ['registry.k8s.io/prometheus-adapter/prometheus-adapter'],
+      changelogUrl: 'https://github.com/kubernetes-sigs/prometheus-adapter',
     },
     {
-      matchPackageNames: ["registry.k8s.io/kube-state-metrics/kube-state-metrics"],
-      customChangelogUrl: "https://github.com/kubernetes/kube-state-metrics"
+      matchPackageNames: ['registry.k8s.io/kube-state-metrics/kube-state-metrics'],
+      changelogUrl: 'https://github.com/kubernetes/kube-state-metrics',
     },
     {
-      matchPackageNames: ["quay.io/brancz/kube-rbac-proxy"],
-      customChangelogUrl: "https://github.com/brancz/kube-rbac-proxy"
-    }
-  ]
+      matchPackageNames: ['quay.io/brancz/kube-rbac-proxy'],
+      changelogUrl: 'https://github.com/brancz/kube-rbac-proxy',
+    },
+  ],
 }
