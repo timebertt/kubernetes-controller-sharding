@@ -24,7 +24,7 @@ spec:
       nodeCIDRMaskSize: 24
     kubeProxy:
       mode: IPTables
-    version: "1.28"
+    version: "1.31"
   maintenance:
     autoUpdate:
       kubernetesVersion: true
