@@ -35,8 +35,8 @@ const (
 	// alphaPrefix is a common prefix for all well-known annotations and labels in this API version package.
 	alphaPrefix = "alpha.sharding.timebertt.dev/"
 
-	// LabelClusterRing is the label on objects that identifies the ClusterRing that the object belongs to.
-	LabelClusterRing = alphaPrefix + "clusterring"
+	// LabelControllerRing is the label on objects that identifies the ControllerRing that the object belongs to.
+	LabelControllerRing = alphaPrefix + "controllerring"
 	// LabelState is the label on Lease objects that reflects the state of a shard for observability purposes.
 	// This label is maintained by the shardlease controller.
 	LabelState = alphaPrefix + "state"
@@ -53,8 +53,8 @@ const (
 	IdentityShardLeaseController = "shardlease-controller"
 
 	delimiter = "-"
-	// KindClusterRing is the kind string for ClusterRings used in label keys.
-	KindClusterRing = "clusterring"
+	// KindControllerRing is the kind string for ControllerRings used in label keys.
+	KindControllerRing = "controllerring"
 )
 
 // LabelShard returns the label on sharded objects that holds the name of the responsible shard within a ring.

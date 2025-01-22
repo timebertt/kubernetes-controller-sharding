@@ -6,4 +6,4 @@ commonLabels:
 
 resources:
 - namespace.yaml
-- sharding.timebertt.dev_clusterrings.yaml
+- sharding.timebertt.dev_controllerrings.yaml
