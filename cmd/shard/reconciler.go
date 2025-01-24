@@ -44,7 +44,7 @@ type Reconciler struct {
 }
 
 // AddToManager adds Reconciler to the given manager.
-func (r *Reconciler) AddToManager(mgr manager.Manager, clusterRingName, shardName string) error {
+func (r *Reconciler) AddToManager(mgr manager.Manager, controllerRingName, shardName string) error {
 	if r.Client == nil {
 		r.Client = mgr.GetClient()
 	}
@@ -55,7 +55,7 @@ func (r *Reconciler) AddToManager(mgr manager.Manager, clusterRingName, shardNam
 	// - wrapping the actual reconciler a reconciler that handles the drain operation for us
 	return builder.ControllerManagedBy(mgr).
 		Named("configmap").
-		For(&corev1.ConfigMap{}, builder.WithPredicates(shardcontroller.Predicate(clusterRingName, shardName, ConfigMapDataChanged(), predicate.GenerationChangedPredicate{}))).
+		For(&corev1.ConfigMap{}, builder.WithPredicates(shardcontroller.Predicate(controllerRingName, shardName, ConfigMapDataChanged(), predicate.GenerationChangedPredicate{}))).
 		Owns(&corev1.Secret{}, builder.WithPredicates(ObjectDeleted())).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
@@ -63,7 +63,7 @@ func (r *Reconciler) AddToManager(mgr manager.Manager, clusterRingName, shardNam
 		Complete(
 			shardcontroller.NewShardedReconciler(mgr).
 				For(&corev1.ConfigMap{}).
-				InClusterRing(clusterRingName).
+				InControllerRing(controllerRingName).
 				WithShardName(shardName).
 				MustBuild(r),
 		)
