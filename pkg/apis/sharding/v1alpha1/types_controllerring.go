@@ -121,13 +121,13 @@ func (c *ControllerRing) LeaseSelector() labels.Selector {
 
 // LabelShard returns the label on sharded objects that holds the name of the responsible shard within this ControllerRing.
 func (c *ControllerRing) LabelShard() string {
-	return LabelShard(KindControllerRing, "", c.Name)
+	return LabelShard(c.Name)
 }
 
 // LabelDrain returns the label on sharded objects that instructs the responsible shard within this ControllerRing to stop
 // reconciling the object and remove both the shard and drain label.
 func (c *ControllerRing) LabelDrain() string {
-	return LabelDrain(KindControllerRing, "", c.Name)
+	return LabelDrain(c.Name)
 }
 
 // RingResources returns the the list of resources that are distributed across shards in this ControllerRing.

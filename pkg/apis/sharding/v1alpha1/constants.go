@@ -53,31 +53,24 @@ const (
 	IdentityShardLeaseController = "shardlease-controller"
 
 	delimiter = "-"
-	// KindControllerRing is the kind string for ControllerRings used in label keys.
-	KindControllerRing = "controllerring"
 )
 
 // LabelShard returns the label on sharded objects that holds the name of the responsible shard within a ring.
-func LabelShard(kind string, namespace, name string) string {
-	return LabelShardPrefix + RingSuffix(kind, namespace, name)
+func LabelShard(ringName string) string {
+	return LabelShardPrefix + RingSuffix(ringName)
 }
 
 // LabelDrain returns the label on sharded objects that instructs the responsible shard within a ring to stop reconciling
 // the object and remove both the shard and drain label.
-func LabelDrain(kind string, namespace, name string) string {
-	return LabelDrainPrefix + RingSuffix(kind, namespace, name)
+func LabelDrain(ringName string) string {
+	return LabelDrainPrefix + RingSuffix(ringName)
 }
 
-// RingSuffix returns the label key for a given ring kind and key that is appended to a qualified prefix.
-func RingSuffix(kind string, namespace, name string) string {
-	key := name
-	if namespace != "" {
-		key = namespace + "_" + name
-	}
-
-	keyHash := sha256.Sum256([]byte(key))
+// RingSuffix returns the label key for a given ring name that is appended to a qualified prefix.
+func RingSuffix(ringName string) string {
+	keyHash := sha256.Sum256([]byte(ringName))
 	hexHash := hex.EncodeToString(keyHash[:])
 
 	// the label part after the "/" must not exceed 63 characters, cut off at 63 characters
-	return strings.ShortenString(kind+delimiter+hexHash[:8]+delimiter+key, 63)
+	return strings.ShortenString(hexHash[:8]+delimiter+ringName, 63)
 }
