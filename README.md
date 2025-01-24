@@ -43,9 +43,9 @@ It distributes reconciliation of Kubernetes objects across multiple controller i
 For this, the project applies proven sharding mechanisms used in distributed databases to Kubernetes controllers.
 
 The project introduces a `sharder` component that implements sharding in a generic way and can be applied to any Kubernetes controller (independent of the used programming language and controller framework).
-The `sharder` component is installed into the cluster along with a `ClusterRing` custom resource.
-A `ClusterRing` declares a virtual ring of sharded controller instances and specifies API resources that should be distributed across shards in the ring.
-It configures sharding on the cluster-scope level (i.e., objects in all namespaces), hence the `ClusterRing` name.
+The `sharder` component is installed into the cluster along with a `ControllerRing` custom resource.
+A `ControllerRing` declares a virtual ring of sharded controller instances and specifies API resources that should be distributed across shards in the ring.
+It configures sharding on the cluster-scope level (i.e., objects in all namespaces), hence the `ControllerRing` name.
 
 The watch cache is an expensive part of a controller regarding network transfer, CPU (decoding), and memory (local copy of all objects).
 When running multiple instances of a controller, the individual instances must thus only watch the subset of objects they are responsible for.

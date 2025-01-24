@@ -23,39 +23,39 @@ NAME                       READY   STATUS    RESTARTS   AGE
 sharder-57889fcd8c-p2wxf   1/1     Running   0          44s
 sharder-57889fcd8c-z6bm5   1/1     Running   0          44s
 $ kubectl get po
-NAME                     READY   STATUS    RESTARTS   AGE
-shard-7997b8d9b7-9c2db   1/1     Running   0          45s
-shard-7997b8d9b7-9nvr2   1/1     Running   0          45s
-shard-7997b8d9b7-f9gtd   1/1     Running   0          45s
+NAME                    READY   STATUS    RESTARTS   AGE
+shard-9c6678c9f-8jc5b   1/1     Running   0          45s
+shard-9c6678c9f-v4bw2   1/1     Running   0          45s
+shard-9c6678c9f-xntqc   1/1     Running   0          45s
 ```
 
-## The `ClusterRing` and `Lease` Objects
+## The `ControllerRing` and `Lease` Objects
 
-We can see that the `ClusterRing` object is ready and reports 3 available shards out of 3 total shards:
+We can see that the `ControllerRing` object is ready and reports 3 available shards out of 3 total shards:
 
 ```bash
-$ kubectl get clusterring
+$ kubectl get controllerring example
 NAME      READY   AVAILABLE   SHARDS   AGE
 example   True    3           3        64s
 ```
 
-All shards announce themselves to the sharder by maintaining an individual `Lease` object with the `alpha.sharding.timebertt.dev/clusterring` label.
+All shards announce themselves to the sharder by maintaining an individual `Lease` object with the `alpha.sharding.timebertt.dev/controllerring` label.
 We can observe that the sharder recognizes all shards as available by looking at the `alpha.sharding.timebertt.dev/state` label:
 
 ```bash
-$ kubectl get lease -L alpha.sharding.timebertt.dev/clusterring,alpha.sharding.timebertt.dev/state
-NAME                     HOLDER                   AGE   CLUSTERRING   STATE
-shard-7997b8d9b7-9c2db   shard-7997b8d9b7-9c2db   75s   example       ready
-shard-7997b8d9b7-9nvr2   shard-7997b8d9b7-9nvr2   75s   example       ready
-shard-7997b8d9b7-f9gtd   shard-7997b8d9b7-f9gtd   76s   example       ready
+$ kubectl get lease -L alpha.sharding.timebertt.dev/controllerring,alpha.sharding.timebertt.dev/state
+NAME                    HOLDER                  AGE   CONTROLLERRING   STATE
+shard-9c6678c9f-8jc5b   shard-9c6678c9f-8jc5b   72s   example          ready
+shard-9c6678c9f-v4bw2   shard-9c6678c9f-v4bw2   72s   example          ready
+shard-9c6678c9f-xntqc   shard-9c6678c9f-xntqc   72s   example          ready
 ```
 
-The `ClusterRing` object specifies which API resources should be sharded.
+The `ControllerRing` object specifies which API resources should be sharded.
 Optionally, it allows selecting the namespaces in which API resources are sharded:
 
 ```yaml
 apiVersion: sharding.timebertt.dev/v1alpha1
-kind: ClusterRing
+kind: ControllerRing
 metadata:
   name: example
 spec:
@@ -75,12 +75,12 @@ The created `Secrets` are controlled by the respective `ConfigMap`, i.e., there 
 
 ## The Sharder Webhook
 
-The sharder created a `MutatingWebhookConfiguration` for the resources listed in our `ClusterRing` specification:
+The sharder created a `MutatingWebhookConfiguration` for the resources listed in our `ControllerRing` specification:
 
 ```bash
-$ kubectl get mutatingwebhookconfiguration -l app.kubernetes.io/name=controller-sharding
-NAME                                    WEBHOOKS   AGE
-sharding-clusterring-50d858e0-example   1          2m50s
+$ kubectl get mutatingwebhookconfiguration -l alpha.sharding.timebertt.dev/controllerring=example
+NAME                        WEBHOOKS   AGE
+sharding-50d858e0-example   1          2m50s
 ```
 
 Let's examine the webhook configuration for more details.
@@ -92,13 +92,13 @@ I.e., it gets called for unassigned objects and adds the shard assignment label 
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: sharding-clusterring-50d858e0-example
+  name: sharding-50d858e0-example
 webhooks:
 - clientConfig:
     service:
       name: sharder
       namespace: sharding-system
-      path: /webhooks/sharder/clusterring/example
+      path: /webhooks/sharder/controllerring/example
       port: 443
   name: sharder.sharding.timebertt.dev
   namespaceSelector:
@@ -106,7 +106,7 @@ webhooks:
       kubernetes.io/metadata.name: default
   objectSelector:
     matchExpressions:
-    - key: shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example
+    - key: shard.alpha.sharding.timebertt.dev/50d858e0-example
       operator: DoesNotExist
   rules:
   - apiGroups:
@@ -144,7 +144,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   labels:
-    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example: shard-7997b8d9b7-9c2db
+    shard.alpha.sharding.timebertt.dev/50d858e0-example: shard-9c6678c9f-8jc5b
   name: foo
   namespace: default
 ```
@@ -162,7 +162,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   labels:
-    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example: shard-7997b8d9b7-9c2db
+    shard.alpha.sharding.timebertt.dev/50d858e0-example: shard-9c6678c9f-8jc5b
   name: dummy-foo
   namespace: default
   ownerReferences:
@@ -176,32 +176,30 @@ Let's create a few more `ConfigMaps` and observe the distribution of objects acr
 
 ```bash
 $ for i in $(seq 1 9); do k create cm foo$i ; done
-$ kubectl get cm,secret -L shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example
-NAME                         DATA   AGE     CLUSTERRING-50D858E0-EXAMPLE
-configmap/foo                0      52s     shard-7997b8d9b7-9c2db
-configmap/foo1               0      7s      shard-7997b8d9b7-9nvr2
-configmap/foo10              0      6s      shard-7997b8d9b7-9nvr2
-configmap/foo2               0      6s      shard-7997b8d9b7-9nvr2
-configmap/foo3               0      6s      shard-7997b8d9b7-f9gtd
-configmap/foo4               0      6s      shard-7997b8d9b7-9c2db
-configmap/foo5               0      6s      shard-7997b8d9b7-f9gtd
-configmap/foo6               0      6s      shard-7997b8d9b7-f9gtd
-configmap/foo7               0      6s      shard-7997b8d9b7-9c2db
-configmap/foo8               0      6s      shard-7997b8d9b7-9c2db
-configmap/foo9               0      6s      shard-7997b8d9b7-9nvr2
+$ kubectl get cm,secret -L shard.alpha.sharding.timebertt.dev/50d858e0-example
+NAME                         DATA   AGE     50D858E0-EXAMPLE
+configmap/foo                0      52s     shard-9c6678c9f-8jc5b
+configmap/foo1               0      7s      shard-9c6678c9f-v4bw2
+configmap/foo2               0      6s      shard-9c6678c9f-8jc5b
+configmap/foo3               0      6s      shard-9c6678c9f-v4bw2
+configmap/foo4               0      6s      shard-9c6678c9f-v4bw2
+configmap/foo5               0      6s      shard-9c6678c9f-xntqc
+configmap/foo6               0      6s      shard-9c6678c9f-xntqc
+configmap/foo7               0      6s      shard-9c6678c9f-xntqc
+configmap/foo8               0      6s      shard-9c6678c9f-xntqc
+configmap/foo9               0      6s      shard-9c6678c9f-8jc5b
 
-NAME                            TYPE     DATA   AGE     CLUSTERRING-50D858E0-EXAMPLE
-secret/dummy-foo                Opaque   0      52s     shard-7997b8d9b7-9c2db
-secret/dummy-foo1               Opaque   0      7s      shard-7997b8d9b7-9nvr2
-secret/dummy-foo10              Opaque   0      6s      shard-7997b8d9b7-9nvr2
-secret/dummy-foo2               Opaque   0      6s      shard-7997b8d9b7-9nvr2
-secret/dummy-foo3               Opaque   0      6s      shard-7997b8d9b7-f9gtd
-secret/dummy-foo4               Opaque   0      6s      shard-7997b8d9b7-9c2db
-secret/dummy-foo5               Opaque   0      6s      shard-7997b8d9b7-f9gtd
-secret/dummy-foo6               Opaque   0      6s      shard-7997b8d9b7-f9gtd
-secret/dummy-foo7               Opaque   0      6s      shard-7997b8d9b7-9c2db
-secret/dummy-foo8               Opaque   0      6s      shard-7997b8d9b7-9c2db
-secret/dummy-foo9               Opaque   0      6s      shard-7997b8d9b7-9nvr2
+NAME                            TYPE     DATA   AGE     50D858E0-EXAMPLE
+secret/dummy-foo                Opaque   0      52s     shard-9c6678c9f-8jc5b
+secret/dummy-foo1               Opaque   0      7s      shard-9c6678c9f-v4bw2
+secret/dummy-foo2               Opaque   0      6s      shard-9c6678c9f-8jc5b
+secret/dummy-foo3               Opaque   0      6s      shard-9c6678c9f-v4bw2
+secret/dummy-foo4               Opaque   0      6s      shard-9c6678c9f-v4bw2
+secret/dummy-foo5               Opaque   0      6s      shard-9c6678c9f-xntqc
+secret/dummy-foo6               Opaque   0      6s      shard-9c6678c9f-xntqc
+secret/dummy-foo7               Opaque   0      6s      shard-9c6678c9f-xntqc
+secret/dummy-foo8               Opaque   0      6s      shard-9c6678c9f-xntqc
+secret/dummy-foo9               Opaque   0      6s      shard-9c6678c9f-8jc5b
 ```
 
 ## Removing Shards From the Ring
@@ -222,11 +220,11 @@ With this, the shard is no longer considered for object assignments.
 The orphaned `Lease` is cleaned up after 1 minute.
 
 ```bash
-$ kubectl get lease -L alpha.sharding.timebertt.dev/clusterring,alpha.sharding.timebertt.dev/state
-NAME                     HOLDER                   AGE     CLUSTERRING   STATE
-shard-7997b8d9b7-9c2db                            3m25s   example       dead
-shard-7997b8d9b7-9nvr2   shard-7997b8d9b7-9nvr2   3m25s   example       ready
-shard-7997b8d9b7-f9gtd   shard-7997b8d9b7-f9gtd   3m26s   example       ready
+$ kubectl get lease -L alpha.sharding.timebertt.dev/controllerring,alpha.sharding.timebertt.dev/state
+NAME                    HOLDER                  AGE   CONTROLLERRING   STATE
+shard-9c6678c9f-f49zn                           25s   example          dead
+shard-9c6678c9f-kvgft   shard-9c6678c9f-kvgft   25s   example          ready
+shard-9c6678c9f-ppzf7   shard-9c6678c9f-ppzf7   25s   example          ready
 ```
 
 We can observe that the sharder immediately moved objects that were assigned to the removed shard to the remaining available shards.
@@ -235,11 +233,9 @@ As the original shard is not available anymore, moving the objects doesn't need 
 
 ```bash
 $ kubectl get cm --show-labels -w --output-watch-events --watch-only
-EVENT      NAME   DATA   AGE   LABELS
-MODIFIED   foo    0      85s   shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-f9gtd
-MODIFIED   foo4   0      39s   shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
-MODIFIED   foo7   0      39s   shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
-MODIFIED   foo8   0      39s   shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
+EVENT      NAME   DATA   AGE     LABELS
+MODIFIED   foo4   0      7m52s   shard.alpha.sharding.timebertt.dev/50d858e0-example=shard-9c6678c9f-ppzf7
+MODIFIED   foo6   0      7m52s   shard.alpha.sharding.timebertt.dev/50d858e0-example=shard-9c6678c9f-ppzf7
 ```
 
 ## Adding Shards to the Ring
@@ -255,11 +251,11 @@ We can observe that the new `Lease` object is in state `ready`.
 With this, the new shard is immediately considered for assignment of new objects.
 
 ```bash
-$ kubectl get lease -L alpha.sharding.timebertt.dev/clusterring,alpha.sharding.timebertt.dev/state
-NAME                     HOLDER                   AGE     CLUSTERRING   STATE
-shard-7997b8d9b7-9nvr2   shard-7997b8d9b7-9nvr2   4m52s   example       ready
-shard-7997b8d9b7-f9gtd   shard-7997b8d9b7-f9gtd   4m53s   example       ready
-shard-7997b8d9b7-mkh72   shard-7997b8d9b7-mkh72   8s      example       ready
+$ kubectl get lease -L alpha.sharding.timebertt.dev/controllerring,alpha.sharding.timebertt.dev/state
+NAME                    HOLDER                  AGE   CONTROLLERRING   STATE
+shard-9c6678c9f-jkgj6   shard-9c6678c9f-jkgj6   3s    example          ready
+shard-9c6678c9f-kvgft   shard-9c6678c9f-kvgft   96s   example          ready
+shard-9c6678c9f-ppzf7   shard-9c6678c9f-ppzf7   96s   example          ready
 ```
 
 In this case, a rebalancing needs to happen and the sharder needs to move objects away from available shards to the new shard.
@@ -273,21 +269,11 @@ This triggers the sharder webhook which immediately assigns the object to the de
 
 ```bash
 $ kubectl get cm --show-labels -w --output-watch-events --watch-only
-EVENT      NAME   DATA   AGE     LABELS
-MODIFIED   foo    0      2m49s   drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-f9gtd
-MODIFIED   foo3   0      2m3s    drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-f9gtd
-MODIFIED   foo4   0      2m3s    drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
-MODIFIED   foo    0      2m49s   shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
-MODIFIED   foo3   0      2m3s    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
-MODIFIED   foo6   0      2m3s    drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-f9gtd
-MODIFIED   foo4   0      2m3s    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
-MODIFIED   foo7   0      2m3s    drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
-MODIFIED   foo6   0      2m3s    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
-MODIFIED   foo8   0      2m3s    drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
-MODIFIED   foo7   0      2m3s    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
-MODIFIED   foo9   0      2m3s    drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=true,shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-9nvr2
-MODIFIED   foo8   0      2m3s    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
-MODIFIED   foo9   0      2m3s    shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example=shard-7997b8d9b7-mkh72
+EVENT      NAME   DATA   AGE    LABELS
+MODIFIED   foo4   0      9m2s   drain.alpha.sharding.timebertt.dev/50d858e0-example=true,shard.alpha.sharding.timebertt.dev/50d858e0-example=shard-9c6678c9f-ppzf7
+MODIFIED   foo7   0      9m2s   drain.alpha.sharding.timebertt.dev/50d858e0-example=true,shard.alpha.sharding.timebertt.dev/50d858e0-example=shard-9c6678c9f-ppzf7
+MODIFIED   foo4   0      9m2s   shard.alpha.sharding.timebertt.dev/50d858e0-example=shard-9c6678c9f-jkgj6
+MODIFIED   foo7   0      9m2s   shard.alpha.sharding.timebertt.dev/50d858e0-example=shard-9c6678c9f-jkgj6
 ```
 
 ## Clean Up
