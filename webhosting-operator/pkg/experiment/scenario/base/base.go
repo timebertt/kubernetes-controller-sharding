@@ -33,6 +33,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/generator"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/tracker"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
@@ -249,7 +250,7 @@ func (s *Scenario) waitForShardLeases(ctx context.Context) error {
 	if err := wait.PollUntilContextTimeout(ctx, 2*time.Second, 2*time.Minute, false, func(ctx context.Context) (done bool, err error) {
 		leaseList := &coordinationv1.LeaseList{}
 		if err := s.Client.List(ctx, leaseList,
-			client.InNamespace("webhosting-system"), client.MatchingLabels{"alpha.sharding.timebertt.dev/clusterring": "webhosting-operator"},
+			client.InNamespace("webhosting-system"), client.MatchingLabels{shardingv1alpha1.LabelControllerRing: "webhosting-operator"},
 		); err != nil {
 			return true, err
 		}

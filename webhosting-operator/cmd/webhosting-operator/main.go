@@ -116,7 +116,7 @@ func main() {
 
 	if err = (&webhosting.WebsiteReconciler{
 		Config: opts.config,
-	}).SetupWithManager(mgr, opts.enableSharding, opts.clusterRingName, opts.shardName); err != nil {
+	}).SetupWithManager(mgr, opts.enableSharding, opts.controllerRingName, opts.shardName); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Website")
 		os.Exit(1)
 	}
@@ -147,12 +147,12 @@ func main() {
 type options struct {
 	configFile string
 
-	restConfig      *rest.Config
-	config          *configv1alpha1.WebhostingOperatorConfig
-	managerOptions  ctrl.Options
-	enableSharding  bool
-	clusterRingName string
-	shardName       string
+	restConfig         *rest.Config
+	config             *configv1alpha1.WebhostingOperatorConfig
+	managerOptions     ctrl.Options
+	enableSharding     bool
+	controllerRingName string
+	shardName          string
 }
 
 func (o *options) AddFlags(fs *flag.FlagSet) {
@@ -273,9 +273,9 @@ func (o *options) applyOptionsOverrides() error {
 		}
 
 		// SHARD LEASE
-		o.clusterRingName = "webhosting-operator"
+		o.controllerRingName = "webhosting-operator"
 		shardLease, err := shardlease.NewResourceLock(o.restConfig, nil, shardlease.Options{
-			ClusterRingName: o.clusterRingName,
+			ControllerRingName: o.controllerRingName,
 		})
 		if err != nil {
 			return fmt.Errorf("failed creating shard lease: %w", err)
@@ -290,7 +290,7 @@ func (o *options) applyOptionsOverrides() error {
 		// FILTERED WATCH CACHE
 		// Configure cache to only watch objects that are assigned to this shard.
 		shardLabelSelector := labels.SelectorFromSet(labels.Set{
-			shardingv1alpha1.LabelShard(o.clusterRingName): o.shardName,
+			shardingv1alpha1.LabelShard(o.controllerRingName): o.shardName,
 		})
 
 		// This operator watches sharded objects (Websites, etc.) as well as non-sharded objects (Themes),
