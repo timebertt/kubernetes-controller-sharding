@@ -243,8 +243,7 @@ func (r *Reconciler) resyncObject(
 		}
 
 		shardingmetrics.DrainsTotal.WithLabelValues(
-			shardingv1alpha1.KindClusterRing, ring.GetNamespace(), ring.GetName(),
-			gr.Group, gr.Resource,
+			ring.GetName(), gr.Group, gr.Resource,
 		).Inc()
 
 		// object will go through the sharder webhook when shard removes the drain label, which will perform the assignment
@@ -265,8 +264,7 @@ func (r *Reconciler) resyncObject(
 	}
 
 	shardingmetrics.MovementsTotal.WithLabelValues(
-		shardingv1alpha1.KindClusterRing, ring.GetNamespace(), ring.GetName(),
-		gr.Group, gr.Resource,
+		ring.GetName(), gr.Group, gr.Resource,
 	).Inc()
 
 	return nil
