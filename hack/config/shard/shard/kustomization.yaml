@@ -13,7 +13,7 @@ images:
   newTag: latest
 
 resources:
-- ../clusterring
+- ../controllerring
 - deployment.yaml
 - rbac.yaml
 - serviceaccount.yaml

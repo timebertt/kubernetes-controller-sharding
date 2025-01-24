@@ -33,14 +33,14 @@ import (
 )
 
 var _ = Describe("Example Shard", Label("example"), Ordered, func() {
-	const clusterRingName = "example"
+	const controllerRingName = "example"
 
 	var (
-		clusterRing *shardingv1alpha1.ClusterRing
+		controllerRing *shardingv1alpha1.ControllerRing
 	)
 
 	BeforeAll(func() {
-		clusterRing = &shardingv1alpha1.ClusterRing{ObjectMeta: metav1.ObjectMeta{Name: clusterRingName}}
+		controllerRing = &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: controllerRingName}}
 	})
 
 	Describe("setup", func() {
@@ -59,7 +59,7 @@ var _ = Describe("Example Shard", Label("example"), Ordered, func() {
 
 			Eventually(ctx, func(g Gomega) {
 				g.Expect(List(leaseList, client.InNamespace(metav1.NamespaceDefault), client.MatchingLabels{
-					shardingv1alpha1.LabelClusterRing: clusterRingName,
+					shardingv1alpha1.LabelControllerRing: controllerRingName,
 				})(ctx)).To(Succeed())
 				g.Expect(leaseList.Items).To(And(
 					HaveLen(3),
@@ -68,14 +68,14 @@ var _ = Describe("Example Shard", Label("example"), Ordered, func() {
 			}).Should(Succeed())
 		}, SpecTimeout(ShortTimeout))
 
-		It("the ClusterRing should be healthy", func(ctx SpecContext) {
+		It("the ControllerRing should be healthy", func(ctx SpecContext) {
 			Eventually(ctx, func(g Gomega) {
-				g.Expect(Get(clusterRing)(ctx)).To(Succeed())
-				g.Expect(clusterRing.Status.Shards).To(BeEquivalentTo(3))
-				g.Expect(clusterRing.Status.AvailableShards).To(BeEquivalentTo(3))
-				g.Expect(clusterRing.Status.Conditions).To(ConsistOf(
+				g.Expect(Get(controllerRing)(ctx)).To(Succeed())
+				g.Expect(controllerRing.Status.Shards).To(BeEquivalentTo(3))
+				g.Expect(controllerRing.Status.AvailableShards).To(BeEquivalentTo(3))
+				g.Expect(controllerRing.Status.Conditions).To(ConsistOf(
 					MatchCondition(
-						OfType(shardingv1alpha1.ClusterRingReady),
+						OfType(shardingv1alpha1.ControllerRingReady),
 						WithStatus(metav1.ConditionTrue),
 					),
 				))
@@ -104,14 +104,14 @@ var _ = Describe("Example Shard", Label("example"), Ordered, func() {
 		})
 
 		It("should assign the main object to a healthy shard", func(ctx SpecContext) {
-			shards := getReadyShards(ctx, clusterRingName)
+			shards := getReadyShards(ctx, controllerRingName)
 
 			Expect(testClient.Create(ctx, configMap)).To(Succeed())
 			log.Info("Created object", "configMap", client.ObjectKeyFromObject(configMap))
 
-			shard = configMap.Labels[clusterRing.LabelShard()]
+			shard = configMap.Labels[controllerRing.LabelShard()]
 			Expect(shard).To(BeElementOf(shards))
-			Expect(configMap).NotTo(HaveLabel(clusterRing.LabelDrain()))
+			Expect(configMap).NotTo(HaveLabel(controllerRing.LabelDrain()))
 		}, SpecTimeout(ShortTimeout))
 
 		It("should assign the controlled object to the same shard", func(ctx SpecContext) {
@@ -120,20 +120,20 @@ var _ = Describe("Example Shard", Label("example"), Ordered, func() {
 			secret.Namespace = configMap.Namespace
 
 			Eventually(ctx, Object(secret)).Should(And(
-				HaveLabelWithValue(clusterRing.LabelShard(), Equal(shard)),
-				Not(HaveLabel(clusterRing.LabelDrain())),
+				HaveLabelWithValue(controllerRing.LabelShard(), Equal(shard)),
+				Not(HaveLabel(controllerRing.LabelDrain())),
 			))
 		}, SpecTimeout(ShortTimeout))
 	})
 })
 
-func getReadyShards(ctx SpecContext, clusterRingName string) []string {
+func getReadyShards(ctx SpecContext, controllerRingName string) []string {
 	GinkgoHelper()
 
 	leaseList := &coordinationv1.LeaseList{}
 	Eventually(ctx, List(leaseList, client.InNamespace(metav1.NamespaceDefault), client.MatchingLabels{
-		shardingv1alpha1.LabelClusterRing: clusterRingName,
-		shardingv1alpha1.LabelState:       "ready",
+		shardingv1alpha1.LabelControllerRing: controllerRingName,
+		shardingv1alpha1.LabelState:          "ready",
 	})).Should(Succeed())
 
 	return toShardNames(leaseList.Items)

@@ -22,7 +22,7 @@ rules:
 - apiGroups:
   - sharding.timebertt.dev
   resources:
-  - clusterrings
+  - controllerrings
   verbs:
   - get
   - list

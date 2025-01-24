@@ -40,7 +40,7 @@ rules:
 - apiGroups:
   - sharding.timebertt.dev
   resources:
-  - clusterrings
+  - controllerrings
   verbs:
   - get
   - list
@@ -48,7 +48,7 @@ rules:
 - apiGroups:
   - sharding.timebertt.dev
   resources:
-  - clusterrings/status
+  - controllerrings/status
   verbs:
   - patch
   - update

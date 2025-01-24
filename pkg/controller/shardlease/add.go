@@ -52,8 +52,8 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 	return builder.ControllerManagedBy(mgr).
 		Named(ControllerName).
 		For(&coordinationv1.Lease{}, builder.WithPredicates(r.LeasePredicate())).
-		// enqueue all Leases belonging to a ClusterRing when it is created or the spec is updated
-		Watches(&shardingv1alpha1.ClusterRing{}, handler.EnqueueRequestsFromMapFunc(r.MapClusterRingToLeases), builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		// enqueue all Leases belonging to a ControllerRing when it is created or the spec is updated
+		Watches(&shardingv1alpha1.ControllerRing{}, handler.EnqueueRequestsFromMapFunc(r.MapControllerRingToLeases), builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
 		}).
@@ -84,12 +84,12 @@ func (r *Reconciler) LeasePredicate() predicate.Predicate {
 	)
 }
 
-func (r *Reconciler) MapClusterRingToLeases(ctx context.Context, obj client.Object) []reconcile.Request {
-	clusterRing := obj.(*shardingv1alpha1.ClusterRing)
+func (r *Reconciler) MapControllerRingToLeases(ctx context.Context, obj client.Object) []reconcile.Request {
+	controllerRing := obj.(*shardingv1alpha1.ControllerRing)
 
 	leaseList := &coordinationv1.LeaseList{}
-	if err := r.Client.List(ctx, leaseList, client.MatchingLabelsSelector{Selector: clusterRing.LeaseSelector()}); err != nil {
-		handlerLog.Error(err, "failed listing Leases for ClusterRing", "clusterRing", client.ObjectKeyFromObject(clusterRing))
+	if err := r.Client.List(ctx, leaseList, client.MatchingLabelsSelector{Selector: controllerRing.LeaseSelector()}); err != nil {
+		handlerLog.Error(err, "failed listing Leases for ControllerRing", "controllerRing", client.ObjectKeyFromObject(controllerRing))
 		return nil
 	}
 
@@ -103,5 +103,5 @@ func (r *Reconciler) MapClusterRingToLeases(ctx context.Context, obj client.Obje
 }
 
 func isShardLease(obj client.Object) bool {
-	return obj.GetLabels()[shardingv1alpha1.LabelClusterRing] != ""
+	return obj.GetLabels()[shardingv1alpha1.LabelControllerRing] != ""
 }

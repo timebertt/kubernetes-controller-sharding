@@ -208,7 +208,7 @@ build:
 manifests:
   kustomize:
     paths:
-      - hack/config/shard/clusterring
+      - hack/config/shard/controllerring
       - hack/config/shard/shard
 deploy:
   kubectl:
@@ -333,7 +333,7 @@ build:
 manifests:
   kustomize:
     paths:
-    # default configuration: only run operator shards and use external sharding implementation via ClusterRing
+    # default configuration: only run operator shards and use external sharding implementation via ControllerRing
     - webhosting-operator/config/manager/overlays/default
     - webhosting-operator/config/monitoring/default
 deploy:
@@ -372,7 +372,7 @@ profiles:
   patches:
   - op: replace
     path: /manifests/kustomize/paths/0
-    # default configuration: only run operator shards and use external sharding implementation via ClusterRing
+    # default configuration: only run operator shards and use external sharding implementation via ControllerRing
     value: webhosting-operator/config/manager/overlays/shoot/default
   - op: add
     path: /manifests/kustomize/paths/-
@@ -441,7 +441,7 @@ profiles:
             - bash
             - -c
             - |
-              if kubectl get clusterring example &>/dev/null || kubectl -n default get deploy shard &>/dev/null ; then
+              if kubectl get controllerring example &>/dev/null || kubectl -n default get deploy shard &>/dev/null ; then
                 echo "Example shard is still running, refusing to run a load test experiment."
                 echo "Ensure a clean load test environment, i.e., run 'make down SKAFFOLD_MODULE=shard'."
                 exit 1

@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
+	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 )
 
@@ -145,8 +146,8 @@ var (
 				prometheus.GaugeValue,
 				1,
 				append(staticLabels,
-					website.Labels["shard.alpha.sharding.timebertt.dev/clusterring-ef3d63cd-webhosting-operator"],
-					website.Labels["drain.alpha.sharding.timebertt.dev/clusterring-ef3d63cd-webhosting-operator"],
+					website.Labels[shardingv1alpha1.LabelShard("webhosting-operator")],
+					website.Labels[shardingv1alpha1.LabelDrain("webhosting-operator")],
 				)...,
 			)
 		},

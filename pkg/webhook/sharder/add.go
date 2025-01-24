@@ -56,14 +56,14 @@ func (h *Handler) AddToManager(mgr manager.Manager) error {
 	return nil
 }
 
-const pathClusterRing = "clusterring"
+const pathControllerRing = "controllerring"
 
 // WebhookPathFor returns the webhook handler path that should be used for implementing the given ring object.
 // It is the reverse of RingForWebhookPath.
 func WebhookPathFor(obj client.Object) (string, error) {
 	switch obj.(type) {
-	case *shardingv1alpha1.ClusterRing:
-		return path.Join(WebhookPathPrefix, pathClusterRing, obj.GetName()), nil
+	case *shardingv1alpha1.ControllerRing:
+		return path.Join(WebhookPathPrefix, pathControllerRing, obj.GetName()), nil
 	default:
 		return "", fmt.Errorf("unexpected kind %T", obj)
 	}
@@ -83,11 +83,11 @@ func RingForWebhookPath(requestPath string) (sharding.Ring, error) {
 
 	var ring sharding.Ring
 	switch parts[0] {
-	case pathClusterRing:
+	case pathControllerRing:
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("unexpected request path: %s", requestPath)
 		}
-		ring = &shardingv1alpha1.ClusterRing{ObjectMeta: metav1.ObjectMeta{Name: parts[1]}}
+		ring = &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: parts[1]}}
 	default:
 		return nil, fmt.Errorf("unexpected request path: %s", requestPath)
 	}

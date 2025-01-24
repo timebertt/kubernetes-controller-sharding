@@ -23,17 +23,17 @@ Notably, no leader election is performed, and there is no designated single acti
 Instead, each controller instance maintains an individual shard `Lease` labeled with the ring's name, allowing them to announce themselves to the sharder for membership and failure detection.
 The sharder watches these leases to build a hash ring with the available instances.
 
-### The `ClusterRing` Resource and Sharder Webhook
+### The `ControllerRing` Resource and Sharder Webhook
 
-Rings of controllers are configured through the use of the `ClusterRing` custom resource.
-The sharder creates a `MutatingWebhookConfiguration` for each `ClusterRing` to perform assignments for objects associated with the ring.
+Rings of controllers are configured through the use of the `ControllerRing` custom resource.
+The sharder creates a `MutatingWebhookConfiguration` for each `ControllerRing` to perform assignments for objects associated with the ring.
 The sharder webhook is called on `CREATE` and `UPDATE` requests for configured resources, but only for objects that don't have the ring-specific shard label, i.e., for unassigned objects.
 
 The sharder uses the consistent hashing ring to determine the desired shard and adds the shard label during admission accordingly.
 Shards then use a label selector for the shard label with their own instance name to restrict the cache and controller to the subset of objects assigned to them.
 
-For the controller's "main" object (configured in `ClusterRing.spec.resources[]`), the object's `apiVersion`, `kind`, `namespace`, and `name` are concatenated to form its hash key.
-For objects controlled by other objects (configured in `ClusterRing.spec.resources[].controlledResources[]`), the sharder utilizes information about the controlling object (`ownerReference` with `controller=true`) to calculate the object's hash key.
+For the controller's "main" object (configured in `ControllerRing.spec.resources[]`), the object's `apiVersion`, `kind`, `namespace`, and `name` are concatenated to form its hash key.
+For objects controlled by other objects (configured in `ControllerRing.spec.resources[].controlledResources[]`), the sharder utilizes information about the controlling object (`ownerReference` with `controller=true`) to calculate the object's hash key.
 This ensures that owned objects are consistently assigned to the same shard as their owner.
 
 ### Object Movements and Rebalancing
@@ -88,7 +88,7 @@ The comparisons show that the sharder's resource consumption is almost constant 
 ### Minimize Impact on the Critical Path
 
 While the use of mutating webhooks might allow dropping watches for the sharded objects, they can have a significant impact on API requests, e.g., regarding request latency.
-To minimize the impact of the sharder's webhook on the overall request latency, the webhook is configured to only react on precisely the set of objects configured in the `ClusterRing` and only for `CREATE` and `UPDATE` requests of unassigned objects.
+To minimize the impact of the sharder's webhook on the overall request latency, the webhook is configured to only react on precisely the set of objects configured in the `ControllerRing` and only for `CREATE` and `UPDATE` requests of unassigned objects.
 With this the webhook is only on the critical path during initial object creation and whenever the set of available shards requires reassignments.
 
 Furthermore, webhooks can cause API requests to fail entirely.

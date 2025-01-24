@@ -83,7 +83,7 @@ Assuming a fresh kind cluster:
 make run
 ```
 
-Now, create the `example` `ClusterRing` and run a local shard:
+Now, create the `example` `ControllerRing` and run a local shard:
 
 ```bash
 make run-shard
@@ -92,13 +92,13 @@ make run-shard
 You should see that the shard successfully announced itself to the sharder:
 
 ```bash
-$ kubectl get lease -L alpha.sharding.timebertt.dev/clusterring,alpha.sharding.timebertt.dev/state
-NAME             HOLDER           AGE   CLUSTERRING   STATE
-shard-h9np6f8c   shard-h9np6f8c   8s    example       ready
+$ kubectl get lease -L alpha.sharding.timebertt.dev/controllerring,alpha.sharding.timebertt.dev/state
+NAME             HOLDER           AGE   CONTROLLERRING   STATE
+shard-fkpxhjk8   shard-fkpxhjk8   18s   example          ready
 
-$ kubectl get clusterring
+$ kubectl get controllerring
 NAME      READY   AVAILABLE   SHARDS   AGE
-example   True    1           1        15s
+example   True    1           1        34s
 ```
 
 Running the shard locally gives you the option to test non-graceful termination, i.e., a scenario where the shard fails to renew its lease in time.
@@ -113,19 +113,20 @@ make run-shard
 
 ## Testing the Sharding Setup
 
-Independent of the used setup (skaffold-based or running on the host machine), you should be able to create sharded `ConfigMaps` in the `default` namespace as configured in the `example` `ClusterRing`.
+Independent of the used setup (skaffold-based or running on the host machine), you should be able to create sharded `ConfigMaps` in the `default` namespace as configured in the `example` `ControllerRing`.
 The `Secrets` created by the example shard controller should be assigned to the same shard as the owning `ConfigMap`:
 
 ```bash
 $ kubectl create cm foo
 configmap/foo created
 
-$ kubectl get cm,secret -L shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example
-NAME            DATA   AGE    CLUSTERRING-50D858E0-EXAMPLE
-configmap/foo   0      3s     shard-5fc87c9fb7-kfb2z
+$ kubectl get cm,secret -L shard.alpha.sharding.timebertt.dev/50d858e0-example
+NAME                         DATA   AGE     50D858E0-EXAMPLE
+configmap/foo                0      1s      shard-656d588475-5746d
 
-NAME               TYPE     DATA   AGE    CLUSTERRING-50D858E0-EXAMPLE
-secret/dummy-foo   Opaque   0      3s     shard-5fc87c9fb7-kfb2z
+NAME                            TYPE     DATA   AGE     50D858E0-EXAMPLE
+secret/dummy-foo                Opaque   0      1s      shard-656d588475-5746d
+secret/dummy-kube-root-ca.crt   Opaque   0      2m14s
 ```
 
 ## Monitoring

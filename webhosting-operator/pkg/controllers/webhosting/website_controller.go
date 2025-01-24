@@ -468,7 +468,7 @@ const (
 )
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager, enableSharding bool, clusterRingName, shardName string) error {
+func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager, enableSharding bool, controllerRingName, shardName string) error {
 	if r.Client == nil {
 		r.Client = client.WithFieldOwner(mgr.GetClient(), ControllerName+"-controller")
 	}
@@ -500,12 +500,12 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager, enableSharding bo
 		// ACKNOWLEDGE DRAIN OPERATIONS
 		// Use the shardcontroller package as helpers for:
 		// - a predicate that triggers when the drain label is present (even if the actual predicates don't trigger)
-		websitePredicate = shardcontroller.Predicate(clusterRingName, shardName, websitePredicate)
+		websitePredicate = shardcontroller.Predicate(controllerRingName, shardName, websitePredicate)
 
 		// - wrapping the actual reconciler a reconciler that handles the drain operation for us
 		reconciler = shardcontroller.NewShardedReconciler(mgr).
 			For(&webhostingv1alpha1.Website{}).
-			InClusterRing(clusterRingName).
+			InControllerRing(controllerRingName).
 			WithShardName(shardName).
 			MustBuild(reconciler)
 	}

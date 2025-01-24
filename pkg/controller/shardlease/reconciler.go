@@ -55,18 +55,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
 	}
 
-	clusterRingName := lease.Labels[shardingv1alpha1.LabelClusterRing]
-	if clusterRingName == "" {
+	controllerRingName := lease.Labels[shardingv1alpha1.LabelControllerRing]
+	if controllerRingName == "" {
 		log.V(1).Info("Ignoring non-shard lease")
 		return reconcile.Result{}, nil
 	}
 
-	if err := r.Client.Get(ctx, client.ObjectKey{Name: clusterRingName}, &shardingv1alpha1.ClusterRing{}); err != nil {
+	if err := r.Client.Get(ctx, client.ObjectKey{Name: controllerRingName}, &shardingv1alpha1.ControllerRing{}); err != nil {
 		if !apierrors.IsNotFound(err) {
-			return reconcile.Result{}, fmt.Errorf("error checking for existence of ClusterRing: %w", err)
+			return reconcile.Result{}, fmt.Errorf("error checking for existence of ControllerRing: %w", err)
 		}
 
-		log.V(1).Info("Ignoring shard lease without a corresponding ClusterRing")
+		log.V(1).Info("Ignoring shard lease without a corresponding ControllerRing")
 		return reconcile.Result{}, nil
 	}
 

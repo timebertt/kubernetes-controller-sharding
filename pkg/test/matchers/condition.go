@@ -25,9 +25,9 @@ import (
 
 // MatchCondition is an alias for gomega.And to make matching conditions more readable, e.g.,
 //
-//	Expect(clusterRing.Status.Conditions).To(ConsistOf(
+//	Expect(controllerRing.Status.Conditions).To(ConsistOf(
 //		MatchCondition(
-//			OfType(shardingv1alpha1.ClusterRingReady),
+//			OfType(shardingv1alpha1.ControllerRingReady),
 //			WithStatus(metav1.ConditionTrue),
 //		),
 //	))

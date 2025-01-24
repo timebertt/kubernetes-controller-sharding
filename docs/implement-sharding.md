@@ -3,21 +3,21 @@
 This guide walks you through implementing sharding for your own controller.
 Prerequisite for using a sharded controller setup is to install the sharding components in the cluster, see [Install the Sharding Components](installation.md).
 
-## Configuring the `ClusterRing`
+## Configuring the `ControllerRing`
 
-After installing the sharding components, you can go ahead and configure a `ClusterRing` object for your controller.
-For all controllers that you want to shard, configure the controller's main resource and the controlled resources in `ClusterRing.spec.resources`.
+After installing the sharding components, you can go ahead and configure a `ControllerRing` object for your controller.
+For all controllers that you want to shard, configure the controller's main resource and the controlled resources in `ControllerRing.spec.resources`.
 
 As an example, let's consider a subset of kube-controller-manager's controllers: `Deployment` and `ReplicaSet`.
 
 - The `Deployment` controller reconciles the `deployments` resource and controls `replicasets`.
 - The `ReplicaSet` controller reconciles the `replicaset` resource and controls `pods`.
 
-The corresponding `ClusterRing` for the `Deployment` controller would need to be configured like this:
+The corresponding `ControllerRing` for the `Deployment` controller would need to be configured like this:
 
 ```yaml
 apiVersion: sharding.timebertt.dev/v1alpha1
-kind: ClusterRing
+kind: ControllerRing
 metadata:
   name: kube-controller-manager-deployment
 spec:
@@ -30,7 +30,7 @@ spec:
 ```
 
 To allow the sharder to reassign the sharded objects during rebalancing, we need to grant the corresponding permissions.
-We need to grant these permissions explicitly depending on what is configured in the `ClusterRing`.
+We need to grant these permissions explicitly depending on what is configured in the `ControllerRing`.
 Otherwise, the sharder would basically require `cluster-admin` access.
 For the above example, we would use these RBAC manifests:
 
@@ -38,7 +38,7 @@ For the above example, we would use these RBAC manifests:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: sharding:clusterring:kube-controller-manager
+  name: sharding:controllerring:kube-controller-manager
 rules:
 - apiGroups:
   - apps
@@ -52,11 +52,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: sharding:clusterring:kube-controller-manager
+  name: sharding:controllerring:kube-controller-manager
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: sharding:clusterring:kube-controller-manager
+  name: sharding:controllerring:kube-controller-manager
 subjects:
 - kind: ServiceAccount
   name: sharder
@@ -89,7 +89,7 @@ apiVersion: coordination.k8s.io/v1
 kind: Lease
 metadata:
   labels:
-    alpha.sharding.timebertt.dev/clusterring: my-clusterring
+    alpha.sharding.timebertt.dev/controllerring: my-controllerring
   name: my-operator-565df55f4b-5vwpj
   namespace: operator-system
 spec:
@@ -114,7 +114,7 @@ Similar to usual leader election, a shard may release its own shard `Lease` on g
 This immediately triggers reassignments by the sharder to minimize the duration where no shard is acting on a subset of objects.
 
 In essence, all the existing machinery for leader election can be reused for maintaining the shard `Lease` – that is, with two minor changes.
-First, the shard `Lease` needs to be labelled with `alpha.sharding.timebertt.dev/clusterring=<clusterring-name>` to specify which `ClusterRing` the shard belongs to.
+First, the shard `Lease` needs to be labelled with `alpha.sharding.timebertt.dev/controllerring=<controllerring-name>` to specify which `ControllerRing` the shard belongs to.
 Second, the name of the shard `Lease` needs to match the `holderIdentity`.
 By default, the instance's hostname is used for both values.
 If the `holderIdentity` differs from the name, the sharder assumes that the shard is unavailable.
@@ -134,7 +134,7 @@ func run() error {
 	restConfig := config.GetConfigOrDie()
 
 	shardLease, err := shardlease.NewResourceLock(restConfig, nil, shardlease.Options{
-		ClusterRingName: "my-clusterring",
+		ControllerRingName: "my-controllerring",
 	})
 	if err != nil {
 		return err
@@ -163,19 +163,19 @@ func run() error {
 
 ### Filtered Watch Cache
 
-In short: use the following label selector on watches for all sharded resources listed in the `ClusterRing`.
+In short: use the following label selector on watches for all sharded resources listed in the `ControllerRing`.
 
 ```text
-shard.alpha.sharding.timebertt.dev/clusterring-50d858e0-example: my-operator-565df55f4b-5vwpj
+shard.alpha.sharding.timebertt.dev/50d858e0-example: my-operator-565df55f4b-5vwpj
 ```
 
-The sharder assigns all sharded objects by adding a shard label that is specific to the `ClusterRing` (resources could be part of multiple `ClusterRings`).
-The shard label's key consists of the `shard.alpha.sharding.timebertt.dev/clusterring-` prefix followed by the first 8 hex characters of the SHA256 checksum of the `ClusterRing` name followed by a `-` followed by the `ClusterRing` name itself.
+The sharder assigns all sharded objects by adding a shard label that is specific to the `ControllerRing` (resources could be part of multiple `ControllerRings`).
+The shard label's key consists of the `shard.alpha.sharding.timebertt.dev/` prefix followed by the first 8 hex characters of the SHA256 checksum of the `ControllerRing` name followed by a `-` followed by the `ControllerRing` name itself.
 The key part after the `/` is shortened to 63 characters so that it is a valid label key.
-The checksum is added to the label key to derive unique label keys even for `ClusterRings` with long names that would cause the pattern to exceed the 63 characters limit after the `/`.
+The checksum is added to the label key to derive unique label keys even for `ControllerRings` with long names that would cause the pattern to exceed the 63 characters limit after the `/`.
 The shard label's value is the name of the shard, i.e., the name of the shard lease and the shard lease's `holderIdentity`.
 
-Once you have determined the shard label key for your `ClusterRing`, use it as a selector on all watches that your controller starts for any of the sharded resources.
+Once you have determined the shard label key for your `ControllerRing`, use it as a selector on all watches that your controller starts for any of the sharded resources.
 With this, the shard will only cache the objects assigned to it and the controllers will only reconcile these objects.
 
 Note that when you use a label or field selector on a watch connection and the label or field changes so that the selector doesn't match anymore, the API server will emit a `DELETE` watch event.
@@ -204,7 +204,7 @@ func run() error {
 			// If your shard watches sharded objects as well as non-sharded objects, use cache.Options.ByObject to configure
 			// the label selector on object level.
 			DefaultLabelSelector: labels.SelectorFromSet(labels.Set{
-				shardingv1alpha1.LabelShard(shardingv1alpha1.KindClusterRing, "", "my-clusterring"): shardLease.Identity(),
+				shardingv1alpha1.LabelShard("my-controllerring"): shardLease.Identity(),
 			}),
 		},
 
@@ -221,12 +221,12 @@ In short: ensure your sharded controller acknowledges drain operations.
 When the drain label like this is added by the sharder, the controller needs to remove both the shard and the drain label and stop reconciling the object.
 
 ```text
-drain.alpha.sharding.timebertt.dev/clusterring-50d858e0-example
+drain.alpha.sharding.timebertt.dev/50d858e0-example
 ```
 
 When the sharder needs to move an object from an available shard to another shard for rebalancing, it first adds the drain label to instruct the currently responsible shard to stop reconciling the object.
 The shard needs to acknowledge this operation, as the sharder must prevent concurrent reconciliations of the same object in multiple shards.
-The drain label's key is specific to the `ClusterRing` and follows the same pattern as the shard label (see above).
+The drain label's key is specific to the `ControllerRing` and follows the same pattern as the shard label (see above).
 The drain label's value is irrelevant, only the presence of the label is relevant.
 
 Apart from changing the controller's business logic to first check the drain label, also ensure that the watch event filtering logic (predicates) always reacts on events with the drain label set independent of the controller's actual predicates.
@@ -244,19 +244,19 @@ import (
 
 // AddToManager adds a controller to the manager.
 // shardName must match the shard lease's name/identity.
-func (r *Reconciler) AddToManager(mgr manager.Manager, clusterRingName, shardName string) error {
+func (r *Reconciler) AddToManager(mgr manager.Manager, controllerRingName, shardName string) error {
 	// ACKNOWLEDGE DRAIN OPERATIONS
 	// Use the shardcontroller package as helpers for:
 	// - a predicate that triggers when the drain label is present (even if the actual predicates don't trigger)
 	// - wrapping the actual reconciler a reconciler that handles the drain operation for us
 	return builder.ControllerManagedBy(mgr).
 		Named("example").
-		For(&corev1.ConfigMap{}, builder.WithPredicates(shardcontroller.Predicate(clusterRingName, shardName, MyConfigMapPredicate()))).
+		For(&corev1.ConfigMap{}, builder.WithPredicates(shardcontroller.Predicate(controllerRingName, shardName, MyConfigMapPredicate()))).
 		Owns(&corev1.Secret{}, builder.WithPredicates(MySecretPredicate())).
 		Complete(
 			shardcontroller.NewShardedReconciler(mgr).
 				For(&corev1.ConfigMap{}). // must match the kind in For() above
-				InClusterRing(clusterRingName).
+				InControllerRing(controllerRingName).
 				WithShardName(shardName).
 				MustBuild(r),
 		)

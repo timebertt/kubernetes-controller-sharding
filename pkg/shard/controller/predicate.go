@@ -30,24 +30,24 @@ import (
 // `builder.Builder.For` (i.e., the controller's main kind).
 // It is not needed to use this predicate for secondary watches (e.g., for object kinds given to
 // `builder.Builder.{Owns,Watches}`) as secondary objects are not drained by the sharder.
-func Predicate(clusterRingName, shardName string, predicates ...predicate.Predicate) predicate.Predicate {
+func Predicate(controllerRingName, shardName string, predicates ...predicate.Predicate) predicate.Predicate {
 	return predicate.Or(
 		// always enqueue if we need to acknowledge the drain operation, other predicates don't matter in this case
-		isDrained(clusterRingName),
+		isDrained(controllerRingName),
 		// or enqueue if we are responsible and all other predicates match
-		predicate.And(isAssigned(clusterRingName, shardName), predicate.And(predicates...)),
+		predicate.And(isAssigned(controllerRingName, shardName), predicate.And(predicates...)),
 	)
 }
 
-func isAssigned(clusterRingName, shardName string) predicate.Predicate {
+func isAssigned(controllerRingName, shardName string) predicate.Predicate {
 	return predicate.NewPredicateFuncs(func(object client.Object) bool {
-		return object.GetLabels()[shardingv1alpha1.LabelShard(shardingv1alpha1.KindClusterRing, "", clusterRingName)] == shardName
+		return object.GetLabels()[shardingv1alpha1.LabelShard(controllerRingName)] == shardName
 	})
 }
 
-func isDrained(clusterRingName string) predicate.Predicate {
+func isDrained(controllerRingName string) predicate.Predicate {
 	return predicate.NewPredicateFuncs(func(object client.Object) bool {
-		_, drain := object.GetLabels()[shardingv1alpha1.LabelDrain(shardingv1alpha1.KindClusterRing, "", clusterRingName)]
+		_, drain := object.GetLabels()[shardingv1alpha1.LabelDrain(controllerRingName)]
 		return drain
 	})
 }

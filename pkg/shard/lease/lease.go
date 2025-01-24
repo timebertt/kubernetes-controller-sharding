@@ -35,8 +35,8 @@ import (
 
 // Options provides the required configuration to create a new shard lease.
 type Options struct {
-	// ClusterRingName specifies the name of the ClusterRing that the shard belongs to.
-	ClusterRingName string
+	// ControllerRingName specifies the name of the ControllerRing that the shard belongs to.
+	ControllerRingName string
 	// LeaseNamespace determines the namespace in which the shard lease will be created.
 	// Defaults to the pod's namespace if running in-cluster.
 	LeaseNamespace string
@@ -88,7 +88,7 @@ func NewResourceLock(config *rest.Config, eventRecorder resourcelock.EventRecord
 			EventRecorder: eventRecorder,
 		},
 		Labels: map[string]string{
-			shardingv1alpha1.LabelClusterRing: options.ClusterRingName,
+			shardingv1alpha1.LabelControllerRing: options.ControllerRingName,
 		},
 	}
 

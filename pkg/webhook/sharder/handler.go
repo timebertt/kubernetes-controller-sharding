@@ -32,7 +32,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding"
 	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/metrics"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/ring"
@@ -86,7 +85,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 	// collect list of shards in the ring
 	leaseList := &coordinationv1.LeaseList{}
 	if err := h.Reader.List(ctx, leaseList, client.MatchingLabelsSelector{Selector: ringObj.LeaseSelector()}); err != nil {
-		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("error listing Leases for ClusterRing: %w", err))
+		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("error listing Leases for ControllerRing: %w", err))
 	}
 
 	// get ring from cache and hash the object onto the ring
@@ -104,8 +103,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 
 	if !ptr.Deref(req.DryRun, false) {
 		shardingmetrics.AssignmentsTotal.WithLabelValues(
-			shardingv1alpha1.KindClusterRing, ringObj.GetNamespace(), ringObj.GetName(),
-			req.Resource.Group, req.Resource.Resource,
+			ringObj.GetName(), req.Resource.Group, req.Resource.Resource,
 		).Inc()
 	}
 

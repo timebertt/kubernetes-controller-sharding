@@ -79,10 +79,10 @@ running a full controller that complies with the sharding requirements.`,
 }
 
 type options struct {
-	zapOptions      *zap.Options
-	clusterRingName string
-	leaseNamespace  string
-	shardName       string
+	zapOptions         *zap.Options
+	controllerRingName string
+	leaseNamespace     string
+	shardName          string
 }
 
 func newOptions() *options {
@@ -92,12 +92,12 @@ func newOptions() *options {
 			TimeEncoder: zapcore.ISO8601TimeEncoder,
 		},
 
-		clusterRingName: "example",
+		controllerRingName: "example",
 	}
 }
 
 func (o *options) AddFlags(fs *pflag.FlagSet) {
-	fs.StringVar(&o.clusterRingName, "clusterring", o.clusterRingName, "Name of the ClusterRing the shard belongs to.")
+	fs.StringVar(&o.controllerRingName, "controllerring", o.controllerRingName, "Name of the ControllerRing the shard belongs to.")
 	fs.StringVar(&o.leaseNamespace, "lease-namespace", o.leaseNamespace, "Namespace to use for the shard lease. Defaults to the pod's namespace if running in-cluster.")
 	fs.StringVar(&o.shardName, "shard", o.shardName, "Name of the shard. Defaults to the instance's hostname.")
 
@@ -107,8 +107,8 @@ func (o *options) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (o *options) validate() error {
-	if o.clusterRingName == "" {
-		return fmt.Errorf("--clusterring must not be empty")
+	if o.controllerRingName == "" {
+		return fmt.Errorf("--controllerring must not be empty")
 	}
 
 	return nil
@@ -127,9 +127,9 @@ func (o *options) run(ctx context.Context) error {
 
 	log.Info("Setting up shard lease")
 	shardLease, err := shardlease.NewResourceLock(restConfig, nil, shardlease.Options{
-		ClusterRingName: o.clusterRingName,
-		LeaseNamespace:  o.leaseNamespace, // optional, can be empty
-		ShardName:       o.shardName,      // optional, can be empty
+		ControllerRingName: o.controllerRingName,
+		LeaseNamespace:     o.leaseNamespace, // optional, can be empty
+		ShardName:          o.shardName,      // optional, can be empty
 	})
 	if err != nil {
 		return fmt.Errorf("failed creating shard lease: %w", err)
@@ -161,7 +161,7 @@ func (o *options) run(ctx context.Context) error {
 			// If your shard watches sharded objects as well as non-sharded objects, use cache.Options.ByObject to configure
 			// the label selector on object level.
 			DefaultLabelSelector: labels.SelectorFromSet(labels.Set{
-				shardingv1alpha1.LabelShard(shardingv1alpha1.KindClusterRing, "", o.clusterRingName): shardLease.Identity(),
+				shardingv1alpha1.LabelShard(o.controllerRingName): shardLease.Identity(),
 			}),
 		},
 	})
@@ -170,7 +170,7 @@ func (o *options) run(ctx context.Context) error {
 	}
 
 	log.Info("Setting up controller")
-	if err := (&Reconciler{}).AddToManager(mgr, o.clusterRingName, shardLease.Identity()); err != nil {
+	if err := (&Reconciler{}).AddToManager(mgr, o.controllerRingName, shardLease.Identity()); err != nil {
 		return fmt.Errorf("failed adding controller: %w", err)
 	}
 

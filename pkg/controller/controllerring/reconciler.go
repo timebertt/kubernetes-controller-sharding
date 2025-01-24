@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package clusterring
+package controllerring
 
 import (
 	"context"
@@ -46,12 +46,12 @@ import (
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/webhook/sharder"
 )
 
-//+kubebuilder:rbac:groups=sharding.timebertt.dev,resources=clusterrings,verbs=get;list;watch
-//+kubebuilder:rbac:groups=sharding.timebertt.dev,resources=clusterrings/status,verbs=update;patch
+//+kubebuilder:rbac:groups=sharding.timebertt.dev,resources=controllerrings,verbs=get;list;watch
+//+kubebuilder:rbac:groups=sharding.timebertt.dev,resources=controllerrings/status,verbs=update;patch
 //+kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations,verbs=create;patch
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
-// Reconciler reconciles ClusterRings.
+// Reconciler reconciles ControllerRings.
 type Reconciler struct {
 	Client   client.Client
 	Recorder record.EventRecorder
@@ -59,12 +59,12 @@ type Reconciler struct {
 	Config   *configv1alpha1.SharderConfig
 }
 
-// Reconcile reconciles a ClusterRing object.
+// Reconcile reconciles a ControllerRing object.
 func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 	log := logf.FromContext(ctx)
 
-	clusterRing := &shardingv1alpha1.ClusterRing{}
-	if err := r.Client.Get(ctx, req.NamespacedName, clusterRing); err != nil {
+	controllerRing := &shardingv1alpha1.ControllerRing{}
+	if err := r.Client.Get(ctx, req.NamespacedName, controllerRing); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.V(1).Info("Object is gone, stop reconciling")
 			return reconcile.Result{}, nil
@@ -72,90 +72,90 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
 	}
 
-	before := clusterRing.DeepCopy()
+	before := controllerRing.DeepCopy()
 
 	// reconcile sharder webhook configs
-	if err := r.reconcileWebhooks(ctx, clusterRing); err != nil {
-		return reconcile.Result{}, r.updateStatusError(ctx, log, fmt.Errorf("error reconciling webhooks for ClusterRing: %w", err), clusterRing, before)
+	if err := r.reconcileWebhooks(ctx, controllerRing); err != nil {
+		return reconcile.Result{}, r.updateStatusError(ctx, log, fmt.Errorf("error reconciling webhooks for ControllerRing: %w", err), controllerRing, before)
 	}
 
 	// collect list of shards in the ring
 	leaseList := &coordinationv1.LeaseList{}
-	if err := r.Client.List(ctx, leaseList, client.MatchingLabelsSelector{Selector: clusterRing.LeaseSelector()}); err != nil {
-		return reconcile.Result{}, r.updateStatusError(ctx, log, fmt.Errorf("error listing Leases for ClusterRing: %w", err), clusterRing, before)
+	if err := r.Client.List(ctx, leaseList, client.MatchingLabelsSelector{Selector: controllerRing.LeaseSelector()}); err != nil {
+		return reconcile.Result{}, r.updateStatusError(ctx, log, fmt.Errorf("error listing Leases for ControllerRing: %w", err), controllerRing, before)
 	}
 
 	shards := leases.ToShards(leaseList.Items, r.Clock.Now())
-	clusterRing.Status.Shards = int32(len(shards))                            // nolint:gosec
-	clusterRing.Status.AvailableShards = int32(len(shards.AvailableShards())) // nolint:gosec
+	controllerRing.Status.Shards = int32(len(shards))                            // nolint:gosec
+	controllerRing.Status.AvailableShards = int32(len(shards.AvailableShards())) // nolint:gosec
 
 	// update status if necessary
-	return reconcile.Result{}, r.updateStatusSuccess(ctx, clusterRing, before)
+	return reconcile.Result{}, r.updateStatusSuccess(ctx, controllerRing, before)
 }
 
-func (r *Reconciler) updateStatusSuccess(ctx context.Context, clusterRing, before *shardingv1alpha1.ClusterRing) error {
-	if err := r.optionallyUpdateStatus(ctx, clusterRing, before, func(ready *metav1.Condition) {
+func (r *Reconciler) updateStatusSuccess(ctx context.Context, controllerRing, before *shardingv1alpha1.ControllerRing) error {
+	if err := r.optionallyUpdateStatus(ctx, controllerRing, before, func(ready *metav1.Condition) {
 		ready.Status = metav1.ConditionTrue
 		ready.Reason = "ReconciliationSucceeded"
-		ready.Message = "ClusterRing was successfully reconciled"
+		ready.Message = "ControllerRing was successfully reconciled"
 	}); err != nil {
-		return fmt.Errorf("error updating ClusterRing status: %w", err)
+		return fmt.Errorf("error updating ControllerRing status: %w", err)
 	}
 	return nil
 }
 
-func (r *Reconciler) updateStatusError(ctx context.Context, log logr.Logger, reconcileError error, clusterRing, before *shardingv1alpha1.ClusterRing) error {
+func (r *Reconciler) updateStatusError(ctx context.Context, log logr.Logger, reconcileError error, controllerRing, before *shardingv1alpha1.ControllerRing) error {
 	message := utils.CapitalizeFirst(reconcileError.Error())
 
-	r.Recorder.Event(clusterRing, corev1.EventTypeWarning, "ReconciliationFailed", message)
+	r.Recorder.Event(controllerRing, corev1.EventTypeWarning, "ReconciliationFailed", message)
 
-	if err := r.optionallyUpdateStatus(ctx, clusterRing, before, func(ready *metav1.Condition) {
+	if err := r.optionallyUpdateStatus(ctx, controllerRing, before, func(ready *metav1.Condition) {
 		ready.Status = metav1.ConditionFalse
 		ready.Reason = "ReconciliationFailed"
 		ready.Message = message
 	}); err != nil {
 		// We will return the underlying error to the controller. If we fail to publish it to the status, make sure to log
 		// it at least.
-		log.Error(err, "Error updating ClusterRing status with error")
+		log.Error(err, "Error updating ControllerRing status with error")
 	}
 
 	return reconcileError
 }
 
-func (r *Reconciler) optionallyUpdateStatus(ctx context.Context, clusterRing, before *shardingv1alpha1.ClusterRing, mutate func(ready *metav1.Condition)) error {
+func (r *Reconciler) optionallyUpdateStatus(ctx context.Context, controllerRing, before *shardingv1alpha1.ControllerRing, mutate func(ready *metav1.Condition)) error {
 	// always update status with the latest observed generation, no matter if reconciliation succeeded or not
-	clusterRing.Status.ObservedGeneration = clusterRing.Generation
+	controllerRing.Status.ObservedGeneration = controllerRing.Generation
 	readyCondition := metav1.Condition{
-		Type:               shardingv1alpha1.ClusterRingReady,
-		ObservedGeneration: clusterRing.Generation,
+		Type:               shardingv1alpha1.ControllerRingReady,
+		ObservedGeneration: controllerRing.Generation,
 	}
 
 	mutate(&readyCondition)
-	meta.SetStatusCondition(&clusterRing.Status.Conditions, readyCondition)
+	meta.SetStatusCondition(&controllerRing.Status.Conditions, readyCondition)
 
-	if apiequality.Semantic.DeepEqual(clusterRing.Status, before.Status) {
+	if apiequality.Semantic.DeepEqual(controllerRing.Status, before.Status) {
 		return nil
 	}
 
-	return r.Client.Status().Update(ctx, clusterRing)
+	return r.Client.Status().Update(ctx, controllerRing)
 }
 
-func (r *Reconciler) reconcileWebhooks(ctx context.Context, clusterRing *shardingv1alpha1.ClusterRing) error {
+func (r *Reconciler) reconcileWebhooks(ctx context.Context, controllerRing *shardingv1alpha1.ControllerRing) error {
 	webhookConfig := &admissionregistrationv1.MutatingWebhookConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: admissionregistrationv1.SchemeGroupVersion.String(),
 			Kind:       "MutatingWebhookConfiguration",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "sharding-" + shardingv1alpha1.RingSuffix(shardingv1alpha1.KindClusterRing, "", clusterRing.Name),
+			Name: "sharding-" + shardingv1alpha1.RingSuffix(controllerRing.Name),
 			Labels: map[string]string{
-				"app.kubernetes.io/name":          shardingv1alpha1.AppControllerSharding,
-				shardingv1alpha1.LabelClusterRing: clusterRing.Name,
+				"app.kubernetes.io/name":             shardingv1alpha1.AppControllerSharding,
+				shardingv1alpha1.LabelControllerRing: controllerRing.Name,
 			},
 			Annotations: maps.Clone(r.Config.Webhook.Config.Annotations),
 		},
 	}
-	if err := controllerutil.SetControllerReference(clusterRing, webhookConfig, r.Client.Scheme()); err != nil {
+	if err := controllerutil.SetControllerReference(controllerRing, webhookConfig, r.Client.Scheme()); err != nil {
 		return fmt.Errorf("error setting controller reference: %w", err)
 	}
 
@@ -167,7 +167,7 @@ func (r *Reconciler) reconcileWebhooks(ctx context.Context, clusterRing *shardin
 		// only process unassigned objects
 		ObjectSelector: &metav1.LabelSelector{
 			MatchExpressions: []metav1.LabelSelectorRequirement{{
-				Key:      clusterRing.LabelShard(),
+				Key:      controllerRing.LabelShard(),
 				Operator: metav1.LabelSelectorOpDoesNotExist,
 			}},
 		},
@@ -181,12 +181,12 @@ func (r *Reconciler) reconcileWebhooks(ctx context.Context, clusterRing *shardin
 	}
 
 	// overwrite namespaceSelector with ring-specific namespaceSelector if specified
-	if clusterRing.Spec.NamespaceSelector != nil {
-		webhook.NamespaceSelector = clusterRing.Spec.NamespaceSelector.DeepCopy()
+	if controllerRing.Spec.NamespaceSelector != nil {
+		webhook.NamespaceSelector = controllerRing.Spec.NamespaceSelector.DeepCopy()
 	}
 
 	// add ring-specific path to webhook client config
-	webhookPath, err := sharder.WebhookPathFor(clusterRing)
+	webhookPath, err := sharder.WebhookPathFor(controllerRing)
 	if err != nil {
 		return err
 	}
@@ -202,7 +202,7 @@ func (r *Reconciler) reconcileWebhooks(ctx context.Context, clusterRing *shardin
 	}
 
 	// add rules for all ring resources
-	for _, ringResource := range clusterRing.Spec.Resources {
+	for _, ringResource := range controllerRing.Spec.Resources {
 		webhook.Rules = append(webhook.Rules, RuleForResource(ringResource.GroupResource))
 
 		for _, controlledResource := range ringResource.ControlledResources {
