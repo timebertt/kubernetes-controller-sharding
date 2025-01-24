@@ -37,9 +37,9 @@ type Reconciler struct {
 	Client client.Client
 	// ShardName is the shard ID of the manager.
 	ShardName string
-	// LabelShard is the shard label specific to the manager's ClusterRing.
+	// LabelShard is the shard label specific to the manager's ControllerRing.
 	LabelShard string
-	// LabelDrain is the drain label specific to the manager's ClusterRing.
+	// LabelDrain is the drain label specific to the manager's ControllerRing.
 	LabelDrain string
 	// Do is the actual Reconciler.
 	Do reconcile.Reconciler

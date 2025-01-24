@@ -30,11 +30,11 @@ import (
 // Builder can build a sharded reconciler.
 // Use NewShardedReconciler to create a new Builder.
 type Builder struct {
-	object          client.Object
-	client          client.Client
-	clusterRingName string
-	shardName       string
-	err             error
+	object             client.Object
+	client             client.Client
+	controllerRingName string
+	shardName          string
+	err                error
 }
 
 // NewShardedReconciler returns a new Builder for building a sharded reconciler.
@@ -64,9 +64,9 @@ func (b *Builder) WithClient(c client.Client) *Builder {
 	return b
 }
 
-// InClusterRing sets the name of the ClusterRing that the shard belongs to.
-func (b *Builder) InClusterRing(name string) *Builder {
-	b.clusterRingName = name
+// InControllerRing sets the name of the ControllerRing that the shard belongs to.
+func (b *Builder) InControllerRing(name string) *Builder {
+	b.controllerRingName = name
 	return b
 }
 
@@ -97,8 +97,8 @@ func (b *Builder) Build(r reconcile.Reconciler) (reconcile.Reconciler, error) {
 	if b.client == nil {
 		return nil, fmt.Errorf("missing client")
 	}
-	if b.clusterRingName == "" {
-		return nil, fmt.Errorf("missing ClusterRing name")
+	if b.controllerRingName == "" {
+		return nil, fmt.Errorf("missing ControllerRing name")
 	}
 	if b.shardName == "" {
 		return nil, fmt.Errorf("missing shard name")
@@ -108,8 +108,8 @@ func (b *Builder) Build(r reconcile.Reconciler) (reconcile.Reconciler, error) {
 		Object:     b.object,
 		Client:     b.client,
 		ShardName:  b.shardName,
-		LabelShard: shardingv1alpha1.LabelShard(shardingv1alpha1.KindClusterRing, "", b.clusterRingName),
-		LabelDrain: shardingv1alpha1.LabelDrain(shardingv1alpha1.KindClusterRing, "", b.clusterRingName),
+		LabelShard: shardingv1alpha1.LabelShard(b.controllerRingName),
+		LabelDrain: shardingv1alpha1.LabelDrain(b.controllerRingName),
 		Do:         r,
 	}, nil
 }
