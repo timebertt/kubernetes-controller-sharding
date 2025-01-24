@@ -38,32 +38,32 @@ This counter is incremented every time the sharder calculates a new consistent h
 
 ## sharding-exporter
 
-The sharding-exporter is an optional component for metrics about the state of `ClusterRings` and shards, see [Install the Sharding Components](installation.md#monitoring-optional).
+The sharding-exporter is an optional component for metrics about the state of `ControllerRings` and shards, see [Install the Sharding Components](installation.md#monitoring-optional).
 
 The `sharding-exporter` service exposes metrics via `https` on the `8443` port at the `/metrics` endpoint.
 Clients need to authenticate against the endpoint and must be authorized for `get` on the `nonResourceURL` `/metrics`.
 
-### Exposed `ClusterRing` Metrics
+### Exposed `ControllerRing` Metrics
 
-#### `kube_clusterring_metadata_generation`
-
-Type: gauge  
-Description: The generation of a ClusterRing.
-
-#### `kube_clusterring_observed_generation`
+#### `kube_controllerring_metadata_generation`
 
 Type: gauge  
-Description: The latest generation observed by the ClusterRing controller.
+Description: The generation of a ControllerRing.
 
-#### `kube_clusterring_status_shards`
-
-Type: gauge  
-Description: The ClusterRing's total number of shards observed by the ClusterRing controller.
-
-#### `kube_clusterring_status_available_shards`
+#### `kube_controllerring_observed_generation`
 
 Type: gauge  
-Description: The ClusterRing's number of available shards observed by the ClusterRing controller.
+Description: The latest generation observed by the ControllerRing controller.
+
+#### `kube_controllerring_status_shards`
+
+Type: gauge  
+Description: The ControllerRing's total number of shards observed by the ControllerRing controller.
+
+#### `kube_controllerring_status_available_shards`
+
+Type: gauge  
+Description: The ControllerRing's number of available shards observed by the ControllerRing controller.
 
 ### Exposed Shard Metrics
 

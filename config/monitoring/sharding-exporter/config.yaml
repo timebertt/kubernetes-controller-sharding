@@ -10,7 +10,7 @@ spec:
     labelsFromPath:
       namespace: [metadata, namespace]
       shard: [metadata, name]
-      clusterring: [metadata, labels, alpha.sharding.timebertt.dev/clusterring]
+      controllerring: [metadata, labels, alpha.sharding.timebertt.dev/controllerring]
     metrics:
     - name: info
       help: "Information about a Shard"
@@ -30,36 +30,36 @@ spec:
       # The usual leader election leases don't have the state label making the generator log errors.
       # Hence, decrease verbosity of such errors to reduce distraction.
       errorLogV: 4
-  # clusterring metrics
-  - metricNamePrefix: kube_clusterring
+  # controllerring metrics
+  - metricNamePrefix: kube_controllerring
     groupVersionKind:
       group: sharding.timebertt.dev
       version: v1alpha1
-      kind: ClusterRing
+      kind: ControllerRing
     labelsFromPath:
-      clusterring: [metadata, name]
+      controllerring: [metadata, name]
       uid: [metadata, uid]
     metrics:
     - name: metadata_generation
-      help: "The generation of a ClusterRing"
+      help: "The generation of a ControllerRing"
       each:
         type: Gauge
         gauge:
           path: [metadata, generation]
     - name: observed_generation
-      help: "The latest generation observed by the ClusterRing controller"
+      help: "The latest generation observed by the ControllerRing controller"
       each:
         type: Gauge
         gauge:
           path: [status, observedGeneration]
     - name: status_shards
-      help: "The ClusterRing's total number of shards observed by the ClusterRing controller"
+      help: "The ControllerRing's total number of shards observed by the ControllerRing controller"
       each:
         type: Gauge
         gauge:
           path: [status, shards]
     - name: status_available_shards
-      help: "The ClusterRing's number of available shards observed by the ClusterRing controller"
+      help: "The ControllerRing's number of available shards observed by the ControllerRing controller"
       each:
         type: Gauge
         gauge:
