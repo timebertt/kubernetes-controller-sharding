@@ -141,7 +141,7 @@ SHARD_NAME ?= shard-$(shell tr -dc bcdfghjklmnpqrstvwxz2456789 </dev/urandom | h
 
 .PHONY: run-shard
 run-shard: $(KUBECTL) ## Run a shard from your host and deploy prerequisites.
-	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/shard/clusterring
+	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/shard/controllerring
 	go run ./cmd/shard --shard=$(SHARD_NAME) --lease-namespace=default --zap-log-level=debug
 
 PUSH ?= false

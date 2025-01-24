@@ -1,5 +1,5 @@
 apiVersion: sharding.timebertt.dev/v1alpha1
-kind: ClusterRing
+kind: ControllerRing
 metadata:
   name: example
 spec:

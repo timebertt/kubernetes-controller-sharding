@@ -1,11 +1,11 @@
-# These manifests grant the sharder controller permissions to act on resources that we listed in the ClusterRing.
+# These manifests grant the sharder controller permissions to act on resources that we listed in the ControllerRing.
 # We need to grant these permissions explicitly depending on what we configured. Otherwise, the sharder would require
 # cluster-admin access.
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: sharding:clusterring:example
+  name: sharding:controllerring:example
 rules:
 - apiGroups:
   - ""
@@ -19,11 +19,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: sharding:clusterring:example
+  name: sharding:controllerring:example
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: sharding:clusterring:example
+  name: sharding:controllerring:example
 subjects:
 - kind: ServiceAccount
   name: sharder
