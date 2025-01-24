@@ -183,7 +183,7 @@ func (o *options) applyCacheOptions() {
 	// filter lease cache for shard leases to avoid watching all leases in cluster
 	leaseSelector := labels.NewSelector()
 	{
-		ringRequirement, err := labels.NewRequirement(shardingv1alpha1.LabelClusterRing, selection.Exists, nil)
+		ringRequirement, err := labels.NewRequirement(shardingv1alpha1.LabelControllerRing, selection.Exists, nil)
 		utilruntime.Must(err)
 		leaseSelector.Add(*ringRequirement)
 	}

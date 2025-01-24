@@ -85,7 +85,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 	// collect list of shards in the ring
 	leaseList := &coordinationv1.LeaseList{}
 	if err := h.Reader.List(ctx, leaseList, client.MatchingLabelsSelector{Selector: ringObj.LeaseSelector()}); err != nil {
-		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("error listing Leases for ClusterRing: %w", err))
+		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("error listing Leases for ControllerRing: %w", err))
 	}
 
 	// get ring from cache and hash the object onto the ring

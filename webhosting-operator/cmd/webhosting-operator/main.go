@@ -290,7 +290,7 @@ func (o *options) applyOptionsOverrides() error {
 		// FILTERED WATCH CACHE
 		// Configure cache to only watch objects that are assigned to this shard.
 		shardLabelSelector := labels.SelectorFromSet(labels.Set{
-			shardingv1alpha1.LabelShard(shardingv1alpha1.KindClusterRing, "", o.clusterRingName): o.shardName,
+			shardingv1alpha1.LabelShard(o.clusterRingName): o.shardName,
 		})
 
 		// This operator watches sharded objects (Websites, etc.) as well as non-sharded objects (Themes),

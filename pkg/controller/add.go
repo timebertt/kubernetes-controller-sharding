@@ -23,17 +23,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/config/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller/clusterring"
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller/controllerring"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller/sharder"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller/shardlease"
 )
 
 // AddToManager adds all controllers to the manager.
 func AddToManager(ctx context.Context, mgr manager.Manager, config *configv1alpha1.SharderConfig) error {
-	if err := (&clusterring.Reconciler{
+	if err := (&controllerring.Reconciler{
 		Config: config,
 	}).AddToManager(mgr); err != nil {
-		return fmt.Errorf("failed adding clusterring controller: %w", err)
+		return fmt.Errorf("failed adding controllerring controller: %w", err)
 	}
 
 	if err := (&sharder.Reconciler{

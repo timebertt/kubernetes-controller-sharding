@@ -45,17 +45,17 @@ import (
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/pager"
 )
 
-//+kubebuilder:rbac:groups=sharding.timebertt.dev,resources=clusterrings,verbs=get;list;watch
+//+kubebuilder:rbac:groups=sharding.timebertt.dev,resources=controllerrings,verbs=get;list;watch
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
 
-// Note: The sharder requires permissions to list and patch resources listed in ClusterRings. However, the default
+// Note: The sharder requires permissions to list and patch resources listed in ControllerRings. However, the default
 // sharder role doesn't include permissions for listing/mutating arbitrary resources (which would basically be
 // cluster-admin access) to adhere to the least privilege principle.
-// We can't automate permission management in the clusterring controller, because you can't grant permissions you don't
+// We can't automate permission management in the controllerring controller, because you can't grant permissions you don't
 // already have.
 // Hence, users need to grant the sharder permissions for listing/mutating sharded resources explicitly.
 
-// Reconciler reconciles ClusterRings.
+// Reconciler reconciles ControllerRings.
 type Reconciler struct {
 	Client client.Client
 	Reader client.Reader
@@ -63,12 +63,12 @@ type Reconciler struct {
 	Config *configv1alpha1.SharderConfig
 }
 
-// Reconcile reconciles a ClusterRing object.
+// Reconcile reconciles a ControllerRing object.
 func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 	log := logf.FromContext(ctx)
 
-	clusterRing := &shardingv1alpha1.ClusterRing{}
-	if err := r.Client.Get(ctx, req.NamespacedName, clusterRing); err != nil {
+	controllerRing := &shardingv1alpha1.ControllerRing{}
+	if err := r.Client.Get(ctx, req.NamespacedName, controllerRing); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.V(1).Info("Object is gone, stop reconciling")
 			return reconcile.Result{}, nil
@@ -76,18 +76,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
 	}
 
-	log = log.WithValues("ring", client.ObjectKeyFromObject(clusterRing))
+	log = log.WithValues("ring", client.ObjectKeyFromObject(controllerRing))
 
 	// collect list of shards in the ring
 	leaseList := &coordinationv1.LeaseList{}
-	if err := r.Client.List(ctx, leaseList, client.MatchingLabelsSelector{Selector: clusterRing.LeaseSelector()}); err != nil {
-		return reconcile.Result{}, fmt.Errorf("error listing Leases for ClusterRing: %w", err)
+	if err := r.Client.List(ctx, leaseList, client.MatchingLabelsSelector{Selector: controllerRing.LeaseSelector()}); err != nil {
+		return reconcile.Result{}, fmt.Errorf("error listing Leases for ControllerRing: %w", err)
 	}
 
 	// get ring and shards from cache
-	hashRing, shards := ring.FromLeases(clusterRing, leaseList, r.Clock.Now())
+	hashRing, shards := ring.FromLeases(controllerRing, leaseList, r.Clock.Now())
 
-	namespaces, err := r.getSelectedNamespaces(ctx, clusterRing)
+	namespaces, err := r.getSelectedNamespaces(ctx, controllerRing)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -97,14 +97,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	}
 
 	// resync all ring resources
-	for _, ringResource := range clusterRing.Spec.Resources {
+	for _, ringResource := range controllerRing.Spec.Resources {
 		allErrs = multierror.Append(allErrs,
-			r.resyncResource(ctx, log, ringResource.GroupResource, clusterRing, namespaces, hashRing, shards, false),
+			r.resyncResource(ctx, log, ringResource.GroupResource, controllerRing, namespaces, hashRing, shards, false),
 		)
 
 		for _, controlledResource := range ringResource.ControlledResources {
 			allErrs = multierror.Append(allErrs,
-				r.resyncResource(ctx, log, controlledResource, clusterRing, namespaces, hashRing, shards, true),
+				r.resyncResource(ctx, log, controlledResource, controllerRing, namespaces, hashRing, shards, true),
 			)
 		}
 	}
@@ -118,10 +118,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	return reconcile.Result{RequeueAfter: r.Config.Controller.Sharder.SyncPeriod.Duration}, nil
 }
 
-func (r *Reconciler) getSelectedNamespaces(ctx context.Context, clusterRing *shardingv1alpha1.ClusterRing) (sets.Set[string], error) {
+func (r *Reconciler) getSelectedNamespaces(ctx context.Context, controllerRing *shardingv1alpha1.ControllerRing) (sets.Set[string], error) {
 	namespaceSelector := r.Config.Webhook.Config.NamespaceSelector
-	if clusterRing.Spec.NamespaceSelector != nil {
-		namespaceSelector = clusterRing.Spec.NamespaceSelector
+	if controllerRing.Spec.NamespaceSelector != nil {
+		namespaceSelector = controllerRing.Spec.NamespaceSelector
 	}
 
 	selector, err := metav1.LabelSelectorAsSelector(namespaceSelector)
@@ -131,7 +131,7 @@ func (r *Reconciler) getSelectedNamespaces(ctx context.Context, clusterRing *sha
 
 	namespaceList := &corev1.NamespaceList{}
 	if err := r.Client.List(ctx, namespaceList, client.MatchingLabelsSelector{Selector: selector}); err != nil {
-		return nil, fmt.Errorf("error listing selected namespaces for ClusterRing: %w", err)
+		return nil, fmt.Errorf("error listing selected namespaces for ControllerRing: %w", err)
 	}
 
 	namespaceSet := sets.New[string]()

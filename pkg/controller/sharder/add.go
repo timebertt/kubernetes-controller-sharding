@@ -51,18 +51,18 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 
 	return builder.ControllerManagedBy(mgr).
 		Named(ControllerName).
-		For(&shardingv1alpha1.ClusterRing{}, builder.WithPredicates(r.ClusterRingPredicate())).
-		Watches(&coordinationv1.Lease{}, handler.EnqueueRequestsFromMapFunc(MapLeaseToClusterRing), builder.WithPredicates(r.LeasePredicate())).
+		For(&shardingv1alpha1.ControllerRing{}, builder.WithPredicates(r.ControllerRingPredicate())).
+		Watches(&coordinationv1.Lease{}, handler.EnqueueRequestsFromMapFunc(MapLeaseToControllerRing), builder.WithPredicates(r.LeasePredicate())).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
 		}).
 		Complete(r)
 }
 
-func (r *Reconciler) ClusterRingPredicate() predicate.Predicate {
+func (r *Reconciler) ControllerRingPredicate() predicate.Predicate {
 	return predicate.And(
 		predicate.GenerationChangedPredicate{},
-		// ignore deletion of ClusterRings
+		// ignore deletion of ControllerRings
 		predicate.Funcs{
 			CreateFunc: func(_ event.CreateEvent) bool { return true },
 			UpdateFunc: func(_ event.UpdateEvent) bool { return true },
@@ -71,8 +71,8 @@ func (r *Reconciler) ClusterRingPredicate() predicate.Predicate {
 	)
 }
 
-func MapLeaseToClusterRing(ctx context.Context, obj client.Object) []reconcile.Request {
-	ring, ok := obj.GetLabels()[shardingv1alpha1.LabelClusterRing]
+func MapLeaseToControllerRing(ctx context.Context, obj client.Object) []reconcile.Request {
+	ring, ok := obj.GetLabels()[shardingv1alpha1.LabelControllerRing]
 	if !ok {
 		return nil
 	}
@@ -91,7 +91,7 @@ func (r *Reconciler) LeasePredicate() predicate.Predicate {
 				}
 
 				// We only need to resync the ring if the new shard is available right away.
-				// Note: on controller start we will enqueue anyway for the add event of ClusterRings.
+				// Note: on controller start we will enqueue anyway for the add event of ControllerRings.
 				return leases.ToState(lease, r.Clock.Now()).IsAvailable()
 			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
@@ -131,5 +131,5 @@ func (r *Reconciler) LeasePredicate() predicate.Predicate {
 }
 
 func isShardLease(obj client.Object) bool {
-	return obj.GetLabels()[shardingv1alpha1.LabelClusterRing] != ""
+	return obj.GetLabels()[shardingv1alpha1.LabelControllerRing] != ""
 }
