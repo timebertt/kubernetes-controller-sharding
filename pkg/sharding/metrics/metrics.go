@@ -24,36 +24,36 @@ import (
 
 var (
 	// AssignmentsTotal is a prometheus counter metric which holds the total number of shard assignments by the sharder
-	// webhook per Ring and GroupResource.
+	// webhook per ControllerRing and GroupResource.
 	// It has a label which refers to the ControllerRing and two labels which refer to the object's GroupResource.
 	AssignmentsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "controller_sharding_assignments_total",
-		Help: "Total number of shard assignments by the sharder webhook per Ring and GroupResource",
-	}, []string{"ringName", "group", "resource"})
+		Help: "Total number of shard assignments by the sharder webhook per ControllerRing and GroupResource",
+	}, []string{"controllerring", "group", "resource"})
 
 	// MovementsTotal is a prometheus counter metric which holds the total number of shard movements triggered by the
-	// sharder controller per Ring and GroupResource.
+	// sharder controller per ControllerRing and GroupResource.
 	// It has a label which refers to the ControllerRing and two labels which refer to the object's GroupResource.
 	MovementsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "controller_sharding_movements_total",
-		Help: "Total number of shard movements triggered by the sharder controller per Ring and GroupResource",
-	}, []string{"ringName", "group", "resource"})
+		Help: "Total number of shard movements triggered by the sharder controller per ControllerRing and GroupResource",
+	}, []string{"controllerring", "group", "resource"})
 
 	// DrainsTotal is a prometheus counter metric which holds the total number of shard drains triggered by the sharder
-	// controller per Ring and GroupResource.
+	// controller per ControllerRing and GroupResource.
 	// It has a label which refers to the ControllerRing and two labels which refer to the object's GroupResource.
 	DrainsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "controller_sharding_drains_total",
-		Help: "Total number of shard drains triggered by the sharder controller per Ring and GroupResource",
-	}, []string{"ringName", "group", "resource"})
+		Help: "Total number of shard drains triggered by the sharder controller per ControllerRing and GroupResource",
+	}, []string{"controllerring", "group", "resource"})
 
 	// RingCalculationsTotal is a prometheus counter metric which holds the total
-	// number of shard ring calculations per ring kind.
+	// number of hash ring calculations per ControllerRing.
 	// It has a label which refers to the ControllerRing.
 	RingCalculationsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "controller_sharding_ring_calculations_total",
-		Help: "Total number of shard ring calculations per ring kind",
-	}, []string{"name"})
+		Help: "Total number of hash ring calculations per ControllerRing",
+	}, []string{"controllerring"})
 )
 
 func init() {
