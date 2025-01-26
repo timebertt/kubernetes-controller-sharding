@@ -42,6 +42,7 @@
     },
     {
       "datasource": {
+        "default": false,
         "type": "prometheus",
         "uid": "${datasource}"
       },
@@ -81,6 +82,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -88,9 +90,11 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.3",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -148,6 +152,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -155,9 +160,11 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "9.5.3",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -184,11 +191,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -197,6 +206,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineStyle": {
               "fill": "solid"
@@ -413,6 +423,8 @@
       },
       "id": 10,
       "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -422,9 +434,10 @@
           "values": false
         },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "showThresholdMarkers": true,
+        "sizing": "auto"
       },
-      "pluginVersion": "9.5.3",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -534,11 +547,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -547,6 +562,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineStyle": {
               "fill": "solid"
@@ -637,11 +653,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -650,6 +668,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
@@ -740,11 +759,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -753,6 +774,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineStyle": {
               "fill": "solid"
@@ -953,6 +975,7 @@
     },
     {
       "datasource": {
+        "default": false,
         "type": "prometheus",
         "uid": "${datasource}"
       },
@@ -962,11 +985,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "opacity",
@@ -975,6 +1000,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineStyle": {
               "fill": "solid"
@@ -1035,7 +1061,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(controller_sharding_assignments_total{group=~\"$group\", resource=~\"$resource\"}[$__rate_interval]))",
+          "expr": "sum(rate(controller_sharding_assignments_total{controllerring=\"$controllerring\",  group=~\"$group\", resource=~\"$resource\"}[$__rate_interval])) or vector(0)",
           "hide": false,
           "interval": "",
           "legendFormat": "Assignments",
@@ -1049,7 +1075,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(controller_sharding_movements_total{group=~\"$group\", resource=~\"$resource\"}[$__rate_interval]))",
+          "expr": "sum(rate(controller_sharding_movements_total{controllerring=\"$controllerring\", group=~\"$group\", resource=~\"$resource\"}[$__rate_interval])) or vector(0)",
           "hide": false,
           "interval": "",
           "legendFormat": "Movements",
@@ -1063,7 +1089,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(controller_sharding_drains_total{group=~\"$group\", resource=~\"$resource\"}[$__rate_interval]))",
+          "expr": "sum(rate(controller_sharding_drains_total{controllerring=\"$controllerring\", group=~\"$group\", resource=~\"$resource\"}[$__rate_interval])) or vector(0)",
           "hide": false,
           "interval": "",
           "legendFormat": "Drains",
@@ -1076,6 +1102,7 @@
     },
     {
       "datasource": {
+        "default": false,
         "type": "prometheus",
         "uid": "${datasource}"
       },
@@ -1086,11 +1113,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "opacity",
@@ -1099,6 +1128,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineStyle": {
               "fill": "solid"
@@ -1159,7 +1189,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(controller_sharding_assignments_total{group=~\"$group\", resource=~\"$resource\"}[$__rate_interval])) by (resource)",
+          "expr": "sum(rate(controller_sharding_assignments_total{controllerring=\"$controllerring\", group=~\"$group\", resource=~\"$resource\"}[$__rate_interval])) by (resource)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{kind}}",
@@ -1172,6 +1202,7 @@
     },
     {
       "datasource": {
+        "default": false,
         "type": "prometheus",
         "uid": "${datasource}"
       },
@@ -1182,11 +1213,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "opacity",
@@ -1195,6 +1228,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineStyle": {
               "fill": "solid"
@@ -1278,11 +1312,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "opacity",
@@ -1291,6 +1327,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineStyle": {
               "fill": "solid"
@@ -1402,11 +1439,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 100,
             "gradientMode": "opacity",
@@ -1415,6 +1454,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineStyle": {
               "fill": "solid"
@@ -1475,7 +1515,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(controller_sharding_ring_calculations_total{name=\"$controllerring\"}[$__rate_interval]))",
+          "expr": "sum(rate(controller_sharding_ring_calculations_total{controllerring=\"$controllerring\"}[$__rate_interval]))",
           "hide": false,
           "interval": "",
           "legendFormat": "Ring Calculations",
@@ -1488,8 +1528,7 @@
     }
   ],
   "refresh": "10s",
-  "schemaVersion": 38,
-  "style": "dark",
+  "schemaVersion": 39,
   "tags": [
     "webhosting-operator"
   ],
@@ -1497,9 +1536,9 @@
     "list": [
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "prometheus",
-          "value": "prometheus"
+          "value": "P1809F7CD0C75ACF3"
         },
         "hide": 0,
         "includeAll": false,
@@ -1524,14 +1563,15 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(kube_shard_info,controllerring)",
+        "definition": "label_values(controller_sharding_assignments_total,controllerring)",
         "hide": 0,
         "includeAll": false,
         "multi": false,
         "name": "controllerring",
         "options": [],
         "query": {
-          "query": "label_values(kube_shard_info,controllerring)",
+          "qryType": 1,
+          "query": "label_values(controller_sharding_assignments_total,controllerring)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
@@ -1555,15 +1595,16 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(controller_sharding_assignments_total, group)",
+        "definition": "label_values(controller_sharding_assignments_total{controllerring=\"$controllerring\"},group)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "group",
         "options": [],
         "query": {
-          "query": "label_values(controller_sharding_assignments_total, group)",
-          "refId": "StandardVariableQuery"
+          "qryType": 1,
+          "query": "label_values(controller_sharding_assignments_total{controllerring=\"$controllerring\"},group)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
         "regex": "",
@@ -1586,15 +1627,16 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(controller_sharding_assignments_total{group=~\"$group\"}, resource)",
+        "definition": "label_values(controller_sharding_assignments_total{controllerring=\"$controllerring\", group=~\"$group\"},resource)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "resource",
         "options": [],
         "query": {
-          "query": "label_values(controller_sharding_assignments_total{group=~\"$group\"}, resource)",
-          "refId": "StandardVariableQuery"
+          "qryType": 1,
+          "query": "label_values(controller_sharding_assignments_total{controllerring=\"$controllerring\", group=~\"$group\"},resource)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
         "regex": "",
@@ -1617,7 +1659,7 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(kube_namespace_status_phase{job=\"kube-state-metrics\", namespace=~\"project-.+\"}, namespace)",
+        "definition": "label_values(kube_namespace_status_phase{job=\"kube-state-metrics\", namespace=~\"project-.+\"},namespace)",
         "hide": 0,
         "includeAll": true,
         "multi": true,

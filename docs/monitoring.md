@@ -33,7 +33,7 @@ This doesn't consider the action taken by the shard.
 #### `controller_sharding_ring_calculations_total`
 
 Type: counter  
-Description: Total number of shard ring calculations per `ControllerRing`.
+Description: Total number of hash ring calculations per `ControllerRing`.
 This counter is incremented every time the sharder calculates a new consistent hash ring based on the shard leases.
 
 ## sharding-exporter
