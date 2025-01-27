@@ -147,7 +147,7 @@ func (r *Reconciler) reconcileWebhooks(ctx context.Context, controllerRing *shar
 			Kind:       "MutatingWebhookConfiguration",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "sharding-" + shardingv1alpha1.RingSuffix(controllerRing.Name),
+			Name: "controllerring-" + controllerRing.Name,
 			Labels: map[string]string{
 				"app.kubernetes.io/name":             shardingv1alpha1.AppControllerSharding,
 				shardingv1alpha1.LabelControllerRing: controllerRing.Name,

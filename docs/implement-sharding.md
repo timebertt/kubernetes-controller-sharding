@@ -29,6 +29,8 @@ spec:
       resource: replicasets
 ```
 
+Note that the `ControllerRing` name must not be longer than 63 characters because it is used as part of the shard and drain label key (see below).
+
 To allow the sharder to reassign the sharded objects during rebalancing, we need to grant the corresponding permissions.
 We need to grant these permissions explicitly depending on what is configured in the `ControllerRing`.
 Otherwise, the sharder would basically require `cluster-admin` access.
@@ -166,13 +168,12 @@ func run() error {
 In short: use the following label selector on watches for all sharded resources listed in the `ControllerRing`.
 
 ```text
-shard.alpha.sharding.timebertt.dev/50d858e0-example: my-operator-565df55f4b-5vwpj
+shard.alpha.sharding.timebertt.dev/example: my-operator-565df55f4b-5vwpj
 ```
 
 The sharder assigns all sharded objects by adding a shard label that is specific to the `ControllerRing` (resources could be part of multiple `ControllerRings`).
-The shard label's key consists of the `shard.alpha.sharding.timebertt.dev/` prefix followed by the first 8 hex characters of the SHA256 checksum of the `ControllerRing` name followed by a `-` followed by the `ControllerRing` name itself.
-The key part after the `/` is shortened to 63 characters so that it is a valid label key.
-The checksum is added to the label key to derive unique label keys even for `ControllerRings` with long names that would cause the pattern to exceed the 63 characters limit after the `/`.
+The shard label's key consists of the `shard.alpha.sharding.timebertt.dev/` prefix followed by the `ControllerRing` name.
+As the key part after the `/` must not exceed 63 characters, the `ControllerRing` name must not be longer than 63 characters.
 The shard label's value is the name of the shard, i.e., the name of the shard lease and the shard lease's `holderIdentity`.
 
 Once you have determined the shard label key for your `ControllerRing`, use it as a selector on all watches that your controller starts for any of the sharded resources.
@@ -221,7 +222,7 @@ In short: ensure your sharded controller acknowledges drain operations.
 When the drain label like this is added by the sharder, the controller needs to remove both the shard and the drain label and stop reconciling the object.
 
 ```text
-drain.alpha.sharding.timebertt.dev/50d858e0-example
+drain.alpha.sharding.timebertt.dev/example
 ```
 
 When the sharder needs to move an object from an available shard to another shard for rebalancing, it first adds the drain label to instruct the currently responsible shard to stop reconciling the object.

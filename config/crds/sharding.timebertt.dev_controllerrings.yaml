@@ -237,6 +237,9 @@ spec:
             - shards
             type: object
         type: object
+        x-kubernetes-validations:
+        - message: ClusterRing name must not be longer than 63 characters
+          rule: size(self.metadata.name) <= 63
     served: true
     storage: true
     subresources:
