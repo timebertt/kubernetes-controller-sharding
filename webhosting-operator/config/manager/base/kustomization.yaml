@@ -12,8 +12,10 @@ namespace: webhosting-system
 namePrefix: webhosting-
 
 # Labels to add to all resources and selectors.
-commonLabels:
-  app.kubernetes.io/name: webhosting-operator
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: webhosting-operator
 
 images:
 - name: controller

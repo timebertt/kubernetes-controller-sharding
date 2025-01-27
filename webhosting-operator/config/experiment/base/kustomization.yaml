@@ -3,8 +3,10 @@ kind: Kustomization
 
 namespace: experiment
 
-commonLabels:
-  app.kubernetes.io/name: experiment
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: experiment
 
 images:
 - name: experiment

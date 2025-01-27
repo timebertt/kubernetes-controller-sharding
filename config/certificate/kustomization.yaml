@@ -3,8 +3,10 @@ kind: Component
 
 namespace: sharding-system
 
-commonLabels:
-  app.kubernetes.io/name: controller-sharding
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: controller-sharding
 
 resources:
 - certificate.yaml
