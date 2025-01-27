@@ -40,10 +40,12 @@ cat <<EOF > kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-commonLabels:
-  app.kubernetes.io/name: prometheus-operator
-  app.kubernetes.io/part-of: kube-prometheus
-  app.kubernetes.io/version: $prometheus_operator_version
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: prometheus-operator
+    app.kubernetes.io/part-of: kube-prometheus
+    app.kubernetes.io/version: $prometheus_operator_version
 
 resources:
 $(ls *.yaml | sed 's/^/- /')

@@ -3,9 +3,11 @@ kind: Kustomization
 
 namespace: default
 
-commonLabels:
-  app.kubernetes.io/name: controller-sharding
-  app.kubernetes.io/component: shard
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: controller-sharding
+    app.kubernetes.io/component: shard
 
 images:
 - name: shard
