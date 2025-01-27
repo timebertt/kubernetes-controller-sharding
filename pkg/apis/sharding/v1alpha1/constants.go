@@ -16,13 +16,6 @@ limitations under the License.
 
 package v1alpha1
 
-import (
-	"crypto/sha256"
-	"encoding/hex"
-
-	"k8s.io/utils/strings"
-)
-
 // This file contains API-related constants for the sharding implementation, e.g. well-known annotations and labels.
 
 const (
@@ -51,26 +44,15 @@ const (
 	// IdentityShardLeaseController is the identity that the shardlease controller uses to acquire leases of unavailable
 	// shards.
 	IdentityShardLeaseController = "shardlease-controller"
-
-	delimiter = "-"
 )
 
 // LabelShard returns the label on sharded objects that holds the name of the responsible shard within a ring.
 func LabelShard(ringName string) string {
-	return LabelShardPrefix + RingSuffix(ringName)
+	return LabelShardPrefix + ringName
 }
 
 // LabelDrain returns the label on sharded objects that instructs the responsible shard within a ring to stop reconciling
 // the object and remove both the shard and drain label.
 func LabelDrain(ringName string) string {
-	return LabelDrainPrefix + RingSuffix(ringName)
-}
-
-// RingSuffix returns the label key for a given ring name that is appended to a qualified prefix.
-func RingSuffix(ringName string) string {
-	keyHash := sha256.Sum256([]byte(ringName))
-	hexHash := hex.EncodeToString(keyHash[:])
-
-	// the label part after the "/" must not exceed 63 characters, cut off at 63 characters
-	return strings.ShortenString(hexHash[:8]+delimiter+ringName, 63)
+	return LabelDrainPrefix + ringName
 }
