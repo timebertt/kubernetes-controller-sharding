@@ -120,13 +120,12 @@ The `Secrets` created by the example shard controller should be assigned to the 
 $ kubectl create cm foo
 configmap/foo created
 
-$ kubectl get cm,secret -L shard.alpha.sharding.timebertt.dev/50d858e0-example
-NAME                         DATA   AGE     50D858E0-EXAMPLE
+$ kubectl get cm,secret -L shard.alpha.sharding.timebertt.dev/example
+NAME                         DATA   AGE     EXAMPLE
 configmap/foo                0      1s      shard-656d588475-5746d
 
-NAME                            TYPE     DATA   AGE     50D858E0-EXAMPLE
+NAME                            TYPE     DATA   AGE     EXAMPLE
 secret/dummy-foo                Opaque   0      1s      shard-656d588475-5746d
-secret/dummy-kube-root-ca.crt   Opaque   0      2m14s
 ```
 
 ## Monitoring

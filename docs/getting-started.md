@@ -79,8 +79,8 @@ The sharder created a `MutatingWebhookConfiguration` for the resources listed in
 
 ```bash
 $ kubectl get mutatingwebhookconfiguration -l alpha.sharding.timebertt.dev/controllerring=example
-NAME                        WEBHOOKS   AGE
-sharding-50d858e0-example   1          2m50s
+NAME                     WEBHOOKS   AGE
+controllerring-example   1          2m50s
 ```
 
 Let's examine the webhook configuration for more details.
@@ -92,7 +92,7 @@ I.e., it gets called for unassigned objects and adds the shard assignment label 
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: sharding-50d858e0-example
+  name: controllerring-example
 webhooks:
 - clientConfig:
     service:
@@ -106,7 +106,7 @@ webhooks:
       kubernetes.io/metadata.name: default
   objectSelector:
     matchExpressions:
-    - key: shard.alpha.sharding.timebertt.dev/50d858e0-example
+    - key: shard.alpha.sharding.timebertt.dev/example
       operator: DoesNotExist
   rules:
   - apiGroups:
@@ -144,7 +144,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   labels:
-    shard.alpha.sharding.timebertt.dev/50d858e0-example: shard-9c6678c9f-8jc5b
+    shard.alpha.sharding.timebertt.dev/example: shard-9c6678c9f-8jc5b
   name: foo
   namespace: default
 ```
@@ -162,7 +162,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   labels:
-    shard.alpha.sharding.timebertt.dev/50d858e0-example: shard-9c6678c9f-8jc5b
+    shard.alpha.sharding.timebertt.dev/example: shard-9c6678c9f-8jc5b
   name: dummy-foo
   namespace: default
   ownerReferences:
@@ -176,8 +176,8 @@ Let's create a few more `ConfigMaps` and observe the distribution of objects acr
 
 ```bash
 $ for i in $(seq 1 9); do k create cm foo$i ; done
-$ kubectl get cm,secret -L shard.alpha.sharding.timebertt.dev/50d858e0-example
-NAME                         DATA   AGE     50D858E0-EXAMPLE
+$ kubectl get cm,secret -L shard.alpha.sharding.timebertt.dev/example
+NAME                         DATA   AGE     EXAMPLE
 configmap/foo                0      52s     shard-9c6678c9f-8jc5b
 configmap/foo1               0      7s      shard-9c6678c9f-v4bw2
 configmap/foo2               0      6s      shard-9c6678c9f-8jc5b
@@ -189,7 +189,7 @@ configmap/foo7               0      6s      shard-9c6678c9f-xntqc
 configmap/foo8               0      6s      shard-9c6678c9f-xntqc
 configmap/foo9               0      6s      shard-9c6678c9f-8jc5b
 
-NAME                            TYPE     DATA   AGE     50D858E0-EXAMPLE
+NAME                            TYPE     DATA   AGE     EXAMPLE
 secret/dummy-foo                Opaque   0      52s     shard-9c6678c9f-8jc5b
 secret/dummy-foo1               Opaque   0      7s      shard-9c6678c9f-v4bw2
 secret/dummy-foo2               Opaque   0      6s      shard-9c6678c9f-8jc5b
@@ -234,8 +234,8 @@ As the original shard is not available anymore, moving the objects doesn't need 
 ```bash
 $ kubectl get cm --show-labels -w --output-watch-events --watch-only
 EVENT      NAME   DATA   AGE     LABELS
-MODIFIED   foo4   0      7m52s   shard.alpha.sharding.timebertt.dev/50d858e0-example=shard-9c6678c9f-ppzf7
-MODIFIED   foo6   0      7m52s   shard.alpha.sharding.timebertt.dev/50d858e0-example=shard-9c6678c9f-ppzf7
+MODIFIED   foo4   0      7m52s   shard.alpha.sharding.timebertt.dev/example=shard-9c6678c9f-ppzf7
+MODIFIED   foo6   0      7m52s   shard.alpha.sharding.timebertt.dev/example=shard-9c6678c9f-ppzf7
 ```
 
 ## Adding Shards to the Ring
@@ -270,10 +270,10 @@ This triggers the sharder webhook which immediately assigns the object to the de
 ```bash
 $ kubectl get cm --show-labels -w --output-watch-events --watch-only
 EVENT      NAME   DATA   AGE    LABELS
-MODIFIED   foo4   0      9m2s   drain.alpha.sharding.timebertt.dev/50d858e0-example=true,shard.alpha.sharding.timebertt.dev/50d858e0-example=shard-9c6678c9f-ppzf7
-MODIFIED   foo7   0      9m2s   drain.alpha.sharding.timebertt.dev/50d858e0-example=true,shard.alpha.sharding.timebertt.dev/50d858e0-example=shard-9c6678c9f-ppzf7
-MODIFIED   foo4   0      9m2s   shard.alpha.sharding.timebertt.dev/50d858e0-example=shard-9c6678c9f-jkgj6
-MODIFIED   foo7   0      9m2s   shard.alpha.sharding.timebertt.dev/50d858e0-example=shard-9c6678c9f-jkgj6
+MODIFIED   foo4   0      9m2s   drain.alpha.sharding.timebertt.dev/example=true,shard.alpha.sharding.timebertt.dev/example=shard-9c6678c9f-ppzf7
+MODIFIED   foo7   0      9m2s   drain.alpha.sharding.timebertt.dev/example=true,shard.alpha.sharding.timebertt.dev/example=shard-9c6678c9f-ppzf7
+MODIFIED   foo4   0      9m2s   shard.alpha.sharding.timebertt.dev/example=shard-9c6678c9f-jkgj6
+MODIFIED   foo7   0      9m2s   shard.alpha.sharding.timebertt.dev/example=shard-9c6678c9f-jkgj6
 ```
 
 ## Clean Up

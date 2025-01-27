@@ -25,20 +25,20 @@ To perform a quick test of the webhosting-operator, create some example `Website
 $ kubectl apply -k webhosting-operator/config/samples
 ...
 
-$ kubectl -n project-foo get website,deploy,svc,ing -L shard.alpha.sharding.timebertt.dev/ef3d63cd-webhosting-operator
-NAME                                        THEME      PHASE   SINCE   AGE   EF3D63CD-WEBHOSTING-OPERATOR
+$ kubectl -n project-foo get website,deploy,svc,ing -L shard.alpha.sharding.timebertt.dev/webhosting-operator
+NAME                                        THEME      PHASE   SINCE   AGE   WEBHOSTING-OPERATOR
 website.webhosting.timebertt.dev/homepage   exciting   Ready   6s      16s   webhosting-operator-98ff76b66-tdrtc
 website.webhosting.timebertt.dev/official   lame       Ready   5s      16s   webhosting-operator-98ff76b66-tdrtc
 
-NAME                              READY   UP-TO-DATE   AVAILABLE   AGE   EF3D63CD-WEBHOSTING-OPERATOR
+NAME                              READY   UP-TO-DATE   AVAILABLE   AGE   WEBHOSTING-OPERATOR
 deployment.apps/homepage-98bad4   1/1     1            1           15s   webhosting-operator-98ff76b66-tdrtc
 deployment.apps/official-10ff22   1/1     1            1           15s   webhosting-operator-98ff76b66-tdrtc
 
-NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE   EF3D63CD-WEBHOSTING-OPERATOR
+NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE   WEBHOSTING-OPERATOR
 service/homepage-98bad4   ClusterIP   100.82.128.107   <none>        8080/TCP   16s   webhosting-operator-98ff76b66-tdrtc
 service/official-10ff22   ClusterIP   100.82.194.21    <none>        8080/TCP   16s   webhosting-operator-98ff76b66-tdrtc
 
-NAME                                        CLASS   HOSTS                      ADDRESS   PORTS     AGE   EF3D63CD-WEBHOSTING-OPERATOR
+NAME                                        CLASS   HOSTS                      ADDRESS   PORTS     AGE   WEBHOSTING-OPERATOR
 ingress.networking.k8s.io/homepage-98bad4   nginx   webhosting.timebertt.dev             80, 443   16s   webhosting-operator-98ff76b66-tdrtc
 ingress.networking.k8s.io/official-10ff22   nginx   webhosting.timebertt.dev             80, 443   15s   webhosting-operator-98ff76b66-tdrtc
 ```
