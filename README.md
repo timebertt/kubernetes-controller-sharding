@@ -22,6 +22,9 @@ I completed a study project ("half-time thesis") on this topic and evolved it in
 
 This repository contains the implementation belonging to the scientific work: the actual sharding implementation, a sample operator using controller sharding, a monitoring and continuous profiling setup, and some tools for development and evaluation purposes.
 
+Since finishing the scientific work, this project evolved further, especially in the [v0.9 release](https://github.com/timebertt/kubernetes-controller-sharding/releases/tag/v0.9.0).
+Be aware that the Master's thesis might not reflect the current development state in all descriptions.
+
 ## Motivation 💡
 
 Typically, [Kubernetes controllers](https://kubernetes.io/docs/concepts/architecture/controller/) use a leader election mechanism to determine a *single* active controller instance (leader).
