@@ -163,6 +163,8 @@ func run() error {
 }
 ```
 
+Note that if you're using controller-runtime, the same manager instance cannot run sharded and non-sharded controllers as a manager can only run under a single resource lock (either leader election or shard lease).
+
 ### Filtered Watch Cache
 
 In short: use the following label selector on watches for all sharded resources listed in the `ControllerRing`.
