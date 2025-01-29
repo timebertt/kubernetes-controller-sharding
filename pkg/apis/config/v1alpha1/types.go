@@ -121,6 +121,7 @@ type WebhookConfig struct {
 	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// ClientConfig configures the webhook configs' target.
+	// Defaults to a service reference to sharding-system/sharder.
 	// +optional
 	ClientConfig *admissionregistrationv1.WebhookClientConfig `json:"clientConfig,omitempty"`
 	// NamespaceSelector overwrites the webhook configs' default namespaceSelector.
