@@ -28,7 +28,7 @@ import (
 //+kubebuilder:printcolumn:name="Available",type=string,JSONPath=`.status.availableShards`
 //+kubebuilder:printcolumn:name="Shards",type=string,JSONPath=`.status.shards`
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`
-//+kubebuilder:validation:XValidation:rule="size(self.metadata.name) <= 63",message="ClusterRing name must not be longer than 63 characters"
+//+kubebuilder:validation:XValidation:rule="size(self.metadata.name) <= 63",message="ControllerRing name must not be longer than 63 characters"
 
 // ControllerRing declares a virtual ring of sharded controller instances. Objects of the specified resources are
 // distributed across shards of this ring. Objects in all namespaces are considered unless a namespaceSelector is
