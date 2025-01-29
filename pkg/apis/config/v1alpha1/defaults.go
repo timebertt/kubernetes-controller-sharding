@@ -46,8 +46,7 @@ func SetDefaults_SharderConfig(obj *SharderConfig) {
 	}
 
 	if obj.GracefulShutdownTimeout == nil {
-		var defaultGracefulShutdownTimeout = 15 * time.Second
-		obj.GracefulShutdownTimeout = &metav1.Duration{Duration: defaultGracefulShutdownTimeout}
+		obj.GracefulShutdownTimeout = &metav1.Duration{Duration: 15 * time.Second}
 	}
 }
 
