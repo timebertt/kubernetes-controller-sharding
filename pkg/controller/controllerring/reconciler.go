@@ -94,7 +94,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 }
 
 func (r *Reconciler) updateStatusSuccess(ctx context.Context, controllerRing, before *shardingv1alpha1.ControllerRing) error {
-	if err := r.optionallyUpdateStatus(ctx, controllerRing, before, func(ready *metav1.Condition) {
+	if err := r.OptionallyUpdateStatus(ctx, controllerRing, before, func(ready *metav1.Condition) {
 		ready.Status = metav1.ConditionTrue
 		ready.Reason = "ReconciliationSucceeded"
 		ready.Message = "ControllerRing was successfully reconciled"
@@ -109,7 +109,7 @@ func (r *Reconciler) updateStatusError(ctx context.Context, log logr.Logger, rec
 
 	r.Recorder.Event(controllerRing, corev1.EventTypeWarning, "ReconciliationFailed", message)
 
-	if err := r.optionallyUpdateStatus(ctx, controllerRing, before, func(ready *metav1.Condition) {
+	if err := r.OptionallyUpdateStatus(ctx, controllerRing, before, func(ready *metav1.Condition) {
 		ready.Status = metav1.ConditionFalse
 		ready.Reason = "ReconciliationFailed"
 		ready.Message = message
@@ -122,7 +122,7 @@ func (r *Reconciler) updateStatusError(ctx context.Context, log logr.Logger, rec
 	return reconcileError
 }
 
-func (r *Reconciler) optionallyUpdateStatus(ctx context.Context, controllerRing, before *shardingv1alpha1.ControllerRing, mutate func(ready *metav1.Condition)) error {
+func (r *Reconciler) OptionallyUpdateStatus(ctx context.Context, controllerRing, before *shardingv1alpha1.ControllerRing, mutate func(ready *metav1.Condition)) error {
 	// always update status with the latest observed generation, no matter if reconciliation succeeded or not
 	controllerRing.Status.ObservedGeneration = controllerRing.Generation
 	readyCondition := metav1.Condition{
@@ -141,6 +141,15 @@ func (r *Reconciler) optionallyUpdateStatus(ctx context.Context, controllerRing,
 }
 
 func (r *Reconciler) reconcileWebhooks(ctx context.Context, controllerRing *shardingv1alpha1.ControllerRing) error {
+	webhookConfig, err := r.WebhookConfigForControllerRing(controllerRing)
+	if err != nil {
+		return err
+	}
+
+	return r.Client.Patch(ctx, webhookConfig, client.Apply)
+}
+
+func (r *Reconciler) WebhookConfigForControllerRing(controllerRing *shardingv1alpha1.ControllerRing) (*admissionregistrationv1.MutatingWebhookConfiguration, error) {
 	webhookConfig := &admissionregistrationv1.MutatingWebhookConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: admissionregistrationv1.SchemeGroupVersion.String(),
@@ -154,11 +163,16 @@ func (r *Reconciler) reconcileWebhooks(ctx context.Context, controllerRing *shar
 			},
 			Annotations: maps.Clone(r.Config.Webhook.Config.Annotations),
 		},
+		Webhooks: []admissionregistrationv1.MutatingWebhook{r.WebhookForControllerRing(controllerRing)},
 	}
 	if err := controllerutil.SetControllerReference(controllerRing, webhookConfig, r.Client.Scheme()); err != nil {
-		return fmt.Errorf("error setting controller reference: %w", err)
+		return nil, fmt.Errorf("error setting controller reference: %w", err)
 	}
 
+	return webhookConfig, nil
+}
+
+func (r *Reconciler) WebhookForControllerRing(controllerRing *shardingv1alpha1.ControllerRing) admissionregistrationv1.MutatingWebhook {
 	webhook := admissionregistrationv1.MutatingWebhook{
 		Name:              "sharder.sharding.timebertt.dev",
 		ClientConfig:      *r.Config.Webhook.Config.ClientConfig.DeepCopy(),
@@ -207,9 +221,7 @@ func (r *Reconciler) reconcileWebhooks(ctx context.Context, controllerRing *shar
 		}
 	}
 
-	webhookConfig.Webhooks = []admissionregistrationv1.MutatingWebhook{webhook}
-
-	return r.Client.Patch(ctx, webhookConfig, client.Apply)
+	return webhook
 }
 
 // RuleForResource returns the sharder's webhook rule for the given resource.
