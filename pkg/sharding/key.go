@@ -22,11 +22,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 )
 
 // KeyFuncForResource returns the key function that maps the given resource or its controller dependening on whether
 // the resource is listed as a resource or controlled resource in the given ring.
-func KeyFuncForResource(gr metav1.GroupResource, ring Ring) (KeyFunc, error) {
+func KeyFuncForResource(gr metav1.GroupResource, ring *shardingv1alpha1.ControllerRing) (KeyFunc, error) {
 	ringResources := sets.New[metav1.GroupResource]()
 	controlledResources := sets.New[metav1.GroupResource]()
 

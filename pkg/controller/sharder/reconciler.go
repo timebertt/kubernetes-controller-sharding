@@ -146,7 +146,7 @@ func (r *Reconciler) resyncResource(
 	ctx context.Context,
 	log logr.Logger,
 	gr metav1.GroupResource,
-	ring sharding.Ring,
+	ring *shardingv1alpha1.ControllerRing,
 	namespaces sets.Set[string],
 	hashRing *consistenthash.Ring,
 	shards leases.Shards,
@@ -194,7 +194,7 @@ func (r *Reconciler) resyncObject(
 	log logr.Logger,
 	gr metav1.GroupResource,
 	obj *metav1.PartialObjectMetadata,
-	ring sharding.Ring,
+	ring *shardingv1alpha1.ControllerRing,
 	hashRing *consistenthash.Ring,
 	shards leases.Shards,
 	controlled bool,
@@ -243,7 +243,7 @@ func (r *Reconciler) resyncObject(
 		}
 
 		shardingmetrics.DrainsTotal.WithLabelValues(
-			ring.GetName(), gr.Group, gr.Resource,
+			ring.Name, gr.Group, gr.Resource,
 		).Inc()
 
 		// object will go through the sharder webhook when shard removes the drain label, which will perform the assignment
@@ -264,7 +264,7 @@ func (r *Reconciler) resyncObject(
 	}
 
 	shardingmetrics.MovementsTotal.WithLabelValues(
-		ring.GetName(), gr.Group, gr.Resource,
+		ring.Name, gr.Group, gr.Resource,
 	).Inc()
 
 	return nil

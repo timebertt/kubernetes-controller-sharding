@@ -32,6 +32,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding"
 	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/metrics"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/ring"
@@ -46,9 +47,9 @@ type Handler struct {
 func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.Response {
 	log := logf.FromContext(ctx)
 
-	ringObj, err := RingForRequest(ctx, h.Reader)
+	controllerRing, err := ControllerRingForRequest(ctx, h.Reader)
 	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("error determining ring for request: %w", err))
+		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("error determining ControllerRing for request: %w", err))
 	}
 
 	// Unfortunately, admission.Decoder / runtime.Decoder can't handle decoding into PartialObjectMetadata.
@@ -58,7 +59,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("error decoding object: %w", err))
 	}
 
-	labelShard := ringObj.LabelShard()
+	labelShard := controllerRing.LabelShard()
 
 	// Don't touch labels that the object already has, we can't simply reassign it because the active shard might still
 	// be working on it.
@@ -69,7 +70,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 	keyFunc, err := sharding.KeyFuncForResource(metav1.GroupResource{
 		Group:    req.Resource.Group,
 		Resource: req.Resource.Resource,
-	}, ringObj)
+	}, controllerRing)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("error deteriming hash key func for object: %w", err))
 	}
@@ -84,15 +85,15 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 
 	// collect list of shards in the ring
 	leaseList := &coordinationv1.LeaseList{}
-	if err := h.Reader.List(ctx, leaseList, client.MatchingLabelsSelector{Selector: ringObj.LeaseSelector()}); err != nil {
+	if err := h.Reader.List(ctx, leaseList, client.MatchingLabelsSelector{Selector: controllerRing.LeaseSelector()}); err != nil {
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("error listing Leases for ControllerRing: %w", err))
 	}
 
 	// get ring from cache and hash the object onto the ring
-	hashRing, _ := ring.FromLeases(ringObj, leaseList, h.Clock.Now())
+	hashRing, _ := ring.FromLeases(controllerRing, leaseList, h.Clock.Now())
 	shard := hashRing.Hash(key)
 
-	log.V(1).Info("Assigning object for ring", "ring", client.ObjectKeyFromObject(ringObj), "shard", shard)
+	log.V(1).Info("Assigning object for ControllerRing", "controllerRing", client.ObjectKeyFromObject(controllerRing), "shard", shard)
 
 	patches := make([]jsonpatch.JsonPatchOperation, 0, 2)
 	if obj.Labels == nil {
@@ -103,30 +104,30 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 
 	if !ptr.Deref(req.DryRun, false) {
 		shardingmetrics.AssignmentsTotal.WithLabelValues(
-			ringObj.GetName(), req.Resource.Group, req.Resource.Resource,
+			controllerRing.Name, req.Resource.Group, req.Resource.Resource,
 		).Inc()
 	}
 
 	return admission.Patched("assigning object", patches...)
 }
 
-// RingForRequest returns the Ring object matching the requests' path.
-func RingForRequest(ctx context.Context, c client.Reader) (sharding.Ring, error) {
+// ControllerRingForRequest returns the Ring object matching the requests' path.
+func ControllerRingForRequest(ctx context.Context, c client.Reader) (*shardingv1alpha1.ControllerRing, error) {
 	requestPath, err := RequestPathFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	ring, err := RingForWebhookPath(requestPath)
+	controllerRing, err := ControllerRingForWebhookPath(requestPath)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := c.Get(ctx, client.ObjectKeyFromObject(ring), ring); err != nil {
-		return nil, fmt.Errorf("error getting ring: %w", err)
+	if err := c.Get(ctx, client.ObjectKeyFromObject(controllerRing), controllerRing); err != nil {
+		return nil, fmt.Errorf("error getting ControllerRing: %w", err)
 	}
 
-	return ring, nil
+	return controllerRing, nil
 }
 
 // rfc6901Encoder can escape / characters in label keys for inclusion in JSON patch paths.

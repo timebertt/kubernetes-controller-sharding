@@ -21,7 +21,7 @@ import (
 
 	coordinationv1 "k8s.io/api/coordination/v1"
 
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding"
+	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/consistenthash"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/leases"
 	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/metrics"
@@ -32,13 +32,13 @@ import (
 // This is a central function in the sharding implementation bringing together the leases package with the
 // consistenthash package.
 // In short, it determines the subset of available shards and constructs a new consistenthash.Ring with it.
-func FromLeases(ringObj sharding.Ring, leaseList *coordinationv1.LeaseList, now time.Time) (*consistenthash.Ring, leases.Shards) {
+func FromLeases(controllerRing *shardingv1alpha1.ControllerRing, leaseList *coordinationv1.LeaseList, now time.Time) (*consistenthash.Ring, leases.Shards) {
 	// determine ready shards and calculate hash ring
 	shards := leases.ToShards(leaseList.Items, now)
 	availableShards := shards.AvailableShards().IDs()
 	ring := consistenthash.New(nil, 0, availableShards...)
 
-	shardingmetrics.RingCalculationsTotal.WithLabelValues(ringObj.GetName()).Inc()
+	shardingmetrics.RingCalculationsTotal.WithLabelValues(controllerRing.Name).Inc()
 
 	return ring, shards
 }

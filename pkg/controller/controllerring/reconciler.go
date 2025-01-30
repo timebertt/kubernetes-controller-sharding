@@ -186,10 +186,7 @@ func (r *Reconciler) reconcileWebhooks(ctx context.Context, controllerRing *shar
 	}
 
 	// add ring-specific path to webhook client config
-	webhookPath, err := sharder.WebhookPathFor(controllerRing)
-	if err != nil {
-		return err
-	}
+	webhookPath := sharder.WebhookPathForControllerRing(controllerRing)
 
 	if service := webhook.ClientConfig.Service; service != nil {
 		service.Path = ptr.To(path.Join(ptr.Deref(service.Path, ""), webhookPath))
