@@ -53,7 +53,7 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 		Named(ControllerName).
 		For(&coordinationv1.Lease{}, builder.WithPredicates(r.LeasePredicate())).
 		// enqueue all Leases belonging to a ControllerRing when it is created or the spec is updated
-		Watches(&shardingv1alpha1.ControllerRing{}, handler.EnqueueRequestsFromMapFunc(r.MapControllerRingToLeases), builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&shardingv1alpha1.ControllerRing{}, handler.EnqueueRequestsFromMapFunc(r.MapControllerRingToLeases), builder.WithPredicates(shardingpredicate.ControllerRingCreatedOrUpdated())).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
 		}).
