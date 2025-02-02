@@ -27,9 +27,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/test"
-	. "github.com/timebertt/kubernetes-controller-sharding/pkg/test/komega"
-	. "github.com/timebertt/kubernetes-controller-sharding/pkg/test/matchers"
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test"
+	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/komega"
+	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
 )
 
 var _ = Describe("Example Shard", Label("example"), Ordered, func() {

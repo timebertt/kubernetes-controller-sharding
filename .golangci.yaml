@@ -71,7 +71,7 @@ issues:
   - linters:
     - stylecheck
     text: "ST1001: should not use dot imports"
-    path: "pkg/test"
+    path: "pkg/utils/test"
   - linters:
     - nolintlint
     text: "should be written without leading space"
