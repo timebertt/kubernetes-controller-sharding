@@ -31,7 +31,8 @@ const (
 	Unknown ShardState = iota
 	// Orphaned is the ShardState if the Lease has been in state Dead for at least 1 minute.
 	Orphaned
-	// Dead is the ShardState if the Lease is Uncertain and was successfully acquired by the sharder.
+	// Dead is the ShardState if the Lease is Uncertain and was successfully acquired by the sharder or if it was actively
+	// released by the shard.
 	Dead
 	// Uncertain is the ShardState if the Lease has expired at least leaseDuration ago.
 	Uncertain

@@ -24,14 +24,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/leases"
+	shardingpredicate "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/predicate"
 )
 
 // ControllerName is the name of this controller.
@@ -82,54 +81,7 @@ func MapLeaseToControllerRing(ctx context.Context, obj client.Object) []reconcil
 
 func (r *Reconciler) LeasePredicate() predicate.Predicate {
 	return predicate.And(
-		predicate.NewPredicateFuncs(isShardLease),
-		predicate.Funcs{
-			CreateFunc: func(e event.CreateEvent) bool {
-				lease, ok := e.Object.(*coordinationv1.Lease)
-				if !ok {
-					return false
-				}
-
-				// We only need to resync the ring if the new shard is available right away.
-				// Note: on controller start we will enqueue anyway for the add event of ControllerRings.
-				return leases.ToState(lease, r.Clock.Now()).IsAvailable()
-			},
-			UpdateFunc: func(e event.UpdateEvent) bool {
-				oldLease, ok := e.ObjectOld.(*coordinationv1.Lease)
-				if !ok {
-					return false
-				}
-				newLease, ok := e.ObjectNew.(*coordinationv1.Lease)
-				if !ok {
-					return false
-				}
-
-				// We only need to resync the ring if the shard's availability changed.
-				now := r.Clock.Now()
-				return leases.ToState(oldLease, now).IsAvailable() != leases.ToState(newLease, now).IsAvailable()
-			},
-			DeleteFunc: func(e event.DeleteEvent) bool {
-				if e.DeleteStateUnknown {
-					// If we missed the delete event, we cannot know the final state of the shard (available or not) for sure.
-					// The included object might be stale, as we might have missed a relevant update before as well.
-					// Leases usually go unavailable before being deleted, so its unlikely that we need to act on this delete
-					// event.
-					// Hence, skip enqueing here in favor of periodic resyncs.
-					return true
-				}
-
-				lease, ok := e.Object.(*coordinationv1.Lease)
-				if !ok {
-					return false
-				}
-
-				// We only need to resync the ring if the removed shard was still available.
-				return leases.ToState(lease, r.Clock.Now()).IsAvailable()
-			},
-		},
+		shardingpredicate.IsShardLease(),
+		shardingpredicate.ShardLeaseAvailabilityChanged(r.Clock),
 	)
-}
-
-func isShardLease(obj client.Object) bool {
-	return obj.GetLabels()[shardingv1alpha1.LabelControllerRing] != ""
 }

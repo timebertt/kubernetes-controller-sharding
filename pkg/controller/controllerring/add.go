@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/leases"
+	shardingpredicate "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/predicate"
 )
 
 // ControllerName is the name of this controller.
@@ -82,28 +82,17 @@ func MapLeaseToControllerRing(ctx context.Context, obj client.Object) []reconcil
 
 func (r *Reconciler) LeasePredicate() predicate.Predicate {
 	return predicate.And(
-		predicate.NewPredicateFuncs(isShardLease),
-		predicate.Funcs{
-			CreateFunc: func(_ event.CreateEvent) bool { return true },
-			UpdateFunc: func(e event.UpdateEvent) bool {
-				oldLease, ok := e.ObjectOld.(*coordinationv1.Lease)
-				if !ok {
-					return false
-				}
-				newLease, ok := e.ObjectNew.(*coordinationv1.Lease)
-				if !ok {
-					return false
-				}
-
-				// only enqueue ring if the shard's state changed
-				now := r.Clock.Now()
-				return leases.ToState(oldLease, now).IsAvailable() != leases.ToState(newLease, now).IsAvailable()
+		shardingpredicate.IsShardLease(),
+		predicate.Or(
+			// react if a shard lease was created or deleted independent of its availability, we want to update
+			// ControllerRing.status.shards
+			predicate.Funcs{
+				CreateFunc: func(_ event.CreateEvent) bool { return true },
+				UpdateFunc: func(_ event.UpdateEvent) bool { return false },
+				DeleteFunc: func(_ event.DeleteEvent) bool { return true },
 			},
-			DeleteFunc: func(_ event.DeleteEvent) bool { return true },
-		},
+			// for update events, only react if the shard's availability changed
+			shardingpredicate.ShardLeaseAvailabilityChanged(r.Clock),
+		),
 	)
-}
-
-func isShardLease(obj client.Object) bool {
-	return obj.GetLabels()[shardingv1alpha1.LabelControllerRing] != ""
 }
