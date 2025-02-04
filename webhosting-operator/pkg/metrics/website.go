@@ -78,9 +78,7 @@ func (e *WebsiteExporter) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	for _, item := range websiteList.Items {
-		website := item
-
+	for _, website := range websiteList.Items {
 		staticLabels := generateWebsiteStaticLabels(&website)
 
 		for _, desc := range websiteMetrics {
