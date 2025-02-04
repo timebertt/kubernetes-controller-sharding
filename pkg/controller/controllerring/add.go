@@ -17,8 +17,6 @@ limitations under the License.
 package controllerring
 
 import (
-	"context"
-
 	coordinationv1 "k8s.io/api/coordination/v1"
 	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -28,9 +26,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
+	shardinghandler "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/handler"
 	shardingpredicate "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/predicate"
 )
 
@@ -52,20 +50,15 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 	return builder.ControllerManagedBy(mgr).
 		Named(ControllerName).
 		For(&shardingv1alpha1.ControllerRing{}, builder.WithPredicates(shardingpredicate.ControllerRingCreatedOrUpdated())).
-		Watches(&coordinationv1.Lease{}, handler.EnqueueRequestsFromMapFunc(MapLeaseToControllerRing), builder.WithPredicates(r.LeasePredicate())).
+		Watches(
+			&coordinationv1.Lease{},
+			handler.EnqueueRequestsFromMapFunc(shardinghandler.MapLeaseToControllerRing),
+			builder.WithPredicates(r.LeasePredicate()),
+		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
 		}).
 		Complete(r)
-}
-
-func MapLeaseToControllerRing(ctx context.Context, obj client.Object) []reconcile.Request {
-	ring, ok := obj.GetLabels()[shardingv1alpha1.LabelControllerRing]
-	if !ok {
-		return nil
-	}
-
-	return []reconcile.Request{{NamespacedName: client.ObjectKey{Name: ring}}}
 }
 
 func (r *Reconciler) LeasePredicate() predicate.Predicate {
