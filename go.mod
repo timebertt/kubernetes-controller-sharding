@@ -2,7 +2,7 @@ module github.com/timebertt/kubernetes-controller-sharding
 
 go 1.23.0
 
-toolchain go1.23.6
+toolchain go1.24.0
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
