@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 
 	coordinationv1 "k8s.io/api/coordination/v1"
@@ -60,6 +61,10 @@ func NewResourceLock(config *rest.Config, eventRecorder resourcelock.EventRecord
 		return nil, err
 	}
 
+	if options.ControllerRingName == "" {
+		return nil, errors.New("ControllerRingName is required")
+	}
+
 	// default shard name to hostname if not set
 	if options.ShardName == "" {
 		options.ShardName, err = os.Hostname()
@@ -76,7 +81,7 @@ func NewResourceLock(config *rest.Config, eventRecorder resourcelock.EventRecord
 		}
 	}
 
-	ll := &LeaseLock{
+	return &LeaseLock{
 		LeaseMeta: metav1.ObjectMeta{
 			Namespace: options.LeaseNamespace,
 			Name:      options.ShardName,
@@ -90,9 +95,7 @@ func NewResourceLock(config *rest.Config, eventRecorder resourcelock.EventRecord
 		Labels: map[string]string{
 			shardingv1alpha1.LabelControllerRing: options.ControllerRingName,
 		},
-	}
-
-	return ll, nil
+	}, nil
 }
 
 // LeaseLock implements resourcelock.Interface but is able to add labels to the Lease.
@@ -140,7 +143,7 @@ func (ll *LeaseLock) Create(ctx context.Context, ler resourcelock.LeaderElection
 // Update will update an existing Lease spec.
 func (ll *LeaseLock) Update(ctx context.Context, ler resourcelock.LeaderElectionRecord) error {
 	if ll.lease == nil {
-		return errors.New("lease not initialized, call get or create first")
+		return errors.New("lease not initialized, call Get or Create first")
 	}
 	// don't set labels map on ll.lease directly, otherwise we might overwrite labels managed by the sharder
 	mergeLabels(&ll.lease.ObjectMeta, ll.Labels)
@@ -185,19 +188,25 @@ func mergeLabels(obj *metav1.ObjectMeta, labels map[string]string) {
 	}
 }
 
-const inClusterNamespacePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+// allow overwriting file system for testing purposes
+var fsys = os.DirFS("/")
 
+const inClusterNamespacePath = "var/run/secrets/kubernetes.io/serviceaccount/namespace"
+
+// getInClusterNamespace determines the namespace that this binary is running in, if running in a cluster.
+// For this, it consults the ServiceAccount mount. If the binary is not running in a cluster or the pod doesn't mount a
+// ServiceAccount, it returns an error.
 func getInClusterNamespace() (string, error) {
 	// Check whether the namespace file exists.
 	// If not, we are not running in cluster so can't guess the namespace.
-	if _, err := os.Stat(inClusterNamespacePath); os.IsNotExist(err) {
-		return "", fmt.Errorf("not running in-cluster, please specify LeaseNamespace")
+	if _, err := fs.Stat(fsys, inClusterNamespacePath); os.IsNotExist(err) {
+		return "", fmt.Errorf("not running in cluster, please specify LeaseNamespace")
 	} else if err != nil {
 		return "", fmt.Errorf("error checking namespace file: %w", err)
 	}
 
 	// Load the namespace file and return its content
-	namespace, err := os.ReadFile(inClusterNamespacePath)
+	namespace, err := fs.ReadFile(fsys, inClusterNamespacePath)
 	if err != nil {
 		return "", fmt.Errorf("error reading namespace file: %w", err)
 	}
