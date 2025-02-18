@@ -83,7 +83,7 @@ test-kyverno: $(KYVERNO) ## Run kyverno policy tests.
 
 .PHONY: test-e2e
 test-e2e: $(GINKGO) ## Run e2e tests.
-	ginkgo run --timeout=1h --poll-progress-after=60s --poll-progress-interval=30s --randomize-all --randomize-suites --keep-going --vv $(GINKGO_FLAGS) ./test/e2e/...
+	$(GINKGO) run --timeout=1h --poll-progress-after=60s --poll-progress-interval=30s --randomize-all --randomize-suites --keep-going --vv $(GINKGO_FLAGS) ./test/e2e/...
 
 .PHONY: skaffold-fix
 skaffold-fix: $(SKAFFOLD) ## Upgrade skaffold configuration to the latest apiVersion.

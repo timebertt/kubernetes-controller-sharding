@@ -153,9 +153,7 @@ func main() {
 	}
 	cmd.AddGroup(&group)
 
-	for _, s := range experiment.GetAllScenarios() {
-		scenario := s
-
+	for _, scenario := range experiment.GetAllScenarios() {
 		cmd.AddCommand(&cobra.Command{
 			Use:     scenario.Name(),
 			Short:   scenario.Description(),

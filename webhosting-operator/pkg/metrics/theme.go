@@ -77,9 +77,7 @@ func (e *ThemeExporter) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	for _, item := range themeList.Items {
-		theme := item
-
+	for _, theme := range themeList.Items {
 		staticLabels := generateThemeStaticLabels(&theme)
 
 		for _, desc := range themeMetrics {

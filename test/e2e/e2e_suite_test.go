@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/test/komega"
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/komega"
 )
 
 func TestE2E(t *testing.T) {

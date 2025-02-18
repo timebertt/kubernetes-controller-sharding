@@ -74,8 +74,7 @@ func (s Shards) IDs() []string {
 func ToShards(leases []coordinationv1.Lease, now time.Time) Shards {
 	shards := make(Shards, 0, len(leases))
 	for _, lease := range leases {
-		l := lease
-		shards = append(shards, ToShard(&l, now))
+		shards = append(shards, ToShard(&lease, now))
 	}
 	return shards
 }
