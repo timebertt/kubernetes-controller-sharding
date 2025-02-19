@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Tim Ebert.
+Copyright 2025 Tim Ebert.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,63 +14,78 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package consistenthash
+package consistenthash_test
 
 import (
-	"fmt"
-	"math"
-	"testing"
+	"strings"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	. "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/consistenthash"
 )
 
-func TestDistribution(t *testing.T) {
-	ring := New(DefaultHash, DefaultTokensPerNode)
+var _ = Describe("Ring", func() {
+	Describe("#New", func() {
+		It("should initialize a new Ring", func() {
+			ring := New(nil, 0, "foo")
+			Expect(ring).NotTo(BeNil())
+			Expect(ring.IsEmpty()).To(BeFalse())
+		})
+	})
 
-	hosts := generateHostnames(10)
-	dist := make(map[string]float64, len(hosts))
-	ring.AddNodes(hosts...)
-	for _, host := range hosts {
-		dist[host] = 0
-	}
+	Describe("#IsEmpty", func() {
+		It("should true if there are no nodes", func() {
+			ring := New(nil, 0)
+			Expect(ring.IsEmpty()).To(BeTrue())
+			ring.AddNodes("foo")
+			Expect(ring.IsEmpty()).To(BeFalse())
+		})
+	})
 
-	// fmt.Println("Virtual Nodes:")
-	last := ring.tokens[len(ring.tokens)-1]
-	for _, token := range ring.tokens {
-		node := ring.tokenToNode[token]
-		percentage := float64(token-last) / math.MaxUint64
-		dist[node] += percentage
+	Describe("#Hash", func() {
+		It("should use the configured hash function", func() {
+			ring := New(func(data string) uint64 {
+				if strings.HasPrefix(data, "foo") {
+					// map all foo* nodes and keys to 1
+					return 1
+				}
+				return 2
+			}, 1, "foo", "bar")
 
-		// fmt.Printf("\t%016x (%.5f): %.5f -> %s\n", token, float64(token)/math.MaxUint64, percentage, node)
-		last = token
-	}
+			Expect(ring.Hash("foo")).To(Equal("foo"))
+			Expect(ring.Hash("bar")).To(Equal("bar"))
+			Expect(ring.Hash("baz")).To(Equal("bar"))
+		})
 
-	fmt.Println("Nodes distribution:")
-	for _, host := range hosts {
-		fmt.Printf("\t%s: %.5f\n", host, dist[host])
-	}
-}
+		It("should use the default hash function", func() {
+			ring := New(nil, 0, "foo", "bar")
 
-func generateHostnames(n int) []string {
-	hosts := make([]string, n)
-	for i := range hosts {
-		host := fmt.Sprintf("10.42.0.%d", i)
-		hosts[i] = host
-	}
-	return hosts
-}
+			Expect(ring.Hash("1")).NotTo(Equal(ring.Hash("10")))
+		})
 
-func benchmarkRing(nodes int, tokensPerNode int, b *testing.B) {
-	hosts := generateHostnames(nodes)
-	b.ResetTimer()
+		It("should return the empty string if there are no nodes", func() {
+			ring := New(nil, 0)
 
-	for n := 0; n < b.N; n++ {
-		ring := New(DefaultHash, tokensPerNode, hosts...)
-		ring.Hash("Website.webhosting.timebertt.dev/project-foo/homepage")
-	}
-}
+			Expect(ring.Hash("foo")).To(BeEmpty())
+		})
 
-func BenchmarkRing3_100(b *testing.B)   { benchmarkRing(3, 100, b) }
-func BenchmarkRing3_1000(b *testing.B)  { benchmarkRing(3, 1000, b) }
-func BenchmarkRing5_100(b *testing.B)   { benchmarkRing(5, 100, b) }
-func BenchmarkRing5_1000(b *testing.B)  { benchmarkRing(5, 1000, b) }
-func BenchmarkRing10_100(b *testing.B)  { benchmarkRing(10, 100, b) }
-func BenchmarkRing10_1000(b *testing.B) { benchmarkRing(10, 1000, b) }
+		It("should return the first node when walking the whole ring", func() {
+			ring := New(func(data string) uint64 {
+				if strings.HasPrefix(data, "foo") {
+					// map all foo* nodes and keys to 1
+					return 1
+				}
+				if strings.HasPrefix(data, "bar") {
+					// map all bar* nodes and keys to 1
+					return 2
+				}
+				return 3
+			}, 1, "foo", "bar")
+
+			Expect(ring.Hash("foo")).To(Equal("foo"))
+			Expect(ring.Hash("bar")).To(Equal("bar"))
+			Expect(ring.Hash("baz")).To(Equal("foo"))
+		})
+	})
+})
