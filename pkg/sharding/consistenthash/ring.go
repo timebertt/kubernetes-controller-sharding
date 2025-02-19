@@ -32,10 +32,13 @@ var DefaultHash Hash = xxhash.Sum64String
 // DefaultTokensPerNode is the default number of virtual nodes per node.
 const DefaultTokensPerNode = 100
 
-// New creates a new hash ring.
-func New(fn Hash, tokensPerNode int, initialNodes ...string) *Ring {
-	if fn == nil {
-		fn = DefaultHash
+// New creates a new hash ring with the given configuration and adds the given nodes.
+// The given Hash (or DefaultHash if nil) is used to hash nodes and keys (strings).
+// Each node is assigned tokensPerNode tokens (or DefaultTokensPerNode if <= 0) – aka. virtual nodes – for a more
+// uniform key distribution.
+func New(hash Hash, tokensPerNode int, initialNodes ...string) *Ring {
+	if hash == nil {
+		hash = DefaultHash
 	}
 	if tokensPerNode <= 0 {
 		tokensPerNode = DefaultTokensPerNode
@@ -43,7 +46,7 @@ func New(fn Hash, tokensPerNode int, initialNodes ...string) *Ring {
 
 	numTokens := len(initialNodes) * tokensPerNode
 	r := &Ring{
-		hash:          fn,
+		hash:          hash,
 		tokensPerNode: tokensPerNode,
 
 		tokens:      make([]uint64, 0, numTokens),
@@ -53,8 +56,9 @@ func New(fn Hash, tokensPerNode int, initialNodes ...string) *Ring {
 	return r
 }
 
-// Ring implements consistent hashing, aka ring hash (not thread-safe).
-// It hashes nodes and keys onto a ring of tokens. Keys are mapped to the next node on the ring.
+// Ring implements consistent hashing, aka. ring hash (not thread-safe).
+// It hashes nodes and keys (strings) onto a ring of tokens. Keys are mapped to the next token (node) on the ring.
+// Nodes cannot be removed. Instantiate a new Ring instead.
 type Ring struct {
 	hash          Hash
 	tokensPerNode int
@@ -63,10 +67,12 @@ type Ring struct {
 	tokenToNode map[uint64]string
 }
 
+// IsEmpty returns true if there are no nodes in this Ring.
 func (r *Ring) IsEmpty() bool {
 	return len(r.tokens) == 0
 }
 
+// AddNodes adds hash tokens for the given nodes to this Ring.
 func (r *Ring) AddNodes(nodes ...string) {
 	for _, node := range nodes {
 		for i := 0; i < r.tokensPerNode; i++ {
@@ -80,6 +86,7 @@ func (r *Ring) AddNodes(nodes ...string) {
 	slices.Sort(r.tokens)
 }
 
+// Hash hashes the given key onto the ring of tokens and returns the node that belongs to the next token on the ring.
 func (r *Ring) Hash(key string) string {
 	if r.IsEmpty() {
 		return ""
