@@ -23,12 +23,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	"github.com/timebertt/kubernetes-controller-sharding/cmd/sharder/app"
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/client"
 )
 
 func main() {
-	client.DeduplicateWarnings()
-
 	if err := app.NewCommand().ExecuteContext(signals.SetupSignalHandler()); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
