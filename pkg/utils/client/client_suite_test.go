@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Tim Ebert.
+Copyright 2025 Tim Ebert.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,20 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package client
+package client_test
 
 import (
-	"os"
+	"testing"
 
-	"k8s.io/client-go/rest"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-// DeduplicateWarnings configures a client-go warning handler that deduplicates API warnings in order to not spam logs.
-func DeduplicateWarnings() {
-	rest.SetDefaultWarningHandler(
-		rest.NewWarningWriter(os.Stderr, rest.WarningWriterOptions{
-			// only print a given warning the first time we receive it
-			Deduplicate: true,
-		}),
-	)
+func TestClient(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Client Utils Suite")
 }

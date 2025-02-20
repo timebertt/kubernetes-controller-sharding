@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Tim Ebert.
+Copyright 2025 Tim Ebert.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,24 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package errors
+package errors_test
 
 import (
-	"fmt"
-	"strings"
+	"testing"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-// FormatErrors is like multierror.ListFormatFunc without the noisy newlines and tabs.
-// It also simplifies the format for a single error.
-func FormatErrors(es []error) string {
-	if len(es) == 1 {
-		return es[0].Error()
-	}
-
-	errs := make([]string, len(es))
-	for i, err := range es {
-		errs[i] = err.Error()
-	}
-
-	return fmt.Sprintf("%d errors occurred: %s", len(es), strings.Join(errs, ", "))
+func TestErrors(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Errors Utils Suite")
 }

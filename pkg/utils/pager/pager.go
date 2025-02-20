@@ -32,8 +32,13 @@ const (
 	defaultPageBufferSize = 10
 )
 
+// lister is the subset of client.Reader that ListPager uses.
+type lister interface {
+	List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error
+}
+
 // New creates a new pager from the provided reader using the default options.
-func New(reader client.Reader) *ListPager {
+func New(reader lister) *ListPager {
 	return &ListPager{
 		Reader:         reader,
 		PageSize:       defaultPageSize,
@@ -48,7 +53,7 @@ func New(reader client.Reader) *ListPager {
 // Exception: this ListPager also fixes the `specifying resource version is not allowed when using continue` error
 // in EachListItem and EachListItemWithAlloc.
 type ListPager struct {
-	Reader client.Reader
+	Reader lister
 
 	// PageSize is the maximum number of objects to retrieve in individual list calls.
 	// If a client.Limit option is passed, the pager uses the option's value instead.
@@ -68,7 +73,7 @@ type ListPager struct {
 // ListPager.PageBufferSize chunks buffered concurrently in the background.
 //
 // If items passed to fn are retained for different durations, and you want to avoid
-// retaining the whole slice returned by p.PageFn as long as any item is referenced,
+// retaining the whole slice returned by p.Reader.List as long as any item is referenced,
 // use EachListItemWithAlloc instead.
 func (p *ListPager) EachListItem(ctx context.Context, list client.ObjectList, fn func(obj client.Object) error, opts ...client.ListOption) error {
 	return p.eachListChunkBuffered(ctx, list, func(list client.ObjectList) error {
@@ -78,13 +83,13 @@ func (p *ListPager) EachListItem(ctx context.Context, list client.ObjectList, fn
 	}, opts...)
 }
 
-// EachListItemWithAlloc works like EachListItem, but avoids retaining references to the items slice returned by p.PageFn.
-// It does this by making a shallow copy of non-pointer items in the slice returned by p.PageFn.
+// EachListItemWithAlloc works like EachListItem, but avoids retaining references to the items slice returned by p.Reader.List.
+// It does this by making a shallow copy of non-pointer items in the slice returned by p.Reader.List.
 //
 // If the items passed to fn are not retained, or are retained for the same duration, use EachListItem instead for memory efficiency.
 func (p *ListPager) EachListItemWithAlloc(ctx context.Context, list client.ObjectList, fn func(obj client.Object) error, opts ...client.ListOption) error {
 	return p.eachListChunkBuffered(ctx, list, func(list client.ObjectList) error {
-		return meta.EachListItem(list, func(obj runtime.Object) error {
+		return meta.EachListItemWithAlloc(list, func(obj runtime.Object) error {
 			return fn(obj.(client.Object))
 		})
 	}, opts...)

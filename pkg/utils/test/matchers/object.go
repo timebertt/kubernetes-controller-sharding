@@ -21,6 +21,11 @@ import (
 	gomegatypes "github.com/onsi/gomega/types"
 )
 
+// HaveName succeeds if the actual object has a matching name.
+func HaveName(name interface{}) gomegatypes.GomegaMatcher {
+	return HaveField("ObjectMeta.Name", name)
+}
+
 // HaveLabel succeeds if the actual object has a label with a matching key.
 func HaveLabel(key interface{}) gomegatypes.GomegaMatcher {
 	return HaveField("ObjectMeta.Labels", HaveKey(key))

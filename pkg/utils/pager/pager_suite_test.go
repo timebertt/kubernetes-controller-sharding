@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Tim Ebert.
+Copyright 2025 Tim Ebert.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,12 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package komega is a modified version of sigs.k8s.io/controller-runtime/pkg/envtest/komega.
-// Instead of requiring users to set a global context, the returned functions accept a context to integrate nicely with
-// ginkgo's/gomega's timeout/interrupt handling and polling.
-// For this, users must pass a spec-specific context, e.g.:
-//
-//	It("...", func(ctx SpecContext) {
-//		Eventually(ctx, Get(...)).Should(Succeed())
-//	})
-package komega
+package pager_test
+
+import (
+	"testing"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+func TestPager(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Pager Suite")
+}

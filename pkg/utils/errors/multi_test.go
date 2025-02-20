@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Tim Ebert.
+Copyright 2025 Tim Ebert.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,20 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package errors_test
 
 import (
 	"fmt"
-	"os"
 
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
-	"github.com/timebertt/kubernetes-controller-sharding/cmd/sharder/app"
+	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/errors"
 )
 
-func main() {
-	if err := app.NewCommand().ExecuteContext(signals.SetupSignalHandler()); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
+var _ = Describe("FormatErrors", func() {
+	It("should return the single error", func() {
+		Expect(FormatErrors([]error{fmt.Errorf("foo")})).To(Equal("foo"))
+	})
+
+	It("should return the error count and comma separated error list", func() {
+		Expect(
+			FormatErrors([]error{fmt.Errorf("foo"), fmt.Errorf("bar")}),
+		).To(
+			Equal("2 errors occurred: foo, bar"),
+		)
+	})
+})
