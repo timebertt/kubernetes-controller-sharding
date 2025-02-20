@@ -25,10 +25,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test"
-	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/komega"
 	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
 )
 
@@ -48,7 +48,7 @@ var _ = Describe("Example Shard", Label("example"), Ordered, func() {
 			deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "shard", Namespace: metav1.NamespaceDefault}}
 
 			Eventually(ctx, func(g Gomega) {
-				g.Expect(Get(deployment)(ctx)).To(Succeed())
+				g.Expect(Get(deployment)()).To(Succeed())
 				g.Expect(deployment.Spec.Replicas).To(PointTo(BeEquivalentTo(3)))
 				g.Expect(deployment.Status.AvailableReplicas).To(BeEquivalentTo(3))
 			}).Should(Succeed())
@@ -60,7 +60,7 @@ var _ = Describe("Example Shard", Label("example"), Ordered, func() {
 			Eventually(ctx, func(g Gomega) {
 				g.Expect(List(leaseList, client.InNamespace(metav1.NamespaceDefault), client.MatchingLabels{
 					shardingv1alpha1.LabelControllerRing: controllerRingName,
-				})(ctx)).To(Succeed())
+				})()).To(Succeed())
 				g.Expect(leaseList.Items).To(And(
 					HaveLen(3),
 					HaveEach(HaveLabelWithValue(shardingv1alpha1.LabelState, "ready")),
@@ -70,7 +70,7 @@ var _ = Describe("Example Shard", Label("example"), Ordered, func() {
 
 		It("the ControllerRing should be healthy", func(ctx SpecContext) {
 			Eventually(ctx, func(g Gomega) {
-				g.Expect(Get(controllerRing)(ctx)).To(Succeed())
+				g.Expect(Get(controllerRing)()).To(Succeed())
 				g.Expect(controllerRing.Status.Shards).To(BeEquivalentTo(3))
 				g.Expect(controllerRing.Status.AvailableShards).To(BeEquivalentTo(3))
 				g.Expect(controllerRing.Status.Conditions).To(ConsistOf(
