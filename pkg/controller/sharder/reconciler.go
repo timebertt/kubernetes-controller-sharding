@@ -166,7 +166,7 @@ func (r *Reconciler) resyncResource(
 
 	list := &metav1.PartialObjectMetadataList{}
 	list.SetGroupVersionKind(gvks[0])
-	err = pager.New(r.Reader).EachListItem(ctx, list,
+	err = pager.New(r.Reader).EachListItemWithAlloc(ctx, list,
 		func(obj client.Object) error {
 			if !namespaces.Has(obj.GetNamespace()) {
 				return nil
