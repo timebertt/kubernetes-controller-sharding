@@ -32,8 +32,13 @@ const (
 	defaultPageBufferSize = 10
 )
 
+// lister is the subset of client.Reader that ListPager uses.
+type lister interface {
+	List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error
+}
+
 // New creates a new pager from the provided reader using the default options.
-func New(reader client.Reader) *ListPager {
+func New(reader lister) *ListPager {
 	return &ListPager{
 		Reader:         reader,
 		PageSize:       defaultPageSize,
@@ -48,7 +53,7 @@ func New(reader client.Reader) *ListPager {
 // Exception: this ListPager also fixes the `specifying resource version is not allowed when using continue` error
 // in EachListItem and EachListItemWithAlloc.
 type ListPager struct {
-	Reader client.Reader
+	Reader lister
 
 	// PageSize is the maximum number of objects to retrieve in individual list calls.
 	// If a client.Limit option is passed, the pager uses the option's value instead.
