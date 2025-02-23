@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Tim Ebert.
+Copyright 2025 Tim Ebert.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package leases implements logic for determining the state of shards based on their membership Lease object.
-// It is used by the shardlease controller to maintain the state label.
-package leases
+package leases_test
+
+import (
+	"testing"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+func TestLeases(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Leases Suite")
+}
