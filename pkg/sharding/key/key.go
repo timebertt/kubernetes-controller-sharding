@@ -14,25 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package sharding
+package key
 
 import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 )
 
-// KeyFuncForResource returns the key function that maps the given resource or its controller depending on whether
+// FuncForResource returns the key function that maps the given resource or its controller depending on whether
 // the resource is listed as a resource or controlled resource in the given ring.
-func KeyFuncForResource(gr metav1.GroupResource, ring *shardingv1alpha1.ControllerRing) (KeyFunc, error) {
+func FuncForResource(gr metav1.GroupResource, ring *shardingv1alpha1.ControllerRing) (Func, error) {
 	ringResources := sets.New[metav1.GroupResource]()
 	controlledResources := sets.New[metav1.GroupResource]()
 
-	for _, ringResource := range ring.RingResources() {
+	for _, ringResource := range ring.Spec.Resources {
 		ringResources.Insert(ringResource.GroupResource)
 
 		for _, controlledResource := range ringResource.ControlledResources {
@@ -42,24 +43,24 @@ func KeyFuncForResource(gr metav1.GroupResource, ring *shardingv1alpha1.Controll
 
 	switch {
 	case ringResources.Has(gr):
-		return KeyForObject, nil
+		return ForObject, nil
 	case controlledResources.Has(gr):
-		return KeyForController, nil
+		return ForController, nil
 	}
 
-	return nil, fmt.Errorf("object's resource %q was not found in Ring", gr.String())
+	return nil, fmt.Errorf("object's resource %q was not found in ControllerRing", gr.String())
 }
 
-// KeyFunc maps objects to hash keys.
-// It returns an error if the prequisities for sharding the given object are not fulfilled.
+// Func maps objects to hash keys.
+// It returns an error if the prerequisites for sharding the given object are not fulfilled.
 // If the returned key is empty, the object should not be assigned.
-type KeyFunc func(client.Object) (string, error)
+type Func func(client.Object) (string, error)
 
-// KeyForObject returns a ring key for the given object itself.
+// ForObject returns a ring key for the given object itself.
 // It needs the TypeMeta (GVK) to be set, which is not set on objects after decoding by default.
-func KeyForObject(obj client.Object) (string, error) {
+func ForObject(obj client.Object) (string, error) {
 	// We can't use the object's UID, as it is unset during admission for CREATE requests.
-	// Instead, we need to calculate a unique ID ourselves. The ID has this pattern (see keyForMetadata):
+	// Instead, we need to calculate a unique ID ourselves. The ID has this pattern (see forMetadata):
 	//  group/version/kind/namespace/name
 	// With this, different object instances with the same name will use the same hash key, which sounds acceptable.
 	// We can only use fields that are also present in owner references as we need to assign owners and ownees to the same
@@ -77,7 +78,7 @@ func KeyForObject(obj client.Object) (string, error) {
 			// object ID that we can also reconstruct later on for owned objects just by looking at the object itself.
 			// We could use a cache lookup though, but this would restrict scalability of the sharding solution again.
 			// Generally, this tradeoff seems acceptable, as generateName is mostly used on owned objects, but rarely the
-			// owner itself. In such case, KeyForController will be used instead, which doesn't care about the object's own
+			// owner itself. In such case, ForController will be used instead, which doesn't care about the object's own
 			// name but only that of the owner.
 			// If generateName is used nevertheless, respond with a proper error.
 			// We could assign the object after creation, however we can't use a watch cache because of the mentioned
@@ -90,12 +91,12 @@ func KeyForObject(obj client.Object) (string, error) {
 
 	// Namespace can be empty for cluster-scoped resources. Only check the name field as an optimistic check for
 	// preventing wrong usage of the function.
-	return keyForMetadata(gvk.GroupVersion().String(), gvk.Kind, obj.GetNamespace(), obj.GetName()), nil
+	return forMetadata(gvk.Group, gvk.Kind, obj.GetNamespace(), obj.GetName()), nil
 }
 
-// KeyForController returns a ring key for the controller of the given object.
+// ForController returns a ring key for the controller of the given object.
 // It returns an empty key if the object doesn't have an ownerReference with controller=true".
-func KeyForController(obj client.Object) (string, error) {
+func ForController(obj client.Object) (string, error) {
 	ref := metav1.GetControllerOf(obj)
 	if ref == nil {
 		return "", nil
@@ -111,11 +112,16 @@ func KeyForController(obj client.Object) (string, error) {
 		return "", fmt.Errorf("name of controller reference must not be empty")
 	}
 
+	gv, err := schema.ParseGroupVersion(ref.APIVersion)
+	if err != nil {
+		return "", fmt.Errorf("invalid apiVersion of controller reference: %w", err)
+	}
+
 	// Namespace can be empty for cluster-scoped resources. Only check the other fields as an optimistic check for
 	// preventing wrong usage of the function.
-	return keyForMetadata(ref.APIVersion, ref.Kind, obj.GetNamespace(), ref.Name), nil
+	return forMetadata(gv.Group, ref.Kind, obj.GetNamespace(), ref.Name), nil
 }
 
-func keyForMetadata(apiVersion, kind, namespace, name string) string {
-	return apiVersion + "/" + kind + "/" + namespace + "/" + name
+func forMetadata(group, kind, namespace, name string) string {
+	return group + "/" + kind + "/" + namespace + "/" + name
 }

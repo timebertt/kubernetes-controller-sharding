@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding"
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/key"
 	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/metrics"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/ring"
 )
@@ -67,7 +67,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 		return admission.Allowed("object is already assigned")
 	}
 
-	keyFunc, err := sharding.KeyFuncForResource(metav1.GroupResource{
+	keyFunc, err := key.FuncForResource(metav1.GroupResource{
 		Group:    req.Resource.Group,
 		Resource: req.Resource.Resource,
 	}, controllerRing)
@@ -75,11 +75,11 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("error deteriming hash key func for object: %w", err))
 	}
 
-	key, err := keyFunc(obj)
+	hashKey, err := keyFunc(obj)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("error calculating hash key for object: %w", err))
 	}
-	if key == "" {
+	if hashKey == "" {
 		return admission.Allowed("object should not be assigned")
 	}
 
@@ -91,7 +91,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 
 	// get ring from cache and hash the object onto the ring
 	hashRing, _ := ring.FromLeases(controllerRing, leaseList, h.Clock.Now())
-	shard := hashRing.Hash(key)
+	shard := hashRing.Hash(hashKey)
 
 	log.V(1).Info("Assigning object for ControllerRing", "controllerRing", client.ObjectKeyFromObject(controllerRing), "shard", shard)
 

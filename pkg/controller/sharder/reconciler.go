@@ -35,8 +35,8 @@ import (
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/config/v1alpha1"
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/consistenthash"
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/key"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/leases"
 	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/metrics"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/ring"
@@ -201,22 +201,22 @@ func (r *Reconciler) resyncObject(
 ) error {
 	log = log.WithValues("object", client.ObjectKeyFromObject(obj))
 
-	keyFunc := sharding.KeyForObject
+	keyFunc := key.ForObject
 	if controlled {
-		keyFunc = sharding.KeyForController
+		keyFunc = key.ForController
 	}
 
-	key, err := keyFunc(obj)
+	hashKey, err := keyFunc(obj)
 	if err != nil {
 		return err
 	}
-	if key == "" {
+	if hashKey == "" {
 		// object should not be assigned
 		return nil
 	}
 
 	var (
-		desiredShard = hashRing.Hash(key)
+		desiredShard = hashRing.Hash(hashKey)
 		currentShard = obj.Labels[ring.LabelShard()]
 	)
 
