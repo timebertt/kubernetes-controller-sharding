@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -90,7 +91,7 @@ func ForObject(obj client.Object) (string, error) {
 
 	// Namespace can be empty for cluster-scoped resources. Only check the name field as an optimistic check for
 	// preventing wrong usage of the function.
-	return forMetadata(gvk.GroupVersion().String(), gvk.Kind, obj.GetNamespace(), obj.GetName()), nil
+	return forMetadata(gvk.Group, gvk.Kind, obj.GetNamespace(), obj.GetName()), nil
 }
 
 // ForController returns a ring key for the controller of the given object.
@@ -111,11 +112,16 @@ func ForController(obj client.Object) (string, error) {
 		return "", fmt.Errorf("name of controller reference must not be empty")
 	}
 
+	gv, err := schema.ParseGroupVersion(ref.APIVersion)
+	if err != nil {
+		return "", fmt.Errorf("invalid apiVersion of controller reference: %w", err)
+	}
+
 	// Namespace can be empty for cluster-scoped resources. Only check the other fields as an optimistic check for
 	// preventing wrong usage of the function.
-	return forMetadata(ref.APIVersion, ref.Kind, obj.GetNamespace(), ref.Name), nil
+	return forMetadata(gv.Group, ref.Kind, obj.GetNamespace(), ref.Name), nil
 }
 
-func forMetadata(apiVersion, kind, namespace, name string) string {
-	return apiVersion + "/" + kind + "/" + namespace + "/" + name
+func forMetadata(group, kind, namespace, name string) string {
+	return group + "/" + kind + "/" + namespace + "/" + name
 }
