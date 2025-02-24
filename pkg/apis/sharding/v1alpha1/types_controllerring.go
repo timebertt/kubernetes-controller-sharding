@@ -130,8 +130,3 @@ func (c *ControllerRing) LabelShard() string {
 func (c *ControllerRing) LabelDrain() string {
 	return LabelDrain(c.Name)
 }
-
-// RingResources returns the list of resources that are distributed across shards in this ControllerRing.
-func (c *ControllerRing) RingResources() []RingResource {
-	return c.Spec.Resources
-}

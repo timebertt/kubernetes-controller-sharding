@@ -64,10 +64,4 @@ var _ = Describe("ControllerRing", func() {
 			Expect(ring.LabelDrain()).To(Equal("drain.alpha.sharding.timebertt.dev/operator"))
 		})
 	})
-
-	Describe("#RingResources", func() {
-		It("should return the specified resources", func() {
-			Expect(ring.RingResources()).To(Equal(ring.Spec.Resources))
-		})
-	})
 })
