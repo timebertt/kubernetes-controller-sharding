@@ -17,6 +17,10 @@ limitations under the License.
 package matchers
 
 import (
+	"fmt"
+	"reflect"
+
+	"github.com/onsi/gomega/gcustom"
 	gomegatypes "github.com/onsi/gomega/types"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -27,4 +31,23 @@ func BeNotFoundError() gomegatypes.GomegaMatcher {
 		match:   apierrors.IsNotFound,
 		message: "NotFound",
 	}
+}
+
+// BeFunc is a matcher that returns true if expected and actual are the same func.
+func BeFunc(expected any) gomegatypes.GomegaMatcher {
+	return gcustom.MakeMatcher(func(actual any) (bool, error) {
+		var (
+			valueExpected = reflect.ValueOf(expected)
+			valueActual   = reflect.ValueOf(actual)
+		)
+
+		if valueExpected.Kind() != reflect.Func {
+			return false, fmt.Errorf("expected should be a func, got %v", valueExpected.Kind())
+		}
+		if valueActual.Kind() != reflect.Func {
+			return false, fmt.Errorf("actual should be a func, got %v", valueActual.Kind())
+		}
+
+		return valueExpected.Pointer() == valueActual.Pointer(), nil
+	})
 }
