@@ -24,6 +24,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 )
 
 // Reconciler wraps another reconciler to ensure that the controller correctly handles the shard and drain labels.
@@ -35,12 +37,10 @@ type Reconciler struct {
 	Object client.Object
 	// Client is used to read and patch the controller's objects.
 	Client client.Client
+	// ControllerRingName is the name of the manager's ControllerRing.
+	ControllerRingName string
 	// ShardName is the shard ID of the manager.
 	ShardName string
-	// LabelShard is the shard label specific to the manager's ControllerRing.
-	LabelShard string
-	// LabelDrain is the drain label specific to the manager's ControllerRing.
-	LabelDrain string
 	// Do is the actual Reconciler.
 	Do reconcile.Reconciler
 }
@@ -62,24 +62,28 @@ func (r *Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store for determining responsibility: %w", err)
 	}
 
-	labels := obj.GetLabels()
+	var (
+		labels     = obj.GetLabels()
+		labelShard = shardingv1alpha1.LabelShard(r.ControllerRingName)
+		labelDrain = shardingv1alpha1.LabelDrain(r.ControllerRingName)
+	)
 
 	// check if we are responsible for this object
 	// Note that objects should already be filtered by the cache and the predicate for being assigned to this shard.
 	// However, we still need to do a final check before reconciling here. The controller might requeue the object with
 	// a delay or exponential. This might trigger another reconciliation even after observing a label change.
-	if shard, ok := labels[r.LabelShard]; !ok || shard != r.ShardName {
+	if shard, ok := labels[labelShard]; !ok || shard != r.ShardName {
 		log.V(1).Info("Ignoring object as it is assigned to different shard", "shard", shard)
 		return reconcile.Result{}, nil
 	}
 
-	if _, drain := labels[r.LabelDrain]; drain {
+	if _, drain := labels[labelDrain]; drain {
 		log.V(1).Info("Draining object")
 
 		// acknowledge drain operation
 		patch := client.MergeFromWithOptions(obj.DeepCopyObject().(client.Object), client.MergeFromWithOptimisticLock{})
-		delete(labels, r.LabelShard)
-		delete(labels, r.LabelDrain)
+		delete(labels, labelShard)
+		delete(labels, labelDrain)
 
 		if err := r.Client.Patch(ctx, obj, patch); err != nil {
 			return reconcile.Result{}, fmt.Errorf("error draining object: %w", err)
