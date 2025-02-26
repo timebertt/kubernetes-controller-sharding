@@ -17,18 +17,15 @@ limitations under the License.
 package key_test
 
 import (
-	"reflect"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gcustom"
-	gomegatypes "github.com/onsi/gomega/types"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	. "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/key"
+	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
 )
 
 var _ = Describe("#FuncForResource", func() {
@@ -76,7 +73,7 @@ var _ = Describe("#FuncForResource", func() {
 			Group:    "operator",
 			Resource: "foo",
 		}, controllerRing)).To(
-			beFunc(ForObject),
+			BeFunc(ForObject),
 		)
 	})
 
@@ -85,7 +82,7 @@ var _ = Describe("#FuncForResource", func() {
 			Group:    "operator",
 			Resource: "controlled",
 		}, controllerRing)).To(
-			beFunc(ForController),
+			BeFunc(ForController),
 		)
 	})
 
@@ -93,7 +90,7 @@ var _ = Describe("#FuncForResource", func() {
 		Expect(FuncForResource(metav1.GroupResource{
 			Resource: "foo",
 		}, controllerRing)).To(
-			beFunc(ForObject),
+			BeFunc(ForObject),
 		)
 	})
 })
@@ -177,9 +174,3 @@ var _ = Describe("#ForController", func() {
 		Expect(ForController(obj)).To(Equal("operator/Foo/bar/foo"))
 	})
 })
-
-func beFunc(expected Func) gomegatypes.GomegaMatcher {
-	return gcustom.MakeMatcher(func(actual Func) (bool, error) {
-		return reflect.ValueOf(expected).Pointer() == reflect.ValueOf(actual).Pointer(), nil
-	})
-}

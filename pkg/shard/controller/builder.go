@@ -23,8 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 )
 
 // Builder can build a sharded reconciler.
@@ -42,9 +40,7 @@ type Builder struct {
 // reconciler that takes care of the sharding-related logic and calls the delegate reconciler whenever the shard is
 // responsible for reconciling an object.
 func NewShardedReconciler(mgr manager.Manager) *Builder {
-	return &Builder{
-		client: mgr.GetClient(),
-	}
+	return (&Builder{}).WithClient(mgr.GetClient())
 }
 
 // For sets the object kind being reconciled by the reconciler.
@@ -105,11 +101,10 @@ func (b *Builder) Build(r reconcile.Reconciler) (reconcile.Reconciler, error) {
 	}
 
 	return &Reconciler{
-		Object:     b.object,
-		Client:     b.client,
-		ShardName:  b.shardName,
-		LabelShard: shardingv1alpha1.LabelShard(b.controllerRingName),
-		LabelDrain: shardingv1alpha1.LabelDrain(b.controllerRingName),
-		Do:         r,
+		Object:             b.object,
+		Client:             b.client,
+		ControllerRingName: b.controllerRingName,
+		ShardName:          b.shardName,
+		Do:                 r,
 	}, nil
 }
