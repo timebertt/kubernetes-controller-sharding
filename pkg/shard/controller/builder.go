@@ -40,9 +40,7 @@ type Builder struct {
 // reconciler that takes care of the sharding-related logic and calls the delegate reconciler whenever the shard is
 // responsible for reconciling an object.
 func NewShardedReconciler(mgr manager.Manager) *Builder {
-	return &Builder{
-		client: mgr.GetClient(),
-	}
+	return (&Builder{}).WithClient(mgr.GetClient())
 }
 
 // For sets the object kind being reconciled by the reconciler.
