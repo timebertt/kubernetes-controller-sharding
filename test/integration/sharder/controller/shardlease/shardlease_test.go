@@ -51,7 +51,6 @@ var _ = Describe("Shard Lease controller", func() {
 						GroupResource: metav1.GroupResource{Group: "apps", Resource: "deployments"},
 					},
 				},
-				NamespaceSelector: nil,
 			},
 		}
 
@@ -81,10 +80,6 @@ var _ = Describe("Shard Lease controller", func() {
 
 		Expect(testClient.Create(ctx, lease)).To(Succeed())
 		log.Info("Created Lease for test", "leaseName", lease.Name)
-
-		DeferCleanup(func(ctx SpecContext) {
-			Expect(testClient.Delete(ctx, lease)).To(Or(Succeed(), BeNotFoundError()))
-		}, NodeTimeout(time.Minute))
 	}, NodeTimeout(time.Minute), OncePerOrdered)
 
 	Describe("should reflect the shard state in the label", Ordered, func() {

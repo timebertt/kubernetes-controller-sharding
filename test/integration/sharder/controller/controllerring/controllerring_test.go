@@ -51,7 +51,6 @@ var _ = Describe("ControllerRing controller", func() {
 						GroupResource: metav1.GroupResource{Group: "apps", Resource: "deployments"},
 					},
 				},
-				NamespaceSelector: nil,
 			},
 		}
 

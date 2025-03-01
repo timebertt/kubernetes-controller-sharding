@@ -37,7 +37,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/config/v1alpha1"
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller/shardlease"
 	utilclient "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/client"
@@ -127,9 +126,6 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Register controller")
-	config := &configv1alpha1.SharderConfig{}
-	mgr.GetScheme().Default(config)
-
 	clock = testclock.NewFakeClock(time.Now())
 
 	Expect((&shardlease.Reconciler{
