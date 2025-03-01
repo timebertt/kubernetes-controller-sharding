@@ -75,3 +75,7 @@ issues:
   - linters:
     - nolintlint
     text: "should be written without leading space"
+
+  exclude:
+  # ginkgolinter false positive: https://github.com/nunnatsa/ginkgolinter/issues/190
+  - the MatchError matcher used to assert a non error type \(ctx\)

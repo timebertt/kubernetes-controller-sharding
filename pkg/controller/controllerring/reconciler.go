@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"path"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -207,7 +206,7 @@ func WebhookForControllerRing(controllerRing *shardingv1alpha1.ControllerRing, c
 	webhookPath := sharder.WebhookPathForControllerRing(controllerRing)
 
 	if service := webhook.ClientConfig.Service; service != nil {
-		service.Path = ptr.To(path.Join(ptr.Deref(service.Path, ""), webhookPath))
+		service.Path = ptr.To(webhookPath)
 	}
 	if url := webhook.ClientConfig.URL; url != nil {
 		// We can't use path.Join on URLs because it will drop one slash from the scheme.
