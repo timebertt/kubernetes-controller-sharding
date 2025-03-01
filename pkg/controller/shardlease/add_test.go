@@ -44,11 +44,11 @@ var _ = Describe("Reconciler", func() {
 			p           predicate.Predicate
 			obj, objOld *coordinationv1.Lease
 
-			fakeClock *testing.FakePassiveClock
+			fakeClock *testing.FakeClock
 		)
 
 		BeforeEach(func() {
-			fakeClock = testing.NewFakePassiveClock(time.Now())
+			fakeClock = testing.NewFakeClock(time.Now())
 			r.Clock = fakeClock
 
 			p = r.LeasePredicate()
