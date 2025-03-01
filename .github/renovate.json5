@@ -120,12 +120,6 @@
       automerge: true,
     },
     {
-      // setup-envtest is not tagged, don't create a PR for every commit in controller-runtime
-      matchDatasources: ['go'],
-      matchPackageNames: ['sigs.k8s.io/controller-runtime/tools/setup-envtest'],
-      enabled: false,
-    },
-    {
       // jsonpatch has to be kept in sync with k8s and controller-runtime dependencies
       matchDatasources: ['go'],
       matchPackageNames: ['gomodules.xyz/jsonpatch/*'],
