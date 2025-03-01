@@ -72,7 +72,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 		Resource: req.Resource.Resource,
 	}, controllerRing)
 	if err != nil {
-		return admission.Errored(http.StatusBadRequest, fmt.Errorf("error deteriming hash key func for object: %w", err))
+		return admission.Errored(http.StatusBadRequest, fmt.Errorf("error determining hash key func for object: %w", err))
 	}
 
 	hashKey, err := keyFunc(obj)

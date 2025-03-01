@@ -117,8 +117,6 @@ func ForController(obj client.Object) (string, error) {
 		return "", fmt.Errorf("invalid apiVersion of controller reference: %w", err)
 	}
 
-	// Namespace can be empty for cluster-scoped resources. Only check the other fields as an optimistic check for
-	// preventing wrong usage of the function.
 	return forMetadata(gv.Group, ref.Kind, obj.GetNamespace(), ref.Name), nil
 }
 

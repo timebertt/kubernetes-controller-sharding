@@ -14,16 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package shardlease_test
+package sharder_test
 
 import (
 	"context"
+	"maps"
 	"testing"
 	"time"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -36,35 +38,71 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/config/v1alpha1"
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller/shardlease"
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller/controllerring"
 	utilclient "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/client"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test"
 	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/webhook/sharder"
 )
 
-func TestShardLease(t *testing.T) {
+func TestSharder(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Sharder Shard Lease Controller Integration Test Suite")
+	RunSpecs(t, "Sharder Webhook Integration Test Suite")
 }
 
-const testID = "shardlease-controller-test"
+const testID = "sharder-webhook-test"
 
 var (
 	log logr.Logger
 
 	testClient client.Client
+	mgrClient  client.Client
 
 	clock *testclock.FakeClock
 
 	testRunID     string
 	testRunLabels map[string]string
+
+	controllerRing *shardingv1alpha1.ControllerRing
 )
 
 var _ = BeforeSuite(func(ctx SpecContext) {
 	logf.SetLogger(zap.New(zap.UseDevMode(true), zap.WriteTo(GinkgoWriter)))
 	log = logf.Log.WithName(testID)
+
+	testRunID = testID + "-" + test.RandomSuffix()
+	testRunLabels = map[string]string{testID: testRunID}
+
+	controllerRing = &shardingv1alpha1.ControllerRing{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   testRunID,
+			Labels: maps.Clone(testRunLabels),
+		},
+		Spec: shardingv1alpha1.ControllerRingSpec{
+			Resources: []shardingv1alpha1.RingResource{{
+				GroupResource:       metav1.GroupResource{Group: "", Resource: "configmaps"},
+				ControlledResources: []metav1.GroupResource{{Group: "", Resource: "secrets"}},
+			}},
+		},
+	}
+
+	webhookConfig := controllerring.WebhookConfigForControllerRing(controllerRing, &configv1alpha1.WebhookConfig{
+		ClientConfig: &admissionregistrationv1.WebhookClientConfig{
+			// the path will be set by the called function, and envtest will transform it to the proper URL
+			Service: &admissionregistrationv1.ServiceReference{},
+		},
+		NamespaceSelector: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{{
+				Key:      corev1.LabelMetadataName,
+				Operator: metav1.LabelSelectorOpIn,
+				Values:   []string{testRunID},
+			}},
+		},
+	})
 
 	By("Start test environment")
 	testEnv := &envtest.Environment{
@@ -72,6 +110,19 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 			Paths: []string{test.PathShardingCRDs()},
 		},
 		ErrorIfCRDPathMissing: true,
+		WebhookInstallOptions: envtest.WebhookInstallOptions{
+			MutatingWebhooks: []*admissionregistrationv1.MutatingWebhookConfiguration{webhookConfig},
+		},
+	}
+
+	if test.UseExistingCluster() {
+		// NB: envtest does a lookup and complains if it cannot resolve this host. Add a dummy entry to /etc/host as a
+		// workaround.
+		testEnv.WebhookInstallOptions.LocalServingHostExternalName = "host.docker.internal"
+
+		DeferCleanup(func(ctx SpecContext) {
+			Expect(testClient.Delete(ctx, webhookConfig)).To(Succeed())
+		}, NodeTimeout(time.Minute))
 	}
 
 	restConfig, err := testEnv.Start()
@@ -96,24 +147,35 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 	By("Create test Namespace")
 	testNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: testID + "-",
+			Name: testRunID,
 		},
 	}
 	Expect(testClient.Create(ctx, testNamespace)).To(Succeed())
 	log.Info("Created Namespace for test", "namespaceName", testNamespace.Name)
-	testRunID = testNamespace.Name
 	log = log.WithValues("testRunID", testRunID)
-	testRunLabels = map[string]string{testID: testRunID}
 
 	DeferCleanup(func(ctx SpecContext) {
 		By("Delete test Namespace")
 		Expect(testClient.Delete(ctx, testNamespace)).To(Or(Succeed(), BeNotFoundError()))
 	}, NodeTimeout(time.Minute))
 
+	By("Create ControllerRing")
+	Expect(testClient.Create(ctx, controllerRing)).To(Succeed())
+	log.Info("Created ControllerRing for test", "controllerRingName", controllerRing.Name)
+
+	DeferCleanup(func(ctx SpecContext) {
+		Expect(testClient.Delete(ctx, controllerRing)).To(Or(Succeed(), BeNotFoundError()))
+	}, NodeTimeout(time.Minute))
+
 	By("Setup manager")
 	mgr, err := manager.New(restConfig, manager.Options{
 		Scheme:  utilclient.SharderScheme,
 		Metrics: metricsserver.Options{BindAddress: "0"},
+		WebhookServer: webhook.NewServer(webhook.Options{
+			Port:    testEnv.WebhookInstallOptions.LocalServingPort,
+			Host:    testEnv.WebhookInstallOptions.LocalServingHost,
+			CertDir: testEnv.WebhookInstallOptions.LocalServingCertDir,
+		}),
 		Cache: cache.Options{
 			DefaultNamespaces: map[string]cache.Config{testNamespace.Name: {}},
 			ByObject: map[client.Object]cache.ByObject{
@@ -124,11 +186,12 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 		},
 	})
 	Expect(err).NotTo(HaveOccurred())
+	mgrClient = mgr.GetClient()
 
-	By("Register controller")
+	By("Register webhook")
 	clock = testclock.NewFakeClock(time.Now())
 
-	Expect((&shardlease.Reconciler{
+	Expect((&sharder.Handler{
 		Clock: clock,
 	}).AddToManager(mgr)).To(Succeed())
 
