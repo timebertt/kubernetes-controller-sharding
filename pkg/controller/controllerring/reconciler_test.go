@@ -180,7 +180,7 @@ var _ = Describe("Reconciler", func() {
 
 	Describe("#WebhookForControllerRing", func() {
 		It("should have the correct settings", func() {
-			Expect(r.WebhookForControllerRing(ring)).To(MatchFields(IgnoreExtras, Fields{
+			Expect(WebhookForControllerRing(ring, config.Webhook.Config)).To(MatchFields(IgnoreExtras, Fields{
 				"Name":                    Equal("sharder.sharding.timebertt.dev"),
 				"SideEffects":             PointTo(Equal(admissionregistrationv1.SideEffectClassNone)),
 				"AdmissionReviewVersions": ConsistOf("v1"),
@@ -188,7 +188,7 @@ var _ = Describe("Reconciler", func() {
 		})
 
 		It("should have non-problematic failure settings", func() {
-			Expect(r.WebhookForControllerRing(ring)).To(MatchFields(IgnoreExtras, Fields{
+			Expect(WebhookForControllerRing(ring, config.Webhook.Config)).To(MatchFields(IgnoreExtras, Fields{
 				"FailurePolicy":  PointTo(Equal(admissionregistrationv1.Ignore)),
 				"TimeoutSeconds": PointTo(BeEquivalentTo(5)),
 			}))
@@ -196,7 +196,7 @@ var _ = Describe("Reconciler", func() {
 
 		Context("client config", func() {
 			It("should use the config's default client config and add the path", func() {
-				Expect(r.WebhookForControllerRing(ring).ClientConfig).To(Equal(admissionregistrationv1.WebhookClientConfig{
+				Expect(WebhookForControllerRing(ring, config.Webhook.Config).ClientConfig).To(Equal(admissionregistrationv1.WebhookClientConfig{
 					Service: &admissionregistrationv1.ServiceReference{
 						Namespace: "sharding-system",
 						Name:      "sharder",
@@ -215,7 +215,7 @@ var _ = Describe("Reconciler", func() {
 				}
 				clientConfig := config.Webhook.Config.ClientConfig.DeepCopy()
 
-				Expect(r.WebhookForControllerRing(ring).ClientConfig).To(Equal(admissionregistrationv1.WebhookClientConfig{
+				Expect(WebhookForControllerRing(ring, config.Webhook.Config).ClientConfig).To(Equal(admissionregistrationv1.WebhookClientConfig{
 					Service: &admissionregistrationv1.ServiceReference{
 						Namespace: clientConfig.Service.Namespace,
 						Name:      clientConfig.Service.Name,
@@ -230,7 +230,7 @@ var _ = Describe("Reconciler", func() {
 					URL: ptr.To("https://example.com/webhook"),
 				}
 
-				Expect(r.WebhookForControllerRing(ring).ClientConfig).To(Equal(admissionregistrationv1.WebhookClientConfig{
+				Expect(WebhookForControllerRing(ring, config.Webhook.Config).ClientConfig).To(Equal(admissionregistrationv1.WebhookClientConfig{
 					URL: ptr.To("https://example.com/webhook/webhooks/sharder/controllerring/foo"),
 				}))
 			})
@@ -240,7 +240,7 @@ var _ = Describe("Reconciler", func() {
 					URL: ptr.To("https://example.com/"),
 				}
 
-				Expect(r.WebhookForControllerRing(ring).ClientConfig).To(Equal(admissionregistrationv1.WebhookClientConfig{
+				Expect(WebhookForControllerRing(ring, config.Webhook.Config).ClientConfig).To(Equal(admissionregistrationv1.WebhookClientConfig{
 					URL: ptr.To("https://example.com/webhooks/sharder/controllerring/foo"),
 				}))
 			})
@@ -248,7 +248,7 @@ var _ = Describe("Reconciler", func() {
 
 		Context("namespace selector", func() {
 			It("should use the config's default namespace selector", func() {
-				Expect(r.WebhookForControllerRing(ring).NamespaceSelector).To(Equal(&metav1.LabelSelector{
+				Expect(WebhookForControllerRing(ring, config.Webhook.Config).NamespaceSelector).To(Equal(&metav1.LabelSelector{
 					MatchExpressions: []metav1.LabelSelectorRequirement{{
 						Key:      corev1.LabelMetadataName,
 						Operator: metav1.LabelSelectorOpNotIn,
@@ -263,7 +263,7 @@ var _ = Describe("Reconciler", func() {
 				}
 				namespaceSelector := config.Webhook.Config.NamespaceSelector.DeepCopy()
 
-				Expect(r.WebhookForControllerRing(ring).NamespaceSelector).To(Equal(namespaceSelector))
+				Expect(WebhookForControllerRing(ring, config.Webhook.Config).NamespaceSelector).To(Equal(namespaceSelector))
 			})
 
 			It("should use the ControllerRing's namespace selector", func() {
@@ -272,12 +272,12 @@ var _ = Describe("Reconciler", func() {
 				}
 				namespaceSelector := ring.Spec.NamespaceSelector.DeepCopy()
 
-				Expect(r.WebhookForControllerRing(ring).NamespaceSelector).To(Equal(namespaceSelector))
+				Expect(WebhookForControllerRing(ring, config.Webhook.Config).NamespaceSelector).To(Equal(namespaceSelector))
 			})
 		})
 
 		It("should only select unassigned objects", func() {
-			selector, err := metav1.LabelSelectorAsSelector(r.WebhookForControllerRing(ring).ObjectSelector)
+			selector, err := metav1.LabelSelectorAsSelector(WebhookForControllerRing(ring, config.Webhook.Config).ObjectSelector)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(selector.Matches(labels.Set{})).To(BeTrue())
@@ -295,7 +295,7 @@ var _ = Describe("Reconciler", func() {
 				},
 			}
 
-			Expect(r.WebhookForControllerRing(ring).Rules).To(ConsistOf(
+			Expect(WebhookForControllerRing(ring, config.Webhook.Config).Rules).To(ConsistOf(
 				RuleForResource(ring.Spec.Resources[0].GroupResource),
 				RuleForResource(ring.Spec.Resources[1].GroupResource),
 				RuleForResource(ring.Spec.Resources[1].ControlledResources[0]),

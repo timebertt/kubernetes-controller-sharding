@@ -150,7 +150,16 @@ func (r *Reconciler) reconcileWebhooks(ctx context.Context, controllerRing *shar
 }
 
 func (r *Reconciler) WebhookConfigForControllerRing(controllerRing *shardingv1alpha1.ControllerRing) (*admissionregistrationv1.MutatingWebhookConfiguration, error) {
-	webhookConfig := &admissionregistrationv1.MutatingWebhookConfiguration{
+	webhookConfig := WebhookConfigForControllerRing(controllerRing, r.Config.Webhook.Config)
+	if err := controllerutil.SetControllerReference(controllerRing, webhookConfig, r.Client.Scheme()); err != nil {
+		return nil, fmt.Errorf("error setting controller reference: %w", err)
+	}
+
+	return webhookConfig, nil
+}
+
+func WebhookConfigForControllerRing(controllerRing *shardingv1alpha1.ControllerRing, config *configv1alpha1.WebhookConfig) *admissionregistrationv1.MutatingWebhookConfiguration {
+	return &admissionregistrationv1.MutatingWebhookConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: admissionregistrationv1.SchemeGroupVersion.String(),
 			Kind:       "MutatingWebhookConfiguration",
@@ -161,22 +170,17 @@ func (r *Reconciler) WebhookConfigForControllerRing(controllerRing *shardingv1al
 				"app.kubernetes.io/name":             shardingv1alpha1.AppControllerSharding,
 				shardingv1alpha1.LabelControllerRing: controllerRing.Name,
 			},
-			Annotations: maps.Clone(r.Config.Webhook.Config.Annotations),
+			Annotations: maps.Clone(config.Annotations),
 		},
-		Webhooks: []admissionregistrationv1.MutatingWebhook{r.WebhookForControllerRing(controllerRing)},
+		Webhooks: []admissionregistrationv1.MutatingWebhook{WebhookForControllerRing(controllerRing, config)},
 	}
-	if err := controllerutil.SetControllerReference(controllerRing, webhookConfig, r.Client.Scheme()); err != nil {
-		return nil, fmt.Errorf("error setting controller reference: %w", err)
-	}
-
-	return webhookConfig, nil
 }
 
-func (r *Reconciler) WebhookForControllerRing(controllerRing *shardingv1alpha1.ControllerRing) admissionregistrationv1.MutatingWebhook {
+func WebhookForControllerRing(controllerRing *shardingv1alpha1.ControllerRing, config *configv1alpha1.WebhookConfig) admissionregistrationv1.MutatingWebhook {
 	webhook := admissionregistrationv1.MutatingWebhook{
 		Name:              "sharder.sharding.timebertt.dev",
-		ClientConfig:      *r.Config.Webhook.Config.ClientConfig.DeepCopy(),
-		NamespaceSelector: r.Config.Webhook.Config.NamespaceSelector.DeepCopy(),
+		ClientConfig:      *config.ClientConfig.DeepCopy(),
+		NamespaceSelector: config.NamespaceSelector.DeepCopy(),
 
 		// only process unassigned objects
 		ObjectSelector: &metav1.LabelSelector{
