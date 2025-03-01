@@ -49,11 +49,6 @@ var (
 )
 
 var _ = BeforeSuite(func() {
-	SetDefaultEventuallyPollingInterval(500 * time.Millisecond)
-	SetDefaultEventuallyTimeout(time.Hour)
-	SetDefaultConsistentlyPollingInterval(500 * time.Millisecond)
-	SetDefaultConsistentlyDuration(5 * time.Second)
-
 	log = zap.New(zap.UseDevMode(true), zap.WriteTo(GinkgoWriter))
 
 	restConfig, err := config.GetConfig()

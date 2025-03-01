@@ -63,8 +63,10 @@ $(KYVERNO): $(call tool_version_file,$(KYVERNO),$(KYVERNO_VERSION))
 	chmod +x $(KYVERNO)
 
 SETUP_ENVTEST := $(TOOLS_BIN_DIR)/setup-envtest
-$(SETUP_ENVTEST): go.mod
-	go build -o $(SETUP_ENVTEST) sigs.k8s.io/controller-runtime/tools/setup-envtest
+# upgrade setup-envtest every time we upgrade controller-runtime, although the resulting version might be newer than the controller-runtime release
+SETUP_ENVTEST_VERSION ?= $(call version_gomod,sigs.k8s.io/controller-runtime)
+$(SETUP_ENVTEST): $(call tool_version_file,$(SETUP_ENVTEST),$(SETUP_ENVTEST_VERSION))
+	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-$(subst v,,$(shell echo $(SETUP_ENVTEST_VERSION) | cut -d. -f1,2))
 
 SKAFFOLD := $(TOOLS_BIN_DIR)/skaffold
 # renovate: datasource=github-releases depName=GoogleContainerTools/skaffold

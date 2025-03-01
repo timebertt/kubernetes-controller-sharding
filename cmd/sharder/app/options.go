@@ -32,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/selection"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -46,19 +45,11 @@ import (
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/config/v1alpha1"
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
+	utilclient "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/client"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/routes"
 )
 
-var scheme = runtime.NewScheme()
-
-func init() {
-	schemeBuilder := runtime.NewSchemeBuilder(
-		clientgoscheme.AddToScheme,
-		shardingv1alpha1.AddToScheme,
-		configv1alpha1.AddToScheme,
-	)
-	utilruntime.Must(schemeBuilder.AddToScheme(scheme))
-}
+var scheme = utilclient.SharderScheme
 
 type options struct {
 	configFile string

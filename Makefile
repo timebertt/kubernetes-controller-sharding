@@ -8,8 +8,9 @@ SHARD_IMG ?= $(GHCR_REPO)/shard:$(TAG)
 WEBHOSTING_OPERATOR_IMG ?= $(GHCR_REPO)/webhosting-operator:$(TAG)
 EXPERIMENT_IMG ?= $(GHCR_REPO)/experiment:$(TAG)
 
-# ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.31
+# Optionally, overwrite the envtest version or assets directory to use
+ENVTEST_K8S_VERSION =
+KUBEBUILDER_ASSETS =
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -74,8 +75,12 @@ fmt: ## Run go fmt against code.
 	cd webhosting-operator && go fmt ./...
 
 .PHONY: test
-test: $(SETUP_ENVTEST) ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test -race ./cmd/... ./pkg/... ./webhosting-operator/pkg/...
+test: ## Run unit tests.
+	./hack/test.sh ./cmd/... ./pkg/... ./webhosting-operator/pkg/...
+
+.PHONY: test-integration
+test-integration: $(SETUP_ENVTEST) ## Run integration tests.
+	./hack/test-integration.sh ./test/integration/...
 
 .PHONY: test-kyverno
 test-kyverno: $(KYVERNO) ## Run kyverno policy tests.
@@ -83,7 +88,7 @@ test-kyverno: $(KYVERNO) ## Run kyverno policy tests.
 
 .PHONY: test-e2e
 test-e2e: $(GINKGO) ## Run e2e tests.
-	$(GINKGO) run --timeout=1h --poll-progress-after=60s --poll-progress-interval=30s --randomize-all --randomize-suites --keep-going --vv $(GINKGO_FLAGS) ./test/e2e/...
+	./hack/test-e2e.sh $(GINKGO_FLAGS) ./test/e2e/...
 
 .PHONY: skaffold-fix
 skaffold-fix: $(SKAFFOLD) ## Upgrade skaffold configuration to the latest apiVersion.
@@ -97,7 +102,7 @@ lint: $(GOLANGCI_LINT) ## Run golangci-lint against code.
 	$(GOLANGCI_LINT) run ./... ./webhosting-operator/...
 
 .PHONY: check
-check: lint test test-kyverno ## Check everything (lint + test + test-kyverno).
+check: lint test test-integration test-kyverno ## Check everything (lint + test + test-integration + test-kyverno).
 
 .PHONY: verify-fmt
 verify-fmt: fmt ## Verify go code is formatted.
