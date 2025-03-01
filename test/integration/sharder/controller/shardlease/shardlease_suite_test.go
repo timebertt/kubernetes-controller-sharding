@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllerring_test
+package shardlease_test
 
 import (
 	"context"
@@ -39,25 +39,25 @@ import (
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/config/v1alpha1"
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller/controllerring"
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller/shardlease"
 	utilclient "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/client"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test"
 	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
 )
 
-func TestControllerRing(t *testing.T) {
+func TestShardLease(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Sharder ControllerRing Controller Integration Test Suite")
+	RunSpecs(t, "Sharder Shard Lease Controller Integration Test Suite")
 }
 
-const testID = "controllerring-controller-test"
+const testID = "shardlease-controller-test"
 
 var (
 	log logr.Logger
 
 	testClient client.Client
 
-	clock *testclock.FakePassiveClock
+	clock *testclock.FakeClock
 
 	testRunID     string
 	testRunLabels map[string]string
@@ -130,11 +130,10 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 	config := &configv1alpha1.SharderConfig{}
 	mgr.GetScheme().Default(config)
 
-	clock = testclock.NewFakePassiveClock(time.Now())
+	clock = testclock.NewFakeClock(time.Now())
 
-	Expect((&controllerring.Reconciler{
-		Clock:  clock,
-		Config: config,
+	Expect((&shardlease.Reconciler{
+		Clock: clock,
 	}).AddToManager(mgr)).To(Succeed())
 
 	By("Start manager")

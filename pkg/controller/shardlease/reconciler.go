@@ -39,7 +39,7 @@ import (
 // Reconciler reconciles shard leases.
 type Reconciler struct {
 	Client client.Client
-	Clock  clock.PassiveClock
+	Clock  clock.WithTicker
 }
 
 // Reconcile reconciles a Lease object.

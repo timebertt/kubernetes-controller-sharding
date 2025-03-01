@@ -18,6 +18,7 @@ package shardlease
 
 import (
 	coordinationv1 "k8s.io/api/coordination/v1"
+	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -25,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	shardinghandler "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/handler"
@@ -54,6 +56,12 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
+			NewQueue: func(controllerName string, rateLimiter workqueue.TypedRateLimiter[reconcile.Request]) workqueue.TypedRateLimitingInterface[reconcile.Request] {
+				return workqueue.NewTypedRateLimitingQueueWithConfig(rateLimiter, workqueue.TypedRateLimitingQueueConfig[reconcile.Request]{
+					Name:  controllerName,
+					Clock: r.Clock,
+				})
+			},
 		}).
 		Complete(r)
 }
