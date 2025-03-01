@@ -24,7 +24,6 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -51,7 +50,7 @@ func TestControllerRing(t *testing.T) {
 	RunSpecs(t, "Sharder ControllerRing Controller Integration Test Suite")
 }
 
-const testID = "controllerring-test"
+const testID = "controllerring-controller-test"
 
 var (
 	log logr.Logger
@@ -60,7 +59,6 @@ var (
 
 	clock *testclock.FakePassiveClock
 
-	testNamespace *corev1.Namespace
 	testRunID     string
 	testRunLabels map[string]string
 )
@@ -97,7 +95,7 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 	DeferCleanup(clientCancel)
 
 	By("Create test Namespace")
-	testNamespace = &corev1.Namespace{
+	testNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: testID + "-",
 		},
@@ -121,9 +119,6 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 			DefaultNamespaces: map[string]cache.Config{testNamespace.Name: {}},
 			ByObject: map[client.Object]cache.ByObject{
 				&shardingv1alpha1.ControllerRing{}: {
-					Label: labels.SelectorFromSet(testRunLabels),
-				},
-				&coordinationv1.Lease{}: {
 					Label: labels.SelectorFromSet(testRunLabels),
 				},
 			},

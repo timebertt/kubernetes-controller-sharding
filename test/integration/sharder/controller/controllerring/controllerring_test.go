@@ -102,14 +102,14 @@ var _ = Describe("ControllerRing controller", func() {
 	Describe("should reflect the shard leases in the status", Ordered, func() {
 		var lease *coordinationv1.Lease
 
-		It("Create available shard lease", func(ctx SpecContext) {
+		It("create available shard lease", func(ctx SpecContext) {
 			lease = newLease(controllerRing.Name)
 			Expect(testClient.Create(ctx, lease)).To(Succeed())
 
 			Eventually(ctx, Object(controllerRing)).Should(haveStatusShards(1, 1))
 		}, SpecTimeout(time.Minute))
 
-		It("Create orphaned shard lease", func(ctx SpecContext) {
+		It("create orphaned shard lease", func(ctx SpecContext) {
 			lease = newLease(controllerRing.Name)
 			lease.Spec.HolderIdentity = nil
 			Expect(testClient.Create(ctx, lease)).To(Succeed())
@@ -117,7 +117,7 @@ var _ = Describe("ControllerRing controller", func() {
 			Eventually(ctx, Object(controllerRing)).Should(haveStatusShards(1, 2))
 		}, SpecTimeout(time.Minute))
 
-		It("Make lease healthy", func(ctx SpecContext) {
+		It("make lease healthy", func(ctx SpecContext) {
 			Eventually(ctx, Update(lease, func() {
 				lease.Spec.HolderIdentity = ptr.To(lease.Name)
 			})).Should(Succeed())
@@ -125,7 +125,7 @@ var _ = Describe("ControllerRing controller", func() {
 			Eventually(ctx, Object(controllerRing)).Should(haveStatusShards(2, 2))
 		}, SpecTimeout(time.Minute))
 
-		It("Make lease unhealthy", func(ctx SpecContext) {
+		It("make lease unhealthy", func(ctx SpecContext) {
 			Eventually(ctx, Update(lease, func() {
 				lease.Spec.HolderIdentity = nil
 			})).Should(Succeed())
@@ -133,7 +133,7 @@ var _ = Describe("ControllerRing controller", func() {
 			Eventually(ctx, Object(controllerRing)).Should(haveStatusShards(1, 2))
 		}, SpecTimeout(time.Minute))
 
-		It("Delete unhealthy lease", func(ctx SpecContext) {
+		It("delete unhealthy lease", func(ctx SpecContext) {
 			Expect(testClient.Delete(ctx, lease)).To(Succeed())
 
 			Eventually(ctx, Object(controllerRing)).Should(haveStatusShards(1, 1))
@@ -144,11 +144,13 @@ var _ = Describe("ControllerRing controller", func() {
 func newLease(controllerRingName string) *coordinationv1.Lease {
 	name := testRunID + "-" + test.RandomSuffix()
 
-	lease := &coordinationv1.Lease{
+	return &coordinationv1.Lease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: testRunID,
-			Labels:    maps.Clone(testRunLabels),
+			Labels: map[string]string{
+				shardingv1alpha1.LabelControllerRing: controllerRingName,
+			},
 		},
 		Spec: coordinationv1.LeaseSpec{
 			HolderIdentity:       ptr.To(name),
@@ -157,9 +159,6 @@ func newLease(controllerRingName string) *coordinationv1.Lease {
 			RenewTime:            ptr.To(metav1.NewMicroTime(clock.Now().Add(-2 * time.Second))),
 		},
 	}
-	metav1.SetMetaDataLabel(&lease.ObjectMeta, shardingv1alpha1.LabelControllerRing, controllerRingName)
-
-	return lease
 }
 
 func haveStatusShards(availableShards, shards int32) gomegatypes.GomegaMatcher {
