@@ -94,7 +94,7 @@ You should see that the shard successfully announced itself to the sharder:
 ```bash
 $ kubectl get lease -L alpha.sharding.timebertt.dev/controllerring,alpha.sharding.timebertt.dev/state
 NAME             HOLDER           AGE   CONTROLLERRING   STATE
-shard-fkpxhjk8   shard-fkpxhjk8   18s   example          ready
+shard-5pv57c6c   shard-5pv57c6c   18s   example          ready
 
 $ kubectl get controllerring
 NAME      READY   AVAILABLE   SHARDS   AGE
@@ -113,19 +113,19 @@ make run-shard
 
 ## Testing the Sharding Setup
 
-Independent of the used setup (skaffold-based or running on the host machine), you should be able to create sharded `ConfigMaps` in the `default` namespace as configured in the `example` `ControllerRing`.
-The `Secrets` created by the example shard controller should be assigned to the same shard as the owning `ConfigMap`:
+Independent of the used setup (skaffold-based or running on the host machine), you should be able to create sharded `Secrets` in the `default` namespace as configured in the `example` `ControllerRing`.
+The `ConfigMaps` created by the example shard controller should be assigned to the same shard as the owning `Secret`:
 
 ```bash
-$ kubectl create cm foo
-configmap/foo created
+$ kubectl create secret generic foo --from-literal foo=bar
+secret/foo created
 
 $ kubectl get cm,secret -L shard.alpha.sharding.timebertt.dev/example
-NAME                         DATA   AGE     EXAMPLE
-configmap/foo                0      1s      shard-656d588475-5746d
+NAME                      DATA   AGE   EXAMPLE
+configmap/checksums-foo   1      1s    shard-5pv57c6c
 
-NAME                            TYPE     DATA   AGE     EXAMPLE
-secret/dummy-foo                Opaque   0      1s      shard-656d588475-5746d
+NAME         TYPE     DATA   AGE   EXAMPLE
+secret/foo   Opaque   1      1s    shard-5pv57c6c
 ```
 
 ## Monitoring
