@@ -139,7 +139,5 @@ var _ = Describe("Shard Lease controller", func() {
 })
 
 func haveState(state string) gomegatypes.GomegaMatcher {
-	return HaveField("ObjectMeta.Labels",
-		HaveKeyWithValue("alpha.sharding.timebertt.dev/state", Equal(state)),
-	)
+	return HaveLabelWithValue("alpha.sharding.timebertt.dev/state", state)
 }
