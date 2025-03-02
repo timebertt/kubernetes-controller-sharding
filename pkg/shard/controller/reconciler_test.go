@@ -101,7 +101,7 @@ var _ = Describe("#Reconciler", func() {
 
 		It("should ignore the request", func() {
 			Expect(r.Reconcile(ctx, req)).To(BeZero())
-			Eventually(logBuffer).Should(Say("Ignoring object as it is assigned to different shard"))
+			Eventually(logBuffer).Should(Say("Ignoring object as it is not assigned to this shard"))
 		})
 	})
 
