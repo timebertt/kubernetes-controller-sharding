@@ -66,7 +66,7 @@ var _ = Describe("Shard Lease controller", func() {
 			// clean up all leases from this test case
 			Expect(testClient.DeleteAllOf(ctx, &coordinationv1.Lease{}, client.InNamespace(testRunID))).To(Succeed())
 			// wait until the manager no longer sees leases from this test case
-			Eventually(ctx, New(mgrClient).ObjectList(&coordinationv1.LeaseList{})).Should(HaveField("Items", BeEmpty()))
+			Eventually(ctx, New(mgrClient).ObjectList(&coordinationv1.LeaseList{}, client.InNamespace(testRunID))).Should(HaveField("Items", BeEmpty()))
 		}, NodeTimeout(time.Minute))
 	}, NodeTimeout(time.Minute))
 
