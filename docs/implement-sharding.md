@@ -254,11 +254,11 @@ func (r *Reconciler) AddToManager(mgr manager.Manager, controllerRingName, shard
 	// - wrapping the actual reconciler a reconciler that handles the drain operation for us
 	return builder.ControllerManagedBy(mgr).
 		Named("example").
-		For(&corev1.ConfigMap{}, builder.WithPredicates(shardcontroller.Predicate(controllerRingName, shardName, MyConfigMapPredicate()))).
-		Owns(&corev1.Secret{}, builder.WithPredicates(MySecretPredicate())).
+		For(&corev1.Secret{}, builder.WithPredicates(shardcontroller.Predicate(controllerRingName, shardName, MySecretPredicate()))).
+		Owns(&corev1.ConfigMap{}, builder.WithPredicates(MyConfigMapPredicate())).
 		Complete(
 			shardcontroller.NewShardedReconciler(mgr).
-				For(&corev1.ConfigMap{}). // must match the kind in For() above
+				For(&corev1.Secret{}). // must match the kind in For() above
 				InControllerRing(controllerRingName).
 				WithShardName(shardName).
 				MustBuild(r),

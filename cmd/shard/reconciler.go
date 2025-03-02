@@ -18,6 +18,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -37,7 +39,7 @@ import (
 	shardcontroller "github.com/timebertt/kubernetes-controller-sharding/pkg/shard/controller"
 )
 
-// Reconciler is a reconciler for ConfigMaps that creates a dummy secret for every ConfigMap.
+// Reconciler watches Secrets and creates a ConfigMap for every Secret containing the Secret data's checksums.
 // It handles the shard and drain label.
 type Reconciler struct {
 	Client client.Client
@@ -54,27 +56,27 @@ func (r *Reconciler) AddToManager(mgr manager.Manager, controllerRingName, shard
 	// - a predicate that triggers when the drain label is present (even if the actual predicates don't trigger)
 	// - wrapping the actual reconciler a reconciler that handles the drain operation for us
 	return builder.ControllerManagedBy(mgr).
-		Named("configmap").
-		For(&corev1.ConfigMap{}, builder.WithPredicates(shardcontroller.Predicate(controllerRingName, shardName, ConfigMapDataChanged(), predicate.GenerationChangedPredicate{}))).
-		Owns(&corev1.Secret{}, builder.WithPredicates(ObjectDeleted())).
+		Named("secret-checksums").
+		For(&corev1.Secret{}, builder.WithPredicates(shardcontroller.Predicate(controllerRingName, shardName, SecretDataChanged()))).
+		Owns(&corev1.ConfigMap{}, builder.WithPredicates(ObjectDeleted())).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
 		}).
 		Complete(
 			shardcontroller.NewShardedReconciler(mgr).
-				For(&corev1.ConfigMap{}).
+				For(&corev1.Secret{}).
 				InControllerRing(controllerRingName).
 				WithShardName(shardName).
 				MustBuild(r),
 		)
 }
 
-// ConfigMapDataChanged returns a predicate that is similar to predicate.GenerationChangedPredicate but for ConfigMaps
+// SecretDataChanged returns a predicate that is similar to predicate.GenerationChangedPredicate but for Secrets
 // that don't have a metadata.generation field.
-func ConfigMapDataChanged() predicate.Predicate {
+func SecretDataChanged() predicate.Predicate {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			return apiequality.Semantic.DeepEqual(e.ObjectOld.(*corev1.ConfigMap).Data, e.ObjectNew.(*corev1.ConfigMap).Data)
+			return apiequality.Semantic.DeepEqual(e.ObjectOld.(*corev1.Secret).Data, e.ObjectNew.(*corev1.Secret).Data)
 		},
 	}
 }
@@ -93,8 +95,8 @@ func ObjectDeleted() predicate.Predicate {
 func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 	log := logf.FromContext(ctx)
 
-	configMap := &corev1.ConfigMap{}
-	if err := r.Client.Get(ctx, req.NamespacedName, configMap); err != nil {
+	secret := &corev1.Secret{}
+	if err := r.Client.Get(ctx, req.NamespacedName, secret); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.V(1).Info("Object is gone, stop reconciling")
 			return reconcile.Result{}, nil
@@ -102,20 +104,27 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
 	}
 
-	// perform some dummy operation, this is just an example controller, we don't really care what it actually does
-	// create a secret with controller reference so that the controller also serves as an example with controlled objects
+	// Perform a typical operation in this example controller.
+	// Create a ConfigMap with a controller reference to the watched Secret.
 	log.V(1).Info("Reconciling object")
 
-	secret := &corev1.Secret{
+	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "dummy-" + configMap.Name,
-			Namespace: configMap.Namespace,
+			Name:      "checksums-" + secret.Name,
+			Namespace: secret.Namespace,
 		},
+		Data: make(map[string]string, len(secret.Data)),
 	}
 
-	if err := controllerutil.SetControllerReference(configMap, secret, r.Client.Scheme()); err != nil {
+	// Calculate the checksum for every Secret key and populate it in the ConfigMap.
+	for key, data := range secret.Data {
+		checksum := sha256.Sum256(data)
+		configMap.Data[key] = hex.EncodeToString(checksum[:])
+	}
+
+	if err := controllerutil.SetControllerReference(secret, configMap, r.Client.Scheme()); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	return reconcile.Result{}, client.IgnoreAlreadyExists(r.Client.Create(ctx, secret))
+	return reconcile.Result{}, client.IgnoreAlreadyExists(r.Client.Create(ctx, configMap))
 }
