@@ -57,6 +57,13 @@
       automerge: true,
     },
     {
+      // automerge non-major golang.org/x updates
+      matchDatasources: ['go'],
+      matchPackageNames: ['golang.org/x/*'],
+      matchUpdateTypes: ['minor', 'patch', 'digest'],
+      automerge: true,
+    },
+    {
       // disable automerge for go minor updates
       matchDatasources: ['golang-version'],
       matchUpdateTypes: ['minor'],
