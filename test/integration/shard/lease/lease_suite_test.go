@@ -26,33 +26,29 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
-	. "github.com/timebertt/kubernetes-controller-sharding/test/integration/shard/controller"
 )
 
 func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Shard Controller Integration Test Suite")
+	RunSpecs(t, "Shard Lease Integration Test Suite")
 }
 
-const testID = "shard-controller-test"
+const testID = "shard-lease-test"
 
 var (
 	log logr.Logger
 
-	testClient client.Client
+	restConfig *rest.Config
 
-	controllerRingName, shardName string
-	shardLabel, drainLabel        string
+	testClient client.Client
 
 	testRunID string
 )
@@ -64,7 +60,8 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 	By("Start test environment")
 	testEnv := &envtest.Environment{}
 
-	restConfig, err := testEnv.Start()
+	var err error
+	restConfig, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(restConfig).NotTo(BeNil())
 
@@ -94,38 +91,8 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 	testRunID = testNamespace.Name
 	log = log.WithValues("testRunID", testRunID)
 
-	controllerRingName = testRunID
-	shardName = testRunID
-	shardLabel = "shard.alpha.sharding.timebertt.dev/" + controllerRingName
-	drainLabel = "drain.alpha.sharding.timebertt.dev/" + controllerRingName
-
 	DeferCleanup(func(ctx SpecContext) {
 		By("Delete test Namespace")
 		Expect(testClient.Delete(ctx, testNamespace)).To(Or(Succeed(), BeNotFoundError()))
 	}, NodeTimeout(time.Minute))
-
-	By("Setup manager")
-	mgr, err := manager.New(restConfig, manager.Options{
-		Metrics: metricsserver.Options{BindAddress: "0"},
-		Cache: cache.Options{
-			DefaultNamespaces: map[string]cache.Config{testNamespace.Name: {}},
-		},
-	})
-	Expect(err).NotTo(HaveOccurred())
-
-	By("Register controller")
-	Expect((&Reconciler{}).AddToManager(mgr, controllerRingName, shardName)).To(Succeed())
-
-	By("Start manager")
-	mgrContext, mgrCancel := context.WithCancel(context.Background())
-
-	go func() {
-		defer GinkgoRecover()
-		Expect(mgr.Start(mgrContext)).To(Succeed())
-	}()
-
-	DeferCleanup(func() {
-		By("Stop manager")
-		mgrCancel()
-	})
 }, NodeTimeout(time.Minute))
