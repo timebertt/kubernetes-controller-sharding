@@ -36,6 +36,7 @@ import (
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test"
+	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
 )
 
 var _ = Describe("Shard Lease controller", func() {
@@ -65,7 +66,7 @@ var _ = Describe("Shard Lease controller", func() {
 			// clean up all leases from this test case
 			Expect(testClient.DeleteAllOf(ctx, &coordinationv1.Lease{}, client.InNamespace(testRunID))).To(Succeed())
 			// wait until the manager no longer sees leases from this test case
-			Eventually(ctx, New(mgrClient).ObjectList(&coordinationv1.LeaseList{})).Should(HaveField("Items", BeEmpty()))
+			Eventually(ctx, New(mgrClient).ObjectList(&coordinationv1.LeaseList{}, client.InNamespace(testRunID))).Should(HaveField("Items", BeEmpty()))
 		}, NodeTimeout(time.Minute))
 	}, NodeTimeout(time.Minute))
 
@@ -198,14 +199,10 @@ func newLease(controllerRingName string) *coordinationv1.Lease {
 
 func beAssigned(shard ...string) gomegatypes.GomegaMatcher {
 	if len(shard) == 0 {
-		return HaveField("ObjectMeta.Labels",
-			HaveKey("shard.alpha.sharding.timebertt.dev/"+controllerRing.Name),
-		)
+		return HaveLabel("shard.alpha.sharding.timebertt.dev/" + controllerRing.Name)
 	}
 
-	return HaveField("ObjectMeta.Labels",
-		HaveKeyWithValue("shard.alpha.sharding.timebertt.dev/"+controllerRing.Name, shard[0]),
-	)
+	return HaveLabelWithValue("shard.alpha.sharding.timebertt.dev/"+controllerRing.Name, shard[0])
 }
 
 func createObject(obj client.Object, opts ...client.CreateOption) func(ctx context.Context) (client.Object, error) {

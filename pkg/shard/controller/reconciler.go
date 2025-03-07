@@ -73,7 +73,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (
 	// However, we still need to do a final check before reconciling here. The controller might requeue the object with
 	// a delay or exponential. This might trigger another reconciliation even after observing a label change.
 	if shard, ok := labels[labelShard]; !ok || shard != r.ShardName {
-		log.V(1).Info("Ignoring object as it is assigned to different shard", "shard", shard)
+		log.V(1).Info("Ignoring object as it is not assigned to this shard", "shard", shard)
 		return reconcile.Result{}, nil
 	}
 

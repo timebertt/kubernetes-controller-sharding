@@ -23,10 +23,10 @@ NAME                       READY   STATUS    RESTARTS   AGE
 sharder-57889fcd8c-p2wxf   1/1     Running   0          44s
 sharder-57889fcd8c-z6bm5   1/1     Running   0          44s
 $ kubectl get po
-NAME                    READY   STATUS    RESTARTS   AGE
-shard-9c6678c9f-8jc5b   1/1     Running   0          45s
-shard-9c6678c9f-v4bw2   1/1     Running   0          45s
-shard-9c6678c9f-xntqc   1/1     Running   0          45s
+NAME                     READY   STATUS    RESTARTS   AGE
+shard-7dbc6b7d68-77wjq   1/1     Running   0          45s
+shard-7dbc6b7d68-95wc9   1/1     Running   0          45s
+shard-7dbc6b7d68-hxw44   1/1     Running   0          45s
 ```
 
 ## The `ControllerRing` and `Lease` Objects
@@ -44,10 +44,10 @@ We can observe that the sharder recognizes all shards as available by looking at
 
 ```bash
 $ kubectl get lease -L alpha.sharding.timebertt.dev/controllerring,alpha.sharding.timebertt.dev/state
-NAME                    HOLDER                  AGE   CONTROLLERRING   STATE
-shard-9c6678c9f-8jc5b   shard-9c6678c9f-8jc5b   72s   example          ready
-shard-9c6678c9f-v4bw2   shard-9c6678c9f-v4bw2   72s   example          ready
-shard-9c6678c9f-xntqc   shard-9c6678c9f-xntqc   72s   example          ready
+NAME                     HOLDER                   AGE   CONTROLLERRING   STATE
+shard-7dbc6b7d68-77wjq   shard-7dbc6b7d68-77wjq   72s   example          ready
+shard-7dbc6b7d68-95wc9   shard-7dbc6b7d68-95wc9   72s   example          ready
+shard-7dbc6b7d68-hxw44   shard-7dbc6b7d68-hxw44   72s   example          ready
 ```
 
 The `ControllerRing` object specifies which API resources should be sharded.
@@ -61,17 +61,17 @@ metadata:
 spec:
   resources:
   - group: ""
-    resource: configmaps
+    resource: secrets
     controlledResources:
     - group: ""
-      resource: secrets
+      resource: configmaps
   namespaceSelector:
     matchLabels:
       kubernetes.io/metadata.name: default
 ```
 
-In our case, the sharded controller reconciles `ConfigMaps` in the `default` namespace and creates a `Secret` including the configmap's name prefixed with `dummy-`.
-The created `Secrets` are controlled by the respective `ConfigMap`, i.e., there they have an `ownerReference` with `controller=true` to the `ConfigMap`.
+In our case, the sharded controller reconciles `Secrets` in the `default` namespace and creates a `ConfigMap` including the secret data's checksums.
+The created `ConfigMaps` are controlled by the respective `Secret`, i.e., there they have an `ownerReference` with `controller=true` to the `Secret`.
 
 ## The Sharder Webhook
 
@@ -117,7 +117,7 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - configmaps
+    - secrets
     scope: '*'
   - apiGroups:
     - ""
@@ -127,85 +127,90 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - secrets
+    - configmaps
     scope: '*'
 ```
 
 ## Creating Sharded Objects
 
 We can observe the behavior of the webhook by creating a first example object.
-When we create a `ConfigMap`, the webhook assigns it to one of the available controller instances by adding the ring-specific shard label.
-It performs a consistent hashing algorithm, where it hashes both the object's key (consisting of `apiVersion`, `kind`, `namespace`, and `name`) and the shards' names onto a virtual ring.
+When we create a `Secret`, the webhook assigns it to one of the available controller instances by adding the ring-specific shard label.
+It performs a consistent hashing algorithm, where it hashes both the object's key (consisting of API group, `kind`, `namespace`, and `name`) and the shards' names onto a virtual ring.
 It picks the shard with the hash value that is next to the object's hash clock-wise.
 
 ```bash
-$ kubectl create cm foo -oyaml
+$ kubectl create secret generic foo --from-literal foo=bar -oyaml
 apiVersion: v1
-kind: ConfigMap
+data:
+  foo: YmFy
+kind: Secret
 metadata:
   labels:
-    shard.alpha.sharding.timebertt.dev/example: shard-9c6678c9f-8jc5b
+    shard.alpha.sharding.timebertt.dev/example: shard-7dbc6b7d68-95wc9
   name: foo
   namespace: default
+type: Opaque
 ```
 
-We can see that the responsible shard reconciled the `ConfigMap` and created a `Secret` for it.
-Similar to the `ConfigMap`, the `Secret` was also assigned by the webhook.
-In this case however, the sharder uses the information about the owning `ConfigMap` for calculating the object's hash key.
+We can see that the responsible shard reconciled the `Secret` and created a `ConfigMap` for it.
+Similar to the `Secret`, the `ConfigMap` was also assigned by the webhook.
+In this case however, the sharder uses the information about the owning `Secret` for calculating the object's hash key.
 With this, owned objects are always assigned to the same shard as their owner.
 This is done because the controller typically needs to reconcile the owning object whenever the status of an owned object changes.
 E.g., the `Deployment` controller watches `ReplicaSets` and continues rolling updates of the owning `Deployment` as soon as the owned `ReplicaSet` has the number of wanted replicas.
 
 ```bash
-$ kubectl get secret dummy-foo -oyaml
+$ kubectl get configmap checksums-foo -oyaml
 apiVersion: v1
-kind: Secret
+data:
+  foo: fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9
+kind: ConfigMap
 metadata:
   labels:
-    shard.alpha.sharding.timebertt.dev/example: shard-9c6678c9f-8jc5b
-  name: dummy-foo
+    shard.alpha.sharding.timebertt.dev/example: shard-7dbc6b7d68-95wc9
+  name: checksums-foo
   namespace: default
   ownerReferences:
   - apiVersion: v1
     controller: true
-    kind: ConfigMap
+    kind: Secret
     name: foo
 ```
 
-Let's create a few more `ConfigMaps` and observe the distribution of objects across shards:
+Let's create a few more `Secrets` and observe the distribution of objects across shards:
 
 ```bash
-$ for i in $(seq 1 9); do k create cm foo$i ; done
-$ kubectl get cm,secret -L shard.alpha.sharding.timebertt.dev/example
-NAME                         DATA   AGE     EXAMPLE
-configmap/foo                0      52s     shard-9c6678c9f-8jc5b
-configmap/foo1               0      7s      shard-9c6678c9f-v4bw2
-configmap/foo2               0      6s      shard-9c6678c9f-8jc5b
-configmap/foo3               0      6s      shard-9c6678c9f-v4bw2
-configmap/foo4               0      6s      shard-9c6678c9f-v4bw2
-configmap/foo5               0      6s      shard-9c6678c9f-xntqc
-configmap/foo6               0      6s      shard-9c6678c9f-xntqc
-configmap/foo7               0      6s      shard-9c6678c9f-xntqc
-configmap/foo8               0      6s      shard-9c6678c9f-xntqc
-configmap/foo9               0      6s      shard-9c6678c9f-8jc5b
+$ for i in $(seq 1 9); do k create secret generic foo$i ; done
+$ kubectl get secret,configmap -L shard.alpha.sharding.timebertt.dev/example
+NAME          TYPE     DATA   AGE   EXAMPLE
+secret/foo    Opaque   1      62s   shard-7dbc6b7d68-95wc9
+secret/foo1   Opaque   0      7s    shard-7dbc6b7d68-95wc9
+secret/foo2   Opaque   0      7s    shard-7dbc6b7d68-hxw44
+secret/foo3   Opaque   0      7s    shard-7dbc6b7d68-77wjq
+secret/foo4   Opaque   0      7s    shard-7dbc6b7d68-hxw44
+secret/foo5   Opaque   0      7s    shard-7dbc6b7d68-hxw44
+secret/foo6   Opaque   0      7s    shard-7dbc6b7d68-77wjq
+secret/foo7   Opaque   0      7s    shard-7dbc6b7d68-95wc9
+secret/foo8   Opaque   0      7s    shard-7dbc6b7d68-95wc9
+secret/foo9   Opaque   0      7s    shard-7dbc6b7d68-hxw44
 
-NAME                            TYPE     DATA   AGE     EXAMPLE
-secret/dummy-foo                Opaque   0      52s     shard-9c6678c9f-8jc5b
-secret/dummy-foo1               Opaque   0      7s      shard-9c6678c9f-v4bw2
-secret/dummy-foo2               Opaque   0      6s      shard-9c6678c9f-8jc5b
-secret/dummy-foo3               Opaque   0      6s      shard-9c6678c9f-v4bw2
-secret/dummy-foo4               Opaque   0      6s      shard-9c6678c9f-v4bw2
-secret/dummy-foo5               Opaque   0      6s      shard-9c6678c9f-xntqc
-secret/dummy-foo6               Opaque   0      6s      shard-9c6678c9f-xntqc
-secret/dummy-foo7               Opaque   0      6s      shard-9c6678c9f-xntqc
-secret/dummy-foo8               Opaque   0      6s      shard-9c6678c9f-xntqc
-secret/dummy-foo9               Opaque   0      6s      shard-9c6678c9f-8jc5b
+NAME                         DATA   AGE   EXAMPLE
+configmap/checksums-foo      1      62s   shard-7dbc6b7d68-95wc9
+configmap/checksums-foo1     0      7s    shard-7dbc6b7d68-95wc9
+configmap/checksums-foo2     0      7s    shard-7dbc6b7d68-hxw44
+configmap/checksums-foo3     0      7s    shard-7dbc6b7d68-77wjq
+configmap/checksums-foo4     0      7s    shard-7dbc6b7d68-hxw44
+configmap/checksums-foo5     0      7s    shard-7dbc6b7d68-hxw44
+configmap/checksums-foo6     0      7s    shard-7dbc6b7d68-77wjq
+configmap/checksums-foo7     0      7s    shard-7dbc6b7d68-95wc9
+configmap/checksums-foo8     0      7s    shard-7dbc6b7d68-95wc9
+configmap/checksums-foo9     0      7s    shard-7dbc6b7d68-hxw44
 ```
 
 ## Removing Shards From the Ring
 
 Let's see what happens when the set of available shards changes.
-We can observe the actions that the sharder takes using `kubectl get cm --show-labels -w --output-watch-events --watch-only` in a new terminal session.
+We can observe the actions that the sharder takes using `kubectl get secret --show-labels -w --output-watch-events --watch-only` in a new terminal session.
 
 First, let's scale down the sharded controller to remove one shard from the ring:
 
@@ -221,10 +226,10 @@ The orphaned `Lease` is cleaned up after 1 minute.
 
 ```bash
 $ kubectl get lease -L alpha.sharding.timebertt.dev/controllerring,alpha.sharding.timebertt.dev/state
-NAME                    HOLDER                  AGE   CONTROLLERRING   STATE
-shard-9c6678c9f-f49zn                           25s   example          dead
-shard-9c6678c9f-kvgft   shard-9c6678c9f-kvgft   25s   example          ready
-shard-9c6678c9f-ppzf7   shard-9c6678c9f-ppzf7   25s   example          ready
+NAME                     HOLDER                   AGE   CONTROLLERRING   STATE
+shard-7dbc6b7d68-77wjq                            11m   example          dead
+shard-7dbc6b7d68-95wc9   shard-7dbc6b7d68-95wc9   11m   example          ready
+shard-7dbc6b7d68-hxw44   shard-7dbc6b7d68-hxw44   11m   example          ready
 ```
 
 We can observe that the sharder immediately moved objects that were assigned to the removed shard to the remaining available shards.
@@ -232,10 +237,10 @@ For this, the sharder controller simply removes the shard label on all affected 
 As the original shard is not available anymore, moving the objects doesn't need to be coordinated and the sharder can immediately move objects.
 
 ```bash
-$ kubectl get cm --show-labels -w --output-watch-events --watch-only
-EVENT      NAME   DATA   AGE     LABELS
-MODIFIED   foo4   0      7m52s   shard.alpha.sharding.timebertt.dev/example=shard-9c6678c9f-ppzf7
-MODIFIED   foo6   0      7m52s   shard.alpha.sharding.timebertt.dev/example=shard-9c6678c9f-ppzf7
+$ kubectl get secret --show-labels -w --output-watch-events --watch-only
+EVENT      NAME             DATA   AGE     LABELS
+MODIFIED   checksums-foo3   0      7m52s   shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-77wjq
+MODIFIED   checksums-foo6   0      7m52s   shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-77wjq
 ```
 
 ## Adding Shards to the Ring
@@ -252,10 +257,10 @@ With this, the new shard is immediately considered for assignment of new objects
 
 ```bash
 $ kubectl get lease -L alpha.sharding.timebertt.dev/controllerring,alpha.sharding.timebertt.dev/state
-NAME                    HOLDER                  AGE   CONTROLLERRING   STATE
-shard-9c6678c9f-jkgj6   shard-9c6678c9f-jkgj6   3s    example          ready
-shard-9c6678c9f-kvgft   shard-9c6678c9f-kvgft   96s   example          ready
-shard-9c6678c9f-ppzf7   shard-9c6678c9f-ppzf7   96s   example          ready
+NAME                     HOLDER                   AGE   CONTROLLERRING   STATE
+shard-7dbc6b7d68-95wc9   shard-7dbc6b7d68-95wc9   13m   example          ready
+shard-7dbc6b7d68-hxw44   shard-7dbc6b7d68-hxw44   13m   example          ready
+shard-7dbc6b7d68-tsldk   shard-7dbc6b7d68-tsldk   3s    example          ready
 ```
 
 In this case, a rebalancing needs to happen and the sharder needs to move objects away from available shards to the new shard.
@@ -268,12 +273,14 @@ As soon as the controller observes the drain label, it removes it again along wi
 This triggers the sharder webhook which immediately assigns the object to the desired shard.
 
 ```bash
-$ kubectl get cm --show-labels -w --output-watch-events --watch-only
-EVENT      NAME   DATA   AGE    LABELS
-MODIFIED   foo4   0      9m2s   drain.alpha.sharding.timebertt.dev/example=true,shard.alpha.sharding.timebertt.dev/example=shard-9c6678c9f-ppzf7
-MODIFIED   foo7   0      9m2s   drain.alpha.sharding.timebertt.dev/example=true,shard.alpha.sharding.timebertt.dev/example=shard-9c6678c9f-ppzf7
-MODIFIED   foo4   0      9m2s   shard.alpha.sharding.timebertt.dev/example=shard-9c6678c9f-jkgj6
-MODIFIED   foo7   0      9m2s   shard.alpha.sharding.timebertt.dev/example=shard-9c6678c9f-jkgj6
+$ kubectl get secret --show-labels -w --output-watch-events --watch-only
+EVENT      NAME   TYPE     DATA   AGE     LABELS
+MODIFIED   foo1   Opaque   0      2m58s   drain.alpha.sharding.timebertt.dev/example=true,shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-95wc9
+MODIFIED   foo3   Opaque   0      2m58s   drain.alpha.sharding.timebertt.dev/example=true,shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-95wc9
+MODIFIED   foo1   Opaque   0      2m58s   shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-tsldk
+MODIFIED   foo5   Opaque   0      2m58s   drain.alpha.sharding.timebertt.dev/example=true,shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-hxw44
+MODIFIED   foo3   Opaque   0      2m58s   shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-tsldk
+MODIFIED   foo5   Opaque   0      2m58s   shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-tsldk
 ```
 
 ## Clean Up

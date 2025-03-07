@@ -32,7 +32,7 @@ The sharder webhook is called on `CREATE` and `UPDATE` requests for configured r
 The sharder uses the consistent hashing ring to determine the desired shard and adds the shard label during admission accordingly.
 Shards then use a label selector for the shard label with their own instance name to restrict the cache and controller to the subset of objects assigned to them.
 
-For the controller's "main" object (configured in `ControllerRing.spec.resources[]`), the object's `apiVersion`, `kind`, `namespace`, and `name` are concatenated to form its hash key.
+For the controller's "main" object (configured in `ControllerRing.spec.resources[]`), the object's API group, `kind`, `namespace`, and `name` are concatenated to form its hash key.
 For objects controlled by other objects (configured in `ControllerRing.spec.resources[].controlledResources[]`), the sharder utilizes information about the controlling object (`ownerReference` with `controller=true`) to calculate the object's hash key.
 This ensures that owned objects are consistently assigned to the same shard as their owner.
 

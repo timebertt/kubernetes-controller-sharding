@@ -85,41 +85,41 @@ var _ = Describe("Example Shard", Label("example"), Ordered, func() {
 
 	Describe("creating objects", func() {
 		var (
-			configMap *corev1.ConfigMap
-			shard     string
+			secret *corev1.Secret
+			shard  string
 		)
 
 		BeforeAll(func() {
-			configMap = &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+			secret = &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo-" + test.RandomSuffix(),
 				Namespace: metav1.NamespaceDefault,
 			}}
 
 			DeferCleanup(func(ctx SpecContext) {
 				Eventually(ctx, func() error {
-					return testClient.Delete(ctx, configMap)
+					return testClient.Delete(ctx, secret)
 				}).Should(BeNotFoundError())
-				log.Info("Deleted object", "configMap", client.ObjectKeyFromObject(configMap))
+				log.Info("Deleted object", "secret", client.ObjectKeyFromObject(secret))
 			}, NodeTimeout(ShortTimeout))
 		})
 
 		It("should assign the main object to a healthy shard", func(ctx SpecContext) {
 			shards := getReadyShards(ctx, controllerRingName)
 
-			Expect(testClient.Create(ctx, configMap)).To(Succeed())
-			log.Info("Created object", "configMap", client.ObjectKeyFromObject(configMap))
+			Expect(testClient.Create(ctx, secret)).To(Succeed())
+			log.Info("Created object", "secret", client.ObjectKeyFromObject(secret))
 
-			shard = configMap.Labels[controllerRing.LabelShard()]
+			shard = secret.Labels[controllerRing.LabelShard()]
 			Expect(shard).To(BeElementOf(shards))
-			Expect(configMap).NotTo(HaveLabel(controllerRing.LabelDrain()))
+			Expect(secret).NotTo(HaveLabel(controllerRing.LabelDrain()))
 		}, SpecTimeout(ShortTimeout))
 
 		It("should assign the controlled object to the same shard", func(ctx SpecContext) {
-			secret := &corev1.Secret{}
-			secret.Name = "dummy-" + configMap.Name
-			secret.Namespace = configMap.Namespace
+			configMap := &corev1.ConfigMap{}
+			configMap.Name = "checksums-" + secret.Name
+			configMap.Namespace = secret.Namespace
 
-			Eventually(ctx, Object(secret)).Should(And(
+			Eventually(ctx, Object(configMap)).Should(And(
 				HaveLabelWithValue(controllerRing.LabelShard(), Equal(shard)),
 				Not(HaveLabel(controllerRing.LabelDrain())),
 			))

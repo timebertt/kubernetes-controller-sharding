@@ -5,10 +5,10 @@ metadata:
 spec:
   resources:
   - group: ""
-    resource: configmaps
+    resource: secrets
     controlledResources:
     - group: ""
-      resource: secrets
+      resource: configmaps
   namespaceSelector:
     matchLabels:
       kubernetes.io/metadata.name: default
