@@ -35,7 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test"
 	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
 	. "github.com/timebertt/kubernetes-controller-sharding/test/integration/shard/controller"
 )
@@ -63,12 +62,7 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 	log = logf.Log.WithName(testID)
 
 	By("Start test environment")
-	testEnv := &envtest.Environment{
-		CRDInstallOptions: envtest.CRDInstallOptions{
-			Paths: []string{test.PathShardingCRDs()},
-		},
-		ErrorIfCRDPathMissing: true,
-	}
+	testEnv := &envtest.Environment{}
 
 	restConfig, err := testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
