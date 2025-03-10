@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"go.uber.org/automaxprocs/maxprocs"
@@ -31,6 +32,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller"
 	healthzutils "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/healthz"
@@ -89,6 +91,10 @@ func run(ctx context.Context, log logr.Logger, opts *options) error {
 	})); err != nil {
 		log.Error(err, "Failed to set GOMAXPROCS")
 	}
+
+	// replace deprecated legacy go collector
+	metrics.Registry.Unregister(collectors.NewGoCollector())
+	metrics.Registry.MustRegister(collectors.NewGoCollector(collectors.WithGoCollectorRuntimeMetrics(collectors.MetricsAll)))
 
 	log.Info("Setting up manager")
 	mgr, err := manager.New(opts.restConfig, opts.managerOptions)
