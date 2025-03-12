@@ -31,7 +31,7 @@ $(GINKGO): $(call tool_version_file,$(GINKGO),$(GINKGO_VERSION))
 
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
 # renovate: datasource=github-releases depName=golangci/golangci-lint
-GOLANGCI_LINT_VERSION ?= v1.64.6
+GOLANGCI_LINT_VERSION ?= v1.64.7
 $(GOLANGCI_LINT): $(call tool_version_file,$(GOLANGCI_LINT),$(GOLANGCI_LINT_VERSION))
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(TOOLS_BIN_DIR) $(GOLANGCI_LINT_VERSION)
 
