@@ -189,6 +189,13 @@ func (r *Reconciler) resyncResource(
 	return allErrs.ErrorOrNil()
 }
 
+var (
+	// KeyForObject is an alias for key.ForObject, exposed for testing.
+	KeyForObject = key.ForObject
+	// KeyForController is an alias for key.ForController, exposed for testing.
+	KeyForController = key.ForController
+)
+
 func (r *Reconciler) resyncObject(
 	ctx context.Context,
 	log logr.Logger,
@@ -201,9 +208,9 @@ func (r *Reconciler) resyncObject(
 ) error {
 	log = log.WithValues("object", client.ObjectKeyFromObject(obj))
 
-	keyFunc := key.ForObject
+	keyFunc := KeyForObject
 	if controlled {
-		keyFunc = key.ForController
+		keyFunc = KeyForController
 	}
 
 	hashKey, err := keyFunc(obj)
