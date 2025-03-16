@@ -32,7 +32,7 @@ import (
 )
 
 // webhookPathPrefix is the path prefix at which the handler should be registered.
-const webhookPathPrefix = "/webhooks/sharder/"
+const webhookPathPrefix = "/webhooks/sharder/controllerring/"
 
 // AddToManager adds Handler to the given manager.
 func (h *Handler) AddToManager(mgr manager.Manager) error {
@@ -53,12 +53,10 @@ func (h *Handler) AddToManager(mgr manager.Manager) error {
 	return nil
 }
 
-const pathControllerRing = "controllerring"
-
 // WebhookPathForControllerRing returns the webhook handler path that should be used for implementing the given
 // ControllerRing. It is the reverse of ControllerRingForWebhookPath.
 func WebhookPathForControllerRing(ring *shardingv1alpha1.ControllerRing) string {
-	return path.Join(webhookPathPrefix, pathControllerRing, ring.Name)
+	return path.Join(webhookPathPrefix, ring.Name)
 }
 
 // ControllerRingForWebhookPath returns the ControllerRing that is associated with the given webhook handler path.
@@ -68,18 +66,12 @@ func ControllerRingForWebhookPath(requestPath string) (*shardingv1alpha1.Control
 		return nil, fmt.Errorf("unexpected request path: %s", requestPath)
 	}
 
-	parts := strings.SplitN(strings.TrimPrefix(requestPath, webhookPathPrefix), "/", 3)
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("unexpected request path: %s", requestPath)
-	}
-	if parts[0] != pathControllerRing {
-		return nil, fmt.Errorf("unexpected request path: %s", requestPath)
-	}
-	if parts[1] == "" {
+	name := strings.TrimPrefix(requestPath, webhookPathPrefix)
+	if name == "" {
 		return nil, fmt.Errorf("unexpected request path: %s", requestPath)
 	}
 
-	return &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: parts[1]}}, nil
+	return &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: name}}, nil
 }
 
 type ctxKey int

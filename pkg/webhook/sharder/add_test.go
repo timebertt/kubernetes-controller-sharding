@@ -46,11 +46,9 @@ var _ = Describe("webhook path", func() {
 
 			Expect(ControllerRingForWebhookPath("/foo")).Error().To(matchError)
 			Expect(ControllerRingForWebhookPath("/webhooks")).Error().To(matchError)
-			Expect(ControllerRingForWebhookPath("/webhooks/foo")).Error().To(matchError)
 			Expect(ControllerRingForWebhookPath("/webhooks/sharder")).Error().To(matchError)
 			Expect(ControllerRingForWebhookPath("/webhooks/sharder/controllerring")).Error().To(matchError)
 			Expect(ControllerRingForWebhookPath("/webhooks/sharder/controllerring/")).Error().To(matchError)
-			Expect(ControllerRingForWebhookPath("/webhooks/sharder/foo/bar")).Error().To(matchError)
 		})
 
 		It("should return a ControllerRing with name", func() {
