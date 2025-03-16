@@ -1,7 +1,7 @@
 apiVersion: sharding.timebertt.dev/v1alpha1
 kind: ControllerRing
 metadata:
-  name: example
+  name: checksum-controller
 spec:
   resources:
   - group: ""

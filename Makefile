@@ -4,7 +4,7 @@ PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 TAG ?= latest
 GHCR_REPO ?= ghcr.io/timebertt/kubernetes-controller-sharding
 SHARDER_IMG ?= $(GHCR_REPO)/sharder:$(TAG)
-SHARD_IMG ?= $(GHCR_REPO)/shard:$(TAG)
+CHECKSUM_CONTROLLER_IMG ?= $(GHCR_REPO)/checksum-controller:$(TAG)
 WEBHOSTING_OPERATOR_IMG ?= $(GHCR_REPO)/webhosting-operator:$(TAG)
 EXPERIMENT_IMG ?= $(GHCR_REPO)/experiment:$(TAG)
 
@@ -142,12 +142,12 @@ run: $(KUBECTL) generate-fast ## Run the sharder from your host and deploy prere
 	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/certificates/host
 	go run ./cmd/sharder --config=hack/config/sharder/host/config.yaml --zap-log-level=debug
 
-SHARD_NAME ?= shard-$(shell tr -dc bcdfghjklmnpqrstvwxz2456789 </dev/urandom | head -c 8)
+SHARD_NAME ?= checksum-controller-$(shell tr -dc bcdfghjklmnpqrstvwxz2456789 </dev/urandom | head -c 8)
 
-.PHONY: run-shard
-run-shard: $(KUBECTL) ## Run a shard from your host and deploy prerequisites.
-	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/shard/controllerring
-	go run ./cmd/shard --shard=$(SHARD_NAME) --lease-namespace=default --zap-log-level=debug
+.PHONY: run-checksum-controller
+run-checksum-controller: $(KUBECTL) ## Run checksum-controller from your host and deploy prerequisites.
+	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/checksum-controller/controllerring
+	go run ./cmd/checksum-controller --shard-name=$(SHARD_NAME) --lease-namespace=default --zap-log-level=debug
 
 PUSH ?= false
 images: export KO_DOCKER_REPO = $(GHCR_REPO)
@@ -155,7 +155,7 @@ images: export KO_DOCKER_REPO = $(GHCR_REPO)
 .PHONY: images
 images: $(KO) ## Build and push container images using ko.
 	$(KO) build --push=$(PUSH) --sbom none --base-import-paths -t $(TAG) --platform linux/amd64,linux/arm64 \
-		./cmd/sharder ./cmd/shard ./webhosting-operator/cmd/webhosting-operator
+		./cmd/sharder ./cmd/checksum-controller ./webhosting-operator/cmd/webhosting-operator
 
 ##@ Deployment
 
@@ -182,7 +182,7 @@ up dev: export SKAFFOLD_TAIL ?= true
 
 .PHONY: deploy
 deploy: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images and deploy everything to K8s cluster specified in $KUBECONFIG.
-	$(SKAFFOLD) deploy -i $(SHARDER_IMG) -i $(SHARD_IMG) -i $(WEBHOSTING_OPERATOR_IMG) -i $(EXPERIMENT_IMG)
+	$(SKAFFOLD) deploy -i $(SHARDER_IMG) -i $(CHECKSUM_CONTROLLER_IMG) -i $(WEBHOSTING_OPERATOR_IMG) -i $(EXPERIMENT_IMG)
 
 .PHONY: up
 up: $(SKAFFOLD) $(KUBECTL) $(YQ) ## Build all images, deploy everything to K8s cluster specified in $KUBECONFIG, start port-forward and tail logs.

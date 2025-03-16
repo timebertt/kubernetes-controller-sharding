@@ -190,17 +190,17 @@ profiles:
 apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
-  name: shard
+  name: checksum-controller
 build:
   artifacts:
-    - image: ghcr.io/timebertt/kubernetes-controller-sharding/shard
+    - image: ghcr.io/timebertt/kubernetes-controller-sharding/checksum-controller
       ko:
         dependencies:
           paths:
             - go.mod
             - cmd/**/*.go
             - pkg/**/*.go
-        main: ./cmd/shard
+        main: ./cmd/checksum-controller
   tagPolicy:
     inputDigest: {}
   local:
@@ -208,8 +208,7 @@ build:
 manifests:
   kustomize:
     paths:
-      - hack/config/shard/controllerring
-      - hack/config/shard/shard
+      - hack/config/checksum-controller/controller
 deploy:
   kubectl:
     flags:
@@ -441,8 +440,8 @@ profiles:
                   - bash
                   - -c
                   - |
-                    if kubectl get controllerring example &>/dev/null || kubectl -n default get deploy shard &>/dev/null ; then
-                      echo "Example shard is still running, refusing to run a load test experiment."
-                      echo "Ensure a clean load test environment, i.e., run 'make down SKAFFOLD_MODULE=shard'."
+                    if kubectl get controllerring checksum-controller &>/dev/null || kubectl -n default get deploy checksum-controller &>/dev/null ; then
+                      echo "checksum-controller is still running, refusing to run a load test experiment."
+                      echo "Ensure a clean load test environment, i.e., run 'make down SKAFFOLD_MODULE=checksum-controller'."
                       exit 1
                     fi

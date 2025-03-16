@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: sharding:shard
+  name: sharding:checksum-controller
 rules:
 - apiGroups:
   - coordination.k8s.io
@@ -41,11 +41,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: sharding:shard
+  name: sharding:checksum-controller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: sharding:shard
+  name: sharding:checksum-controller
 subjects:
 - kind: ServiceAccount
-  name: shard
+  name: checksum-controller

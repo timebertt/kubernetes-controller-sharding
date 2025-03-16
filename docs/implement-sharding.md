@@ -74,7 +74,7 @@ To support sharding in your Kubernetes controller, only three aspects need to be
 - acknowledge object movements during rebalancing: remove the drain and shard label when the drain label is set and stop reconciling the object
 
 [`pkg/shard`](../pkg/shard) contains reusable reference implementations for these aspects.
-[`cmd/shard`](../cmd/shard) serves as an example shard implementation that shows how to put the pieces together in controllers based on [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime).
+[`cmd/checksum-controller`](../cmd/checksum-controller) serves as an example implementation for sharded controllers that shows how to put the pieces together in controllers based on [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime).
 However, sharding can also be implemented in controllers that don't use controller-runtime or that are written in another programming language than Go.
 
 The following sections outline the exact requirements that a sharded controller needs to fulfill and then show how to implement them in controllers based on controller-runtime.
@@ -170,7 +170,7 @@ Note that if you're using controller-runtime, the same manager instance cannot r
 In short: use the following label selector on watches for all sharded resources listed in the `ControllerRing`.
 
 ```text
-shard.alpha.sharding.timebertt.dev/example: my-operator-565df55f4b-5vwpj
+shard.alpha.sharding.timebertt.dev/my-controllerring: my-operator-565df55f4b-5vwpj
 ```
 
 The sharder assigns all sharded objects by adding a shard label that is specific to the `ControllerRing` (resources could be part of multiple `ControllerRings`).
@@ -203,8 +203,8 @@ func run() error {
 		// FILTERED WATCH CACHE
 		Cache: cache.Options{
 			// Configure cache to only watch objects that are assigned to this shard.
-			// This shard only watches sharded objects, so we can configure the label selector on the cache's global level.
-			// If your shard watches sharded objects as well as non-sharded objects, use cache.Options.ByObject to configure
+			// This controller only watches sharded objects, so we can configure the label selector on the cache's global level.
+			// If your controller watches sharded objects as well as non-sharded objects, use cache.Options.ByObject to configure
 			// the label selector on object level.
 			DefaultLabelSelector: labels.SelectorFromSet(labels.Set{
 				shardingv1alpha1.LabelShard("my-controllerring"): shardLease.Identity(),
@@ -224,7 +224,7 @@ In short: ensure your sharded controller acknowledges drain operations.
 When the drain label like this is added by the sharder, the controller needs to remove both the shard and the drain label and stop reconciling the object.
 
 ```text
-drain.alpha.sharding.timebertt.dev/example
+drain.alpha.sharding.timebertt.dev/my-controllerring
 ```
 
 When the sharder needs to move an object from an available shard to another shard for rebalancing, it first adds the drain label to instruct the currently responsible shard to stop reconciling the object.
@@ -253,7 +253,6 @@ func (r *Reconciler) AddToManager(mgr manager.Manager, controllerRingName, shard
 	// - a predicate that triggers when the drain label is present (even if the actual predicates don't trigger)
 	// - wrapping the actual reconciler a reconciler that handles the drain operation for us
 	return builder.ControllerManagedBy(mgr).
-		Named("example").
 		For(&corev1.Secret{}, builder.WithPredicates(shardcontroller.Predicate(controllerRingName, shardName, MySecretPredicate()))).
 		Owns(&corev1.ConfigMap{}, builder.WithPredicates(MyConfigMapPredicate())).
 		Complete(

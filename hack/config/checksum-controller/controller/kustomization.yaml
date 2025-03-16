@@ -7,11 +7,11 @@ labels:
 - includeSelectors: true
   pairs:
     app.kubernetes.io/name: controller-sharding
-    app.kubernetes.io/component: shard
+    app.kubernetes.io/component: checksum-controller
 
 images:
-- name: shard
-  newName: ghcr.io/timebertt/kubernetes-controller-sharding/shard
+- name: checksum-controller
+  newName: ghcr.io/timebertt/kubernetes-controller-sharding/checksum-controller
   newTag: latest
 
 resources:
