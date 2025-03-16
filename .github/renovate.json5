@@ -138,6 +138,12 @@
       matchUpdateTypes: ['minor'],
       enabled: false,
     },
+    // don't add internal dependency updates to release notes
+    {
+      matchFileNames: ["hack/config/**", "hack/tools.mk"],
+      matchPackageNames: ["!kubernetes-sigs/controller-tools", "!ko-build/ko"],
+      addLabels: ['no-release-note']
+    },
     {
       // combine upgrade of manifests and image tag in one PR
       groupName: 'external-dns',
