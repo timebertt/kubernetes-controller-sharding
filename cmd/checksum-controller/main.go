@@ -125,7 +125,7 @@ func (o *options) run(ctx context.Context) error {
 	}
 
 	log.Info("Setting up shard lease")
-	shardLease, err := shardlease.NewResourceLock(restConfig, nil, shardlease.Options{
+	shardLease, err := shardlease.NewResourceLock(restConfig, shardlease.Options{
 		ControllerRingName: o.controllerRingName,
 		LeaseNamespace:     o.leaseNamespace, // optional, can be empty
 		ShardName:          o.shardName,      // optional, can be empty
