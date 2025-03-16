@@ -68,7 +68,7 @@ var _ = Describe("Shard lease", func() {
 	}, OncePerOrdered)
 
 	JustBeforeEach(func() {
-		shardLease, err := shardlease.NewResourceLock(restConfig, nil, leaseOptions)
+		shardLease, err := shardlease.NewResourceLock(restConfig, leaseOptions)
 		Expect(err).NotTo(HaveOccurred())
 		mgrOptions.LeaderElectionResourceLockInterface = shardLease
 

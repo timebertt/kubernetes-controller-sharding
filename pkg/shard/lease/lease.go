@@ -25,7 +25,6 @@ import (
 	"os"
 
 	coordinationv1 "k8s.io/api/coordination/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coordinationv1client "k8s.io/client-go/kubernetes/typed/coordination/v1"
 	"k8s.io/client-go/rest"
@@ -50,7 +49,7 @@ type Options struct {
 // NewResourceLock returns a new resource lock that implements the shard lease.
 // Pass this to the leader elector, e.g., leaderelection.LeaderElectionConfig.Lock (if using plain client-go) or
 // manager.Options.LeaderElectionResourceLockInterface (if using controller-runtime).
-func NewResourceLock(config *rest.Config, eventRecorder resourcelock.EventRecorder, options Options) (resourcelock.Interface, error) {
+func NewResourceLock(config *rest.Config, options Options) (resourcelock.Interface, error) {
 	// Construct client for leader election
 	rest.AddUserAgent(config, "shard-lease")
 
@@ -89,8 +88,6 @@ func NewResourceLock(config *rest.Config, eventRecorder resourcelock.EventRecord
 		Client: coordinationClient,
 		LockConfig: resourcelock.ResourceLockConfig{
 			Identity: options.ShardName,
-			// eventRecorder is optional
-			EventRecorder: eventRecorder,
 		},
 		Labels: map[string]string{
 			shardingv1alpha1.LabelControllerRing: options.ControllerRingName,
@@ -158,18 +155,8 @@ func (ll *LeaseLock) Update(ctx context.Context, ler resourcelock.LeaderElection
 	return nil
 }
 
-// RecordEvent in leader election while adding meta-data
-func (ll *LeaseLock) RecordEvent(s string) {
-	if ll.LockConfig.EventRecorder == nil {
-		return
-	}
-	events := fmt.Sprintf("%v %v", ll.LockConfig.Identity, s)
-	subject := &coordinationv1.Lease{ObjectMeta: ll.lease.ObjectMeta}
-	// Populate the type meta, so we don't have to get it from the schema
-	subject.Kind = "Lease"
-	subject.APIVersion = coordinationv1.SchemeGroupVersion.String()
-	ll.LockConfig.EventRecorder.Eventf(subject, corev1.EventTypeNormal, "LeaderElection", events)
-}
+// RecordEvent does nothing, as recording events on shard leases is not meaningful.
+func (ll *LeaseLock) RecordEvent(string) {}
 
 // Describe is used to convert details on current resource lock
 // into a string

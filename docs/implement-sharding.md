@@ -135,7 +135,7 @@ import (
 func run() error {
 	restConfig := config.GetConfigOrDie()
 
-	shardLease, err := shardlease.NewResourceLock(restConfig, nil, shardlease.Options{
+	shardLease, err := shardlease.NewResourceLock(restConfig, shardlease.Options{
 		ControllerRingName: "my-controllerring",
 	})
 	if err != nil {

@@ -29,7 +29,6 @@ import (
 	coordinationv1client "k8s.io/client-go/kubernetes/typed/coordination/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -75,11 +74,11 @@ var _ = Describe("LeaseLock", func() {
 		It("should fail if ControllerRingName is empty", func() {
 			options.ControllerRingName = ""
 
-			Expect(NewResourceLock(restConfig, nil, options)).Error().To(MatchError("ControllerRingName is required"))
+			Expect(NewResourceLock(restConfig, options)).Error().To(MatchError("ControllerRingName is required"))
 		})
 
 		It("should use the configured namespace and name", func() {
-			resourceLock, err := NewResourceLock(restConfig, nil, options)
+			resourceLock, err := NewResourceLock(restConfig, options)
 			Expect(err).NotTo(HaveOccurred())
 
 			leaseLock := resourceLock.(*LeaseLock)
@@ -93,7 +92,7 @@ var _ = Describe("LeaseLock", func() {
 			hostname, err := os.Hostname()
 			Expect(err).NotTo(HaveOccurred())
 
-			resourceLock, err := NewResourceLock(restConfig, nil, options)
+			resourceLock, err := NewResourceLock(restConfig, options)
 			Expect(err).NotTo(HaveOccurred())
 
 			leaseLock := resourceLock.(*LeaseLock)
@@ -104,7 +103,7 @@ var _ = Describe("LeaseLock", func() {
 		It("should default the namespace to the in-cluster namespace", func() {
 			options.LeaseNamespace = ""
 
-			resourceLock, err := NewResourceLock(restConfig, nil, options)
+			resourceLock, err := NewResourceLock(restConfig, options)
 			Expect(err).NotTo(HaveOccurred())
 
 			leaseLock := resourceLock.(*LeaseLock)
@@ -115,7 +114,7 @@ var _ = Describe("LeaseLock", func() {
 			options.LeaseNamespace = ""
 			fsys = fstest.MapFS{}
 
-			Expect(NewResourceLock(restConfig, nil, options)).Error().To(MatchError(And(
+			Expect(NewResourceLock(restConfig, options)).Error().To(MatchError(And(
 				ContainSubstring("not running in cluster"),
 				ContainSubstring("please specify LeaseNamespace"),
 			)))
@@ -132,7 +131,7 @@ var _ = Describe("LeaseLock", func() {
 
 		BeforeEach(func() {
 			var err error
-			lock, err = NewResourceLock(&rest.Config{}, nil, Options{
+			lock, err = NewResourceLock(&rest.Config{}, Options{
 				ControllerRingName: controllerRingName,
 				LeaseNamespace:     namespace,
 				ShardName:          shardName,
@@ -235,29 +234,8 @@ var _ = Describe("LeaseLock", func() {
 		})
 
 		Describe("#RecordEvent", func() {
-			Context("no EventRecorder configured", func() {
-				It("should do nothing", func() {
-					lock.RecordEvent("foo")
-				})
-			})
-
-			Context("EventRecorder configured", func() {
-				var recorder *record.FakeRecorder
-
-				BeforeEach(func() {
-					recorder = record.NewFakeRecorder(1)
-					lock.(*LeaseLock).LockConfig.EventRecorder = recorder
-				})
-
-				It("should send the event", func() {
-					Expect(lock.Get(ctx)).Error().To(Succeed())
-
-					lock.RecordEvent("foo")
-
-					Eventually(recorder.Events).Should(Receive(
-						Equal("Normal LeaderElection " + shardName + " foo"),
-					))
-				})
+			It("should do nothing", func() {
+				lock.RecordEvent("foo")
 			})
 		})
 
