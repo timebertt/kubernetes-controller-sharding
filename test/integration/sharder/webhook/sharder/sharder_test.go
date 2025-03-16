@@ -55,10 +55,10 @@ var _ = Describe("Shard Lease controller", func() {
 			},
 		}
 
-		availableShard = newLease(controllerRing.Name)
+		availableShard = newLease()
 		Expect(testClient.Create(ctx, availableShard)).To(Succeed())
 
-		deadShard = newLease(controllerRing.Name)
+		deadShard = newLease()
 		deadShard.Spec.HolderIdentity = nil
 		Expect(testClient.Create(ctx, deadShard)).To(Succeed())
 
@@ -177,7 +177,7 @@ var _ = Describe("Shard Lease controller", func() {
 	})
 })
 
-func newLease(controllerRingName string) *coordinationv1.Lease {
+func newLease() *coordinationv1.Lease {
 	name := testRunID + "-" + test.RandomSuffix()
 
 	return &coordinationv1.Lease{
@@ -185,7 +185,7 @@ func newLease(controllerRingName string) *coordinationv1.Lease {
 			Name:      name,
 			Namespace: testRunID,
 			Labels: map[string]string{
-				shardingv1alpha1.LabelControllerRing: controllerRingName,
+				shardingv1alpha1.LabelControllerRing: controllerRing.Name,
 			},
 		},
 		Spec: coordinationv1.LeaseSpec{
