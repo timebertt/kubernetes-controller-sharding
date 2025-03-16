@@ -1,0 +1,34 @@
+name: release-notes
+
+on:
+  push:
+    branches:
+    - main
+  workflow_dispatch: {}
+
+jobs:
+  release-notes:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Draft release notes
+      run: |
+        set -o errexit
+        set -o nounset
+        set -o pipefail
+        set -x
+        
+        latest_tag="$(gh release view --json tagName --jq .tagName)"
+        
+        major="$(echo "$latest_tag" | cut -d. -f1)"
+        minor="$(echo "$latest_tag" | cut -d. -f2)"
+        new_tag="$major.$((minor+1)).0"
+        
+        if [ "$(gh release view "$new_tag" --json isDraft --jq .isDraft)" = true ] ; then
+          # clean up previous draft release
+          gh release delete -y "$new_tag"
+        fi
+        
+        gh release create "$new_tag" --draft --generate-notes --notes-start-tag="${latest_tag%.*}.0"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
