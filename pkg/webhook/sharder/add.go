@@ -31,10 +31,8 @@ import (
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 )
 
-const (
-	// WebhookPathPrefix is the path prefix at which the handler should be registered.
-	WebhookPathPrefix = "/webhooks/sharder/"
-)
+// webhookPathPrefix is the path prefix at which the handler should be registered.
+const webhookPathPrefix = "/webhooks/sharder/controllerring/"
 
 // AddToManager adds Handler to the given manager.
 func (h *Handler) AddToManager(mgr manager.Manager) error {
@@ -44,38 +42,36 @@ func (h *Handler) AddToManager(mgr manager.Manager) error {
 	if h.Clock == nil {
 		h.Clock = clock.RealClock{}
 	}
+	if h.Metrics == nil {
+		h.Metrics = realMetrics{}
+	}
 
-	mgr.GetWebhookServer().Register(WebhookPathPrefix, &admission.Webhook{
+	mgr.GetWebhookServer().Register(webhookPathPrefix, &admission.Webhook{
 		Handler:         h,
 		WithContextFunc: NewContextWithRequestPath,
 	})
 	return nil
 }
 
-const pathControllerRing = "controllerring"
-
 // WebhookPathForControllerRing returns the webhook handler path that should be used for implementing the given
 // ControllerRing. It is the reverse of ControllerRingForWebhookPath.
 func WebhookPathForControllerRing(ring *shardingv1alpha1.ControllerRing) string {
-	return path.Join(WebhookPathPrefix, pathControllerRing, ring.Name)
+	return path.Join(webhookPathPrefix, ring.Name)
 }
 
 // ControllerRingForWebhookPath returns the ControllerRing that is associated with the given webhook handler path.
 // It is the reverse of WebhookPathForControllerRing.
 func ControllerRingForWebhookPath(requestPath string) (*shardingv1alpha1.ControllerRing, error) {
-	if !strings.HasPrefix(requestPath, WebhookPathPrefix) {
+	if !strings.HasPrefix(requestPath, webhookPathPrefix) {
 		return nil, fmt.Errorf("unexpected request path: %s", requestPath)
 	}
 
-	parts := strings.SplitN(strings.TrimPrefix(requestPath, WebhookPathPrefix), "/", 3)
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("unexpected request path: %s", requestPath)
-	}
-	if parts[0] != pathControllerRing {
+	name := strings.TrimPrefix(requestPath, webhookPathPrefix)
+	if name == "" {
 		return nil, fmt.Errorf("unexpected request path: %s", requestPath)
 	}
 
-	return &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: parts[1]}}, nil
+	return &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: name}}, nil
 }
 
 type ctxKey int
