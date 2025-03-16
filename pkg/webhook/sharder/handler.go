@@ -92,6 +92,9 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 	// get ring from cache and hash the object onto the ring
 	hashRing, _ := ring.FromLeases(controllerRing, leaseList, h.Clock.Now())
 	shard := hashRing.Hash(hashKey)
+	if shard == "" {
+		return admission.Allowed("there is no available shard")
+	}
 
 	log.V(1).Info("Assigning object for ControllerRing", "controllerRing", client.ObjectKeyFromObject(controllerRing), "shard", shard)
 
