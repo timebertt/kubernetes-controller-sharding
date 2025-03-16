@@ -32,12 +32,10 @@ import (
 	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
 )
 
-var _ = Describe("Example Shard", Label("example"), Ordered, func() {
-	const controllerRingName = "example"
+var _ = Describe("Example Controller", Label("checksum-controller"), Ordered, func() {
+	const controllerRingName = "checksum-controller"
 
-	var (
-		controllerRing *shardingv1alpha1.ControllerRing
-	)
+	var controllerRing *shardingv1alpha1.ControllerRing
 
 	BeforeAll(func() {
 		controllerRing = &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: controllerRingName}}
@@ -45,7 +43,7 @@ var _ = Describe("Example Shard", Label("example"), Ordered, func() {
 
 	Describe("setup", func() {
 		It("the Deployment should be healthy", func(ctx SpecContext) {
-			deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "shard", Namespace: metav1.NamespaceDefault}}
+			deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: controllerRingName, Namespace: metav1.NamespaceDefault}}
 
 			Eventually(ctx, func(g Gomega) {
 				g.Expect(Get(deployment)()).To(Succeed())

@@ -5,7 +5,7 @@ This guide walks you through getting started with controller sharding in a local
 It sets up the sharder and an example sharded controller so that you can see the components in action.
 This is great for trying out the project for the first time and learning about the basic concepts.
 
-## Set Up
+## Setup
 
 Create a local cluster using [kind](https://kind.sigs.k8s.io/) and deploy all components:
 
@@ -15,18 +15,18 @@ export KUBECONFIG=$PWD/hack/kind_kubeconfig.yaml
 make deploy TAG=latest
 ```
 
-The sharder is running in the `sharding-system` namespace and the example shard is deployed to the `default` namespace:
+The sharder is running in the `sharding-system` namespace and the example shard (checksum-controller) is deployed to the `default` namespace:
 
 ```bash
 $ kubectl -n sharding-system get po
-NAME                       READY   STATUS    RESTARTS   AGE
-sharder-57889fcd8c-p2wxf   1/1     Running   0          44s
-sharder-57889fcd8c-z6bm5   1/1     Running   0          44s
+NAME                      READY   STATUS    RESTARTS   AGE
+sharder-99fcf97b4-hpm6w   1/1     Running   0          17s
+sharder-99fcf97b4-zr7rj   1/1     Running   0          17s
 $ kubectl get po
-NAME                     READY   STATUS    RESTARTS   AGE
-shard-7dbc6b7d68-77wjq   1/1     Running   0          45s
-shard-7dbc6b7d68-95wc9   1/1     Running   0          45s
-shard-7dbc6b7d68-hxw44   1/1     Running   0          45s
+NAME                                  READY   STATUS    RESTARTS   AGE
+checksum-controller-c95c4fdb6-7jb2v   1/1     Running   0          18s
+checksum-controller-c95c4fdb6-hv8pb   1/1     Running   0          18s
+checksum-controller-c95c4fdb6-rtvrm   1/1     Running   0          18s
 ```
 
 ## The `ControllerRing` and `Lease` Objects
@@ -34,9 +34,9 @@ shard-7dbc6b7d68-hxw44   1/1     Running   0          45s
 We can see that the `ControllerRing` object is ready and reports 3 available shards out of 3 total shards:
 
 ```bash
-$ kubectl get controllerring example
-NAME      READY   AVAILABLE   SHARDS   AGE
-example   True    3           3        64s
+$ kubectl get controllerring checksum-controller
+NAME                  READY   AVAILABLE   SHARDS   AGE
+checksum-controller   True    3           3        25s
 ```
 
 All shards announce themselves to the sharder by maintaining an individual `Lease` object with the `alpha.sharding.timebertt.dev/controllerring` label.
@@ -44,10 +44,10 @@ We can observe that the sharder recognizes all shards as available by looking at
 
 ```bash
 $ kubectl get lease -L alpha.sharding.timebertt.dev/controllerring,alpha.sharding.timebertt.dev/state
-NAME                     HOLDER                   AGE   CONTROLLERRING   STATE
-shard-7dbc6b7d68-77wjq   shard-7dbc6b7d68-77wjq   72s   example          ready
-shard-7dbc6b7d68-95wc9   shard-7dbc6b7d68-95wc9   72s   example          ready
-shard-7dbc6b7d68-hxw44   shard-7dbc6b7d68-hxw44   72s   example          ready
+NAME                                  HOLDER                                AGE   CONTROLLERRING        STATE
+checksum-controller-c95c4fdb6-7jb2v   checksum-controller-c95c4fdb6-7jb2v   44s   checksum-controller   ready
+checksum-controller-c95c4fdb6-hv8pb   checksum-controller-c95c4fdb6-hv8pb   44s   checksum-controller   ready
+checksum-controller-c95c4fdb6-rtvrm   checksum-controller-c95c4fdb6-rtvrm   44s   checksum-controller   ready
 ```
 
 The `ControllerRing` object specifies which API resources should be sharded.
@@ -57,7 +57,7 @@ Optionally, it allows selecting the namespaces in which API resources are sharde
 apiVersion: sharding.timebertt.dev/v1alpha1
 kind: ControllerRing
 metadata:
-  name: example
+  name: checksum-controller
 spec:
   resources:
   - group: ""
@@ -70,7 +70,7 @@ spec:
       kubernetes.io/metadata.name: default
 ```
 
-In our case, the sharded controller reconciles `Secrets` in the `default` namespace and creates a `ConfigMap` including the secret data's checksums.
+In our case, the `checksum-controller` reconciles `Secrets` in the `default` namespace and creates a `ConfigMap` including the secret data's checksums.
 The created `ConfigMaps` are controlled by the respective `Secret`, i.e., there they have an `ownerReference` with `controller=true` to the `Secret`.
 
 ## The Sharder Webhook
@@ -78,9 +78,9 @@ The created `ConfigMaps` are controlled by the respective `Secret`, i.e., there 
 The sharder created a `MutatingWebhookConfiguration` for the resources listed in our `ControllerRing` specification:
 
 ```bash
-$ kubectl get mutatingwebhookconfiguration -l alpha.sharding.timebertt.dev/controllerring=example
-NAME                     WEBHOOKS   AGE
-controllerring-example   1          2m50s
+$ kubectl get mutatingwebhookconfiguration -l alpha.sharding.timebertt.dev/controllerring=checksum-controller
+NAME                                 WEBHOOKS   AGE
+controllerring-checksum-controller   1          71s
 ```
 
 Let's examine the webhook configuration for more details.
@@ -92,13 +92,13 @@ I.e., it gets called for unassigned objects and adds the shard assignment label 
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: controllerring-example
+  name: controllerring-checksum-controller
 webhooks:
 - clientConfig:
     service:
       name: sharder
       namespace: sharding-system
-      path: /webhooks/sharder/controllerring/example
+      path: /webhooks/sharder/controllerring/checksum-controller
       port: 443
   name: sharder.sharding.timebertt.dev
   namespaceSelector:
@@ -106,7 +106,7 @@ webhooks:
       kubernetes.io/metadata.name: default
   objectSelector:
     matchExpressions:
-    - key: shard.alpha.sharding.timebertt.dev/example
+    - key: shard.alpha.sharding.timebertt.dev/checksum-controller
       operator: DoesNotExist
   rules:
   - apiGroups:
@@ -146,7 +146,7 @@ data:
 kind: Secret
 metadata:
   labels:
-    shard.alpha.sharding.timebertt.dev/example: shard-7dbc6b7d68-95wc9
+    shard.alpha.sharding.timebertt.dev/checksum-controller: checksum-controller-c95c4fdb6-hv8pb
   name: foo
   namespace: default
 type: Opaque
@@ -167,7 +167,7 @@ data:
 kind: ConfigMap
 metadata:
   labels:
-    shard.alpha.sharding.timebertt.dev/example: shard-7dbc6b7d68-95wc9
+    shard.alpha.sharding.timebertt.dev/checksum-controller: checksum-controller-c95c4fdb6-hv8pb
   name: checksums-foo
   namespace: default
   ownerReferences:
@@ -181,30 +181,30 @@ Let's create a few more `Secrets` and observe the distribution of objects across
 
 ```bash
 $ for i in $(seq 1 9); do k create secret generic foo$i ; done
-$ kubectl get secret,configmap -L shard.alpha.sharding.timebertt.dev/example
-NAME          TYPE     DATA   AGE   EXAMPLE
-secret/foo    Opaque   1      62s   shard-7dbc6b7d68-95wc9
-secret/foo1   Opaque   0      7s    shard-7dbc6b7d68-95wc9
-secret/foo2   Opaque   0      7s    shard-7dbc6b7d68-hxw44
-secret/foo3   Opaque   0      7s    shard-7dbc6b7d68-77wjq
-secret/foo4   Opaque   0      7s    shard-7dbc6b7d68-hxw44
-secret/foo5   Opaque   0      7s    shard-7dbc6b7d68-hxw44
-secret/foo6   Opaque   0      7s    shard-7dbc6b7d68-77wjq
-secret/foo7   Opaque   0      7s    shard-7dbc6b7d68-95wc9
-secret/foo8   Opaque   0      7s    shard-7dbc6b7d68-95wc9
-secret/foo9   Opaque   0      7s    shard-7dbc6b7d68-hxw44
+$ kubectl get secret,configmap -L shard.alpha.sharding.timebertt.dev/checksum-controller
+NAME          TYPE     DATA   AGE   CHECKSUM-CONTROLLER
+secret/foo    Opaque   1      39s   checksum-controller-c95c4fdb6-hv8pb
+secret/foo1   Opaque   0      10s   checksum-controller-c95c4fdb6-rtvrm
+secret/foo2   Opaque   0      10s   checksum-controller-c95c4fdb6-7jb2v
+secret/foo3   Opaque   0      10s   checksum-controller-c95c4fdb6-rtvrm
+secret/foo4   Opaque   0      10s   checksum-controller-c95c4fdb6-hv8pb
+secret/foo5   Opaque   0      10s   checksum-controller-c95c4fdb6-rtvrm
+secret/foo6   Opaque   0      10s   checksum-controller-c95c4fdb6-hv8pb
+secret/foo7   Opaque   0      10s   checksum-controller-c95c4fdb6-7jb2v
+secret/foo8   Opaque   0      10s   checksum-controller-c95c4fdb6-rtvrm
+secret/foo9   Opaque   0      10s   checksum-controller-c95c4fdb6-hv8pb
 
-NAME                         DATA   AGE   EXAMPLE
-configmap/checksums-foo      1      62s   shard-7dbc6b7d68-95wc9
-configmap/checksums-foo1     0      7s    shard-7dbc6b7d68-95wc9
-configmap/checksums-foo2     0      7s    shard-7dbc6b7d68-hxw44
-configmap/checksums-foo3     0      7s    shard-7dbc6b7d68-77wjq
-configmap/checksums-foo4     0      7s    shard-7dbc6b7d68-hxw44
-configmap/checksums-foo5     0      7s    shard-7dbc6b7d68-hxw44
-configmap/checksums-foo6     0      7s    shard-7dbc6b7d68-77wjq
-configmap/checksums-foo7     0      7s    shard-7dbc6b7d68-95wc9
-configmap/checksums-foo8     0      7s    shard-7dbc6b7d68-95wc9
-configmap/checksums-foo9     0      7s    shard-7dbc6b7d68-hxw44
+NAME                         DATA   AGE     CHECKSUM-CONTROLLER
+configmap/checksums-foo      1      39s     checksum-controller-c95c4fdb6-hv8pb
+configmap/checksums-foo1     0      10s     checksum-controller-c95c4fdb6-rtvrm
+configmap/checksums-foo2     0      10s     checksum-controller-c95c4fdb6-7jb2v
+configmap/checksums-foo3     0      10s     checksum-controller-c95c4fdb6-rtvrm
+configmap/checksums-foo4     0      10s     checksum-controller-c95c4fdb6-hv8pb
+configmap/checksums-foo5     0      10s     checksum-controller-c95c4fdb6-rtvrm
+configmap/checksums-foo6     0      10s     checksum-controller-c95c4fdb6-hv8pb
+configmap/checksums-foo7     0      10s     checksum-controller-c95c4fdb6-7jb2v
+configmap/checksums-foo8     0      10s     checksum-controller-c95c4fdb6-rtvrm
+configmap/checksums-foo9     0      10s     checksum-controller-c95c4fdb6-hv8pb
 ```
 
 ## Removing Shards From the Ring
@@ -215,8 +215,8 @@ We can observe the actions that the sharder takes using `kubectl get secret --sh
 First, let's scale down the sharded controller to remove one shard from the ring:
 
 ```bash
-$ kubectl scale deployment shard --replicas 2
-deployment.apps/shard scaled
+$ kubectl scale deployment checksum-controller --replicas 2
+deployment.apps/checksum-controller scaled
 ```
 
 The shard releases its `Lease` by setting the `holderIdentity` field to the empty string.
@@ -225,11 +225,11 @@ With this, the shard is no longer considered for object assignments.
 The orphaned `Lease` is cleaned up after 1 minute.
 
 ```bash
-$ kubectl get lease -L alpha.sharding.timebertt.dev/controllerring,alpha.sharding.timebertt.dev/state
-NAME                     HOLDER                   AGE   CONTROLLERRING   STATE
-shard-7dbc6b7d68-77wjq                            11m   example          dead
-shard-7dbc6b7d68-95wc9   shard-7dbc6b7d68-95wc9   11m   example          ready
-shard-7dbc6b7d68-hxw44   shard-7dbc6b7d68-hxw44   11m   example          ready
+$ kubectl get lease -L alpha.sharding.timebertt.dev/state
+NAME                                  HOLDER                                AGE     STATE
+checksum-controller-c95c4fdb6-7jb2v   checksum-controller-c95c4fdb6-7jb2v   3m34s   ready
+checksum-controller-c95c4fdb6-hv8pb   checksum-controller-c95c4fdb6-hv8pb   3m34s   ready
+checksum-controller-c95c4fdb6-rtvrm                                         3m34s   dead
 ```
 
 We can observe that the sharder immediately moved objects that were assigned to the removed shard to the remaining available shards.
@@ -238,9 +238,11 @@ As the original shard is not available anymore, moving the objects doesn't need 
 
 ```bash
 $ kubectl get secret --show-labels -w --output-watch-events --watch-only
-EVENT      NAME             DATA   AGE     LABELS
-MODIFIED   checksums-foo3   0      7m52s   shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-77wjq
-MODIFIED   checksums-foo6   0      7m52s   shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-77wjq
+EVENT      NAME   TYPE     DATA   AGE   LABELS
+MODIFIED   foo1   Opaque   0      48s   shard.alpha.sharding.timebertt.dev/checksum-controller=checksum-controller-c95c4fdb6-hv8pb
+MODIFIED   foo3   Opaque   0      48s   shard.alpha.sharding.timebertt.dev/checksum-controller=checksum-controller-c95c4fdb6-7jb2v
+MODIFIED   foo5   Opaque   0      48s   shard.alpha.sharding.timebertt.dev/checksum-controller=checksum-controller-c95c4fdb6-hv8pb
+MODIFIED   foo8   Opaque   0      48s   shard.alpha.sharding.timebertt.dev/checksum-controller=checksum-controller-c95c4fdb6-7jb2v
 ```
 
 ## Adding Shards to the Ring
@@ -248,19 +250,19 @@ MODIFIED   checksums-foo6   0      7m52s   shard.alpha.sharding.timebertt.dev/ex
 Now, let's scale up our sharded controller to add a new shard to the ring.
 
 ```bash
-$ kubectl scale deployment shard --replicas 3
-deployment.apps/shard scaled
+$ kubectl scale deployment checksum-controller --replicas 3
+deployment.apps/checksum-controller scaled
 ```
 
 We can observe that the new `Lease` object is in state `ready`.
 With this, the new shard is immediately considered for assignment of new objects.
 
 ```bash
-$ kubectl get lease -L alpha.sharding.timebertt.dev/controllerring,alpha.sharding.timebertt.dev/state
-NAME                     HOLDER                   AGE   CONTROLLERRING   STATE
-shard-7dbc6b7d68-95wc9   shard-7dbc6b7d68-95wc9   13m   example          ready
-shard-7dbc6b7d68-hxw44   shard-7dbc6b7d68-hxw44   13m   example          ready
-shard-7dbc6b7d68-tsldk   shard-7dbc6b7d68-tsldk   3s    example          ready
+$ kubectl get lease -L alpha.sharding.timebertt.dev/state
+NAME                                  HOLDER                                AGE     STATE
+checksum-controller-c95c4fdb6-7jb2v   checksum-controller-c95c4fdb6-7jb2v   4m19s   ready
+checksum-controller-c95c4fdb6-hv8pb   checksum-controller-c95c4fdb6-hv8pb   4m19s   ready
+checksum-controller-c95c4fdb6-kdrss   checksum-controller-c95c4fdb6-kdrss   4s      ready
 ```
 
 In this case, a rebalancing needs to happen and the sharder needs to move objects away from available shards to the new shard.
@@ -274,13 +276,11 @@ This triggers the sharder webhook which immediately assigns the object to the de
 
 ```bash
 $ kubectl get secret --show-labels -w --output-watch-events --watch-only
-EVENT      NAME   TYPE     DATA   AGE     LABELS
-MODIFIED   foo1   Opaque   0      2m58s   drain.alpha.sharding.timebertt.dev/example=true,shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-95wc9
-MODIFIED   foo3   Opaque   0      2m58s   drain.alpha.sharding.timebertt.dev/example=true,shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-95wc9
-MODIFIED   foo1   Opaque   0      2m58s   shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-tsldk
-MODIFIED   foo5   Opaque   0      2m58s   drain.alpha.sharding.timebertt.dev/example=true,shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-hxw44
-MODIFIED   foo3   Opaque   0      2m58s   shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-tsldk
-MODIFIED   foo5   Opaque   0      2m58s   shard.alpha.sharding.timebertt.dev/example=shard-7dbc6b7d68-tsldk
+EVENT      NAME   TYPE     DATA   AGE    LABELS
+MODIFIED   foo5   Opaque   0      116s   drain.alpha.sharding.timebertt.dev/checksum-controller=true,shard.alpha.sharding.timebertt.dev/checksum-controller=checksum-controller-c95c4fdb6-hv8pb
+MODIFIED   foo8   Opaque   0      116s   drain.alpha.sharding.timebertt.dev/checksum-controller=true,shard.alpha.sharding.timebertt.dev/checksum-controller=checksum-controller-c95c4fdb6-7jb2v
+MODIFIED   foo5   Opaque   0      116s   shard.alpha.sharding.timebertt.dev/checksum-controller=checksum-controller-c95c4fdb6-kdrss
+MODIFIED   foo8   Opaque   0      116s   shard.alpha.sharding.timebertt.dev/checksum-controller=checksum-controller-c95c4fdb6-kdrss
 ```
 
 ## Clean Up

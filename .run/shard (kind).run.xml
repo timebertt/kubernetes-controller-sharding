@@ -1,13 +1,13 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="shard (kind)" type="GoApplicationRunConfiguration" factoryName="Go Application">
+  <configuration default="false" name="checksum-controller (kind)" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$" />
-    <parameters value="--zap-log-level=debug --shard=shard-host --lease-namespace=default" />
+    <parameters value="--zap-log-level=debug --shard-name=checksum-controller-host --lease-namespace=default" />
     <envs>
       <env name="KUBECONFIG" value="$PROJECT_DIR$/hack/kind_kubeconfig.yaml" />
     </envs>
     <kind value="PACKAGE" />
-    <package value="github.com/timebertt/kubernetes-controller-sharding/cmd/shard" />
+    <package value="github.com/timebertt/kubernetes-controller-sharding/cmd/checksum-controller" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$/webhosting-operator/cmd/experiment/main.go" />
     <method v="2" />

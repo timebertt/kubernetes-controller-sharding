@@ -26,7 +26,7 @@ Note that you might need to push images to a remote registry though.
 The development setup reuses the deployment manifests of the main sharding components developed in this repository, located in [`config`](../config).
 See [Install the Sharding Components](installation.md).
 
-It also includes the [example shard](../pkg/shard) (see [Implement Sharding in Your Controller](implement-sharding.md)) and the [webhosting-operator](../webhosting-operator/README.md) (see [Evaluating the Sharding Mechanism](evaluation.md)).
+It also includes the [checksum-controller](../cmd/checksum-controller) as an example sharded controller (see [Implement Sharding in Your Controller](implement-sharding.md)) and the [webhosting-operator](../webhosting-operator/README.md) (see [Evaluating the Sharding Mechanism](evaluation.md)).
 
 Apart from this, the development setup also includes some external components, located in [`hack/config`](../hack/config).
 This includes [cert-manager](https://cert-manager.io/), [ingress-nginx](https://kubernetes.github.io/ingress-nginx/), [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus), [kyverno](https://kyverno.io/), and [parca](https://parca.dev/).
@@ -83,29 +83,29 @@ Assuming a fresh kind cluster:
 make run
 ```
 
-Now, create the `example` `ControllerRing` and run a local shard:
+Now, create the `ControllerRing` and run a local `checksum-controller`:
 
 ```bash
-make run-shard
+make run-checksum-controller
 ```
 
 You should see that the shard successfully announced itself to the sharder:
 
 ```bash
 $ kubectl get lease -L alpha.sharding.timebertt.dev/controllerring,alpha.sharding.timebertt.dev/state
-NAME             HOLDER           AGE   CONTROLLERRING   STATE
-shard-5pv57c6c   shard-5pv57c6c   18s   example          ready
+NAME                           HOLDER                         AGE   CONTROLLERRING        STATE
+checksum-controller-lhrlt6h4   checksum-controller-lhrlt6h4   6s    checksum-controller   ready
 
 $ kubectl get controllerring
-NAME      READY   AVAILABLE   SHARDS   AGE
-example   True    1           1        34s
+NAME                  READY   AVAILABLE   SHARDS   AGE
+checksum-controller   True    1           1        13s
 ```
 
-Running the shard locally gives you the option to test non-graceful termination, i.e., a scenario where the shard fails to renew its lease in time.
+Running the `checksum-controller` locally gives you the option to test non-graceful termination, i.e., a scenario where the shard fails to renew its lease in time.
 Simply press `Ctrl-C` twice:
 
 ```bash
-make run-shard
+make run-checksum-controller
 ...
 ^C2023-11-24T15:16:50.948+0100	INFO	Shutting down gracefully in 2 seconds, send another SIGINT or SIGTERM to shutdown non-gracefully
 ^Cexit status 1
@@ -114,18 +114,18 @@ make run-shard
 ## Testing the Sharding Setup
 
 Independent of the used setup (skaffold-based or running on the host machine), you should be able to create sharded `Secrets` in the `default` namespace as configured in the `example` `ControllerRing`.
-The `ConfigMaps` created by the example shard controller should be assigned to the same shard as the owning `Secret`:
+The `ConfigMaps` created by the `checksum-controller` should be assigned to the same shard as the owning `Secret`:
 
 ```bash
 $ kubectl create secret generic foo --from-literal foo=bar
 secret/foo created
 
-$ kubectl get cm,secret -L shard.alpha.sharding.timebertt.dev/example
-NAME                      DATA   AGE   EXAMPLE
-configmap/checksums-foo   1      1s    shard-5pv57c6c
+$ kubectl get cm,secret -L shard.alpha.sharding.timebertt.dev/checksum-controller
+NAME                      DATA   AGE   CHECKSUM-CONTROLLER
+configmap/checksums-foo   1      1s    checksum-controller-lhrlt6h4
 
-NAME         TYPE     DATA   AGE   EXAMPLE
-secret/foo   Opaque   1      1s    shard-5pv57c6c
+NAME         TYPE     DATA   AGE   CHECKSUM-CONTROLLER
+secret/foo   Opaque   1      1s    checksum-controller-lhrlt6h4
 ```
 
 ## Monitoring

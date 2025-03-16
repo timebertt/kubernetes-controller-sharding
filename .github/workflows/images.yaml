@@ -35,7 +35,7 @@ jobs:
         # prepare .ko.yaml to inject build settings into all images
         entrypoints=(
           ./cmd/sharder
-          ./cmd/shard
+          ./cmd/checksum-controller
           ./webhosting-operator/cmd/experiment
           ./webhosting-operator/cmd/webhosting-operator
         )

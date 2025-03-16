@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: shard
+  name: checksum-controller
 spec:
   replicas: 3
   template:
@@ -10,10 +10,10 @@ spec:
       securityContext:
         runAsNonRoot: true
       containers:
-      - name: shard
-        image: shard:latest
+      - name: checksum-controller
+        image: checksum-controller:latest
         args:
-        - --controllerring=example
+        - --controllerring=checksum-controller
         - --zap-log-level=debug
         env:
         - name: DISABLE_HTTP2
@@ -24,5 +24,5 @@ spec:
           requests:
             cpu: 25m
             memory: 50Mi
-      serviceAccountName: shard
+      serviceAccountName: checksum-controller
       terminationGracePeriodSeconds: 10

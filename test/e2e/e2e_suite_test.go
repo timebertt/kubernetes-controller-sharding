@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -64,5 +65,8 @@ var _ = BeforeSuite(func() {
 	testClient, err = client.New(restConfig, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 
+	clientContext, clientCancel := context.WithCancel(context.Background())
 	komega.SetClient(testClient)
+	komega.SetContext(clientContext)
+	DeferCleanup(clientCancel)
 })

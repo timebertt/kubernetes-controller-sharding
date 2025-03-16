@@ -48,14 +48,13 @@ func main() {
 	opts := newOptions()
 
 	cmd := &cobra.Command{
-		Use:   "shard",
-		Short: "Run an example shard",
-		Long: `The shard command runs an example shard that fulfills the requirements of a controller that supports sharding.
+		Use:   "checksum-controller",
+		Short: "Run an example sharded controller",
+		Long: `The checksum-controller is an example for implementing the controller requirements for sharding.
 For this, it creates a shard Lease object and renews it periodically.
-It also starts a controller for ConfigMaps that are assigned to the shard and handles the drain operation as expected.
+It also starts a controller for Secrets that are assigned to the shard and handles the drain operation as expected.
 See https://github.com/timebertt/kubernetes-controller-sharding/blob/main/docs/implement-sharding.md for more details.
-This is basically a lightweight example controller which is useful for developing the sharding components without actually
-running a full controller that complies with the sharding requirements.`,
+This example sharded controller is also useful for developing the sharding components.`,
 
 		Args:          cobra.NoArgs,
 		SilenceErrors: true,
@@ -92,14 +91,14 @@ func newOptions() *options {
 			TimeEncoder: zapcore.ISO8601TimeEncoder,
 		},
 
-		controllerRingName: "example",
+		controllerRingName: "checksum-controller",
 	}
 }
 
 func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.controllerRingName, "controllerring", o.controllerRingName, "Name of the ControllerRing the shard belongs to.")
 	fs.StringVar(&o.leaseNamespace, "lease-namespace", o.leaseNamespace, "Namespace to use for the shard lease. Defaults to the pod's namespace if running in-cluster.")
-	fs.StringVar(&o.shardName, "shard", o.shardName, "Name of the shard. Defaults to the instance's hostname.")
+	fs.StringVar(&o.shardName, "shard-name", o.shardName, "Name of the shard. Defaults to the instance's hostname.")
 
 	zapFlagSet := flag.NewFlagSet("zap", flag.ContinueOnError)
 	o.zapOptions.BindFlags(zapFlagSet)
@@ -154,11 +153,11 @@ func (o *options) run(ctx context.Context) error {
 
 		// FILTERED WATCH CACHE
 		Cache: cache.Options{
-			// This shard only acts on objects in the default namespace.
+			// This controller only acts on objects in the default namespace.
 			DefaultNamespaces: map[string]cache.Config{metav1.NamespaceDefault: {}},
 			// Configure cache to only watch objects that are assigned to this shard.
-			// This shard only watches sharded objects, so we can configure the label selector on the cache's global level.
-			// If your shard watches sharded objects as well as non-sharded objects, use cache.Options.ByObject to configure
+			// This controller only watches sharded objects, so we can configure the label selector on the cache's global level.
+			// If your controller watches sharded objects as well as non-sharded objects, use cache.Options.ByObject to configure
 			// the label selector on object level.
 			DefaultLabelSelector: labels.SelectorFromSet(labels.Set{
 				shardingv1alpha1.LabelShard(o.controllerRingName): shardLease.Identity(),

@@ -5,7 +5,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: sharding:controllerring:example
+  name: sharding:controllerring:checksum-controller
 rules:
 - apiGroups:
   - ""
@@ -19,11 +19,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: sharding:controllerring:example
+  name: sharding:controllerring:checksum-controller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: sharding:controllerring:example
+  name: sharding:controllerring:checksum-controller
 subjects:
 - kind: ServiceAccount
   name: sharder
