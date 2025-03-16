@@ -72,6 +72,9 @@ func ControllerRingForWebhookPath(requestPath string) (*shardingv1alpha1.Control
 	if parts[0] != pathControllerRing {
 		return nil, fmt.Errorf("unexpected request path: %s", requestPath)
 	}
+	if parts[1] == "" {
+		return nil, fmt.Errorf("unexpected request path: %s", requestPath)
+	}
 
 	return &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: parts[1]}}, nil
 }
