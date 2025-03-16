@@ -31,10 +31,8 @@ import (
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 )
 
-const (
-	// WebhookPathPrefix is the path prefix at which the handler should be registered.
-	WebhookPathPrefix = "/webhooks/sharder/"
-)
+// webhookPathPrefix is the path prefix at which the handler should be registered.
+const webhookPathPrefix = "/webhooks/sharder/"
 
 // AddToManager adds Handler to the given manager.
 func (h *Handler) AddToManager(mgr manager.Manager) error {
@@ -45,7 +43,7 @@ func (h *Handler) AddToManager(mgr manager.Manager) error {
 		h.Clock = clock.RealClock{}
 	}
 
-	mgr.GetWebhookServer().Register(WebhookPathPrefix, &admission.Webhook{
+	mgr.GetWebhookServer().Register(webhookPathPrefix, &admission.Webhook{
 		Handler:         h,
 		WithContextFunc: NewContextWithRequestPath,
 	})
@@ -57,17 +55,17 @@ const pathControllerRing = "controllerring"
 // WebhookPathForControllerRing returns the webhook handler path that should be used for implementing the given
 // ControllerRing. It is the reverse of ControllerRingForWebhookPath.
 func WebhookPathForControllerRing(ring *shardingv1alpha1.ControllerRing) string {
-	return path.Join(WebhookPathPrefix, pathControllerRing, ring.Name)
+	return path.Join(webhookPathPrefix, pathControllerRing, ring.Name)
 }
 
 // ControllerRingForWebhookPath returns the ControllerRing that is associated with the given webhook handler path.
 // It is the reverse of WebhookPathForControllerRing.
 func ControllerRingForWebhookPath(requestPath string) (*shardingv1alpha1.ControllerRing, error) {
-	if !strings.HasPrefix(requestPath, WebhookPathPrefix) {
+	if !strings.HasPrefix(requestPath, webhookPathPrefix) {
 		return nil, fmt.Errorf("unexpected request path: %s", requestPath)
 	}
 
-	parts := strings.SplitN(strings.TrimPrefix(requestPath, WebhookPathPrefix), "/", 3)
+	parts := strings.SplitN(strings.TrimPrefix(requestPath, webhookPathPrefix), "/", 3)
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("unexpected request path: %s", requestPath)
 	}
