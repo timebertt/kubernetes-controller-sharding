@@ -34,7 +34,6 @@ import (
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/key"
-	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/metrics"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/ring"
 )
 
@@ -42,6 +41,8 @@ import (
 type Handler struct {
 	Reader client.Reader
 	Clock  clock.PassiveClock
+
+	Metrics Metrics
 }
 
 func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -106,9 +107,7 @@ func (h *Handler) Handle(ctx context.Context, req admission.Request) admission.R
 	patches = append(patches, jsonpatch.NewOperation("add", "/metadata/labels/"+rfc6901Encoder.Replace(labelShard), shard))
 
 	if !ptr.Deref(req.DryRun, false) {
-		shardingmetrics.AssignmentsTotal.WithLabelValues(
-			controllerRing.Name, req.Resource.Group, req.Resource.Resource,
-		).Inc()
+		h.Metrics.ObserveAssignment(controllerRing.Name, metav1.GroupResource{Group: req.Resource.Group, Resource: req.Resource.Resource})
 	}
 
 	return admission.Patched("assigning object", patches...)

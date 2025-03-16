@@ -42,6 +42,9 @@ func (h *Handler) AddToManager(mgr manager.Manager) error {
 	if h.Clock == nil {
 		h.Clock = clock.RealClock{}
 	}
+	if h.Metrics == nil {
+		h.Metrics = realMetrics{}
+	}
 
 	mgr.GetWebhookServer().Register(webhookPathPrefix, &admission.Webhook{
 		Handler:         h,
