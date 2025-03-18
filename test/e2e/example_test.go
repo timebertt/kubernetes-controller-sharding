@@ -19,7 +19,6 @@ package e2e
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 	appsv1 "k8s.io/api/apps/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -32,56 +31,33 @@ import (
 	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
 )
 
-var _ = Describe("Example Controller", Label("checksum-controller"), Ordered, func() {
-	const controllerRingName = "checksum-controller"
+const namePrefixChecksums = "checksums-"
 
-	var controllerRing *shardingv1alpha1.ControllerRing
-
-	BeforeAll(func() {
-		controllerRing = &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: controllerRingName}}
-	})
-
-	Describe("setup", func() {
+var _ = Describe("Example Controller", Label("checksum-controller"), func() {
+	Describe("setup", Ordered, func() {
 		It("the Deployment should be healthy", func(ctx SpecContext) {
-			deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: controllerRingName, Namespace: metav1.NamespaceDefault}}
-
-			Eventually(ctx, func(g Gomega) {
-				g.Expect(Get(deployment)()).To(Succeed())
-				g.Expect(deployment.Spec.Replicas).To(PointTo(BeEquivalentTo(3)))
-				g.Expect(deployment.Status.AvailableReplicas).To(BeEquivalentTo(3))
-			}).Should(Succeed())
+			deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "checksum-controller", Namespace: namespace.Name}}
+			Eventually(ctx, Object(deployment)).Should(And(
+				HaveField("Spec.Replicas", HaveValue(BeEquivalentTo(3))),
+				HaveField("Status.AvailableReplicas", BeEquivalentTo(3)),
+			))
 		}, SpecTimeout(ShortTimeout))
 
 		It("there should be 3 ready shard leases", func(ctx SpecContext) {
 			leaseList := &coordinationv1.LeaseList{}
-
-			Eventually(ctx, func(g Gomega) {
-				g.Expect(List(leaseList, client.InNamespace(metav1.NamespaceDefault), client.MatchingLabels{
-					shardingv1alpha1.LabelControllerRing: controllerRingName,
-				})()).To(Succeed())
-				g.Expect(leaseList.Items).To(And(
-					HaveLen(3),
-					HaveEach(HaveLabelWithValue(shardingv1alpha1.LabelState, "ready")),
-				))
-			}).Should(Succeed())
+			Eventually(ctx, ObjectList(leaseList, client.InNamespace(namespace.Name), client.MatchingLabelsSelector{
+				Selector: controllerRing.LeaseSelector(),
+			})).Should(HaveField("Items", And(
+				HaveLen(3),
+				HaveEach(HaveLabelWithValue(shardingv1alpha1.LabelState, "ready")),
+			)))
 		}, SpecTimeout(ShortTimeout))
 
-		It("the ControllerRing should be healthy", func(ctx SpecContext) {
-			Eventually(ctx, func(g Gomega) {
-				g.Expect(Get(controllerRing)()).To(Succeed())
-				g.Expect(controllerRing.Status.Shards).To(BeEquivalentTo(3))
-				g.Expect(controllerRing.Status.AvailableShards).To(BeEquivalentTo(3))
-				g.Expect(controllerRing.Status.Conditions).To(ConsistOf(
-					MatchCondition(
-						OfType(shardingv1alpha1.ControllerRingReady),
-						WithStatus(metav1.ConditionTrue),
-					),
-				))
-			}).Should(Succeed())
-		}, SpecTimeout(ShortTimeout))
+		itControllerRingShouldBeReady(3, 3)
+		itShouldGetReadyShards(3)
 	})
 
-	Describe("creating objects", func() {
+	Describe("creating objects", Ordered, func() {
 		var (
 			secret *corev1.Secret
 			shard  string
@@ -90,51 +66,78 @@ var _ = Describe("Example Controller", Label("checksum-controller"), Ordered, fu
 		BeforeAll(func() {
 			secret = &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo-" + test.RandomSuffix(),
-				Namespace: metav1.NamespaceDefault,
+				Namespace: namespace.Name,
 			}}
-
-			DeferCleanup(func(ctx SpecContext) {
-				Eventually(ctx, func() error {
-					return testClient.Delete(ctx, secret)
-				}).Should(BeNotFoundError())
-				log.Info("Deleted object", "secret", client.ObjectKeyFromObject(secret))
-			}, NodeTimeout(ShortTimeout))
 		})
 
+		itControllerRingShouldBeReady(3, 3)
+		itShouldGetReadyShards(3)
+
 		It("should assign the main object to a healthy shard", func(ctx SpecContext) {
-			shards := getReadyShards(ctx, controllerRingName)
+			// Verify that the sharder successfully injects the shard label.
+			// The webhook has failurePolicy=Ignore, so we might need to delete the secret and try again until the injection
+			// succeeds.
+			newSecret := secret.DeepCopy()
 
-			Expect(testClient.Create(ctx, secret)).To(Succeed())
-			log.Info("Created object", "secret", client.ObjectKeyFromObject(secret))
+			Eventually(ctx, func(g Gomega) *corev1.Secret {
+				// if the secret has already been created, reset it and try again
+				newSecret.DeepCopyInto(secret)
 
+				g.Expect(testClient.Create(ctx, secret)).To(Succeed())
+				return secret
+			}).Should(And(
+				HaveLabelWithValue(controllerRing.LabelShard(), BeElementOf(shards)),
+				Not(HaveLabel(controllerRing.LabelDrain())),
+			))
 			shard = secret.Labels[controllerRing.LabelShard()]
-			Expect(shard).To(BeElementOf(shards))
-			Expect(secret).NotTo(HaveLabel(controllerRing.LabelDrain()))
-		}, SpecTimeout(ShortTimeout))
+
+			log.Info("Created object", "secret", client.ObjectKeyFromObject(secret), "shard", shard)
+		}, SpecTimeout(MediumTimeout))
 
 		It("should assign the controlled object to the same shard", func(ctx SpecContext) {
 			configMap := &corev1.ConfigMap{}
-			configMap.Name = "checksums-" + secret.Name
+			configMap.Name = namePrefixChecksums + secret.Name
 			configMap.Namespace = secret.Namespace
 
 			Eventually(ctx, Object(configMap)).Should(And(
 				HaveLabelWithValue(controllerRing.LabelShard(), Equal(shard)),
 				Not(HaveLabel(controllerRing.LabelDrain())),
 			))
-		}, SpecTimeout(ShortTimeout))
+		}, SpecTimeout(MediumTimeout))
 	})
 })
 
-func getReadyShards(ctx SpecContext, controllerRingName string) []string {
+func itControllerRingShouldBeReady(expectedShards, expectedAvailableShards int) {
 	GinkgoHelper()
 
-	leaseList := &coordinationv1.LeaseList{}
-	Eventually(ctx, List(leaseList, client.InNamespace(metav1.NamespaceDefault), client.MatchingLabels{
-		shardingv1alpha1.LabelControllerRing: controllerRingName,
-		shardingv1alpha1.LabelState:          "ready",
-	})).Should(Succeed())
+	It("the ControllerRing should be ready", func(ctx SpecContext) {
+		Eventually(ctx, Object(controllerRing)).Should(And(
+			HaveField("Status.Shards", BeEquivalentTo(expectedShards)),
+			HaveField("Status.AvailableShards", BeEquivalentTo(expectedAvailableShards)),
+			HaveField("Status.Conditions", ConsistOf(
+				MatchCondition(
+					OfType(shardingv1alpha1.ControllerRingReady),
+					WithStatus(metav1.ConditionTrue),
+				),
+			)),
+		))
+	}, SpecTimeout(ShortTimeout))
+}
 
-	return toShardNames(leaseList.Items)
+var shards []string
+
+func itShouldGetReadyShards(expectedCount int) {
+	GinkgoHelper()
+
+	It("should get the ready shards", func(ctx SpecContext) {
+		leaseList := &coordinationv1.LeaseList{}
+		Eventually(ctx, ObjectList(leaseList, client.InNamespace(namespace.Name), client.MatchingLabels{
+			shardingv1alpha1.LabelControllerRing: controllerRing.Name,
+			shardingv1alpha1.LabelState:          "ready",
+		})).Should(HaveField("Items", HaveLen(expectedCount)))
+
+		shards = toShardNames(leaseList.Items)
+	}, SpecTimeout(MediumTimeout))
 }
 
 func toShardNames(leaseList []coordinationv1.Lease) []string {

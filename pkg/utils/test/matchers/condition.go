@@ -18,7 +18,6 @@ package matchers
 
 import (
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gstruct"
 	gomegatypes "github.com/onsi/gomega/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -35,28 +34,20 @@ var MatchCondition = And
 
 // OfType returns a matcher for checking whether a condition has a certain type.
 func OfType(conditionType string) gomegatypes.GomegaMatcher {
-	return gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-		"Type": Equal(conditionType),
-	})
+	return HaveField("Type", Equal(conditionType))
 }
 
 // WithStatus returns a matcher for checking whether a condition has a certain status.
 func WithStatus(status metav1.ConditionStatus) gomegatypes.GomegaMatcher {
-	return gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-		"Status": Equal(status),
-	})
+	return HaveField("Status", Equal(status))
 }
 
 // WithReason returns a matcher for checking whether a condition has a certain reason.
 func WithReason(reason string) gomegatypes.GomegaMatcher {
-	return gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-		"Reason": Equal(reason),
-	})
+	return HaveField("Reason", Equal(reason))
 }
 
 // WithMessage returns a matcher for checking whether a condition has a certain message.
 func WithMessage(message string) gomegatypes.GomegaMatcher {
-	return gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-		"Message": ContainSubstring(message),
-	})
+	return HaveField("Message", ContainSubstring(message))
 }
