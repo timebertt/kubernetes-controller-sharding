@@ -96,15 +96,26 @@ var _ = Describe("Example Controller", Label("checksum-controller"), func() {
 		It("should assign the main object to a healthy shard", func(ctx SpecContext) {
 			shards := getReadyShards(ctx)
 
-			Expect(testClient.Create(ctx, secret)).To(Succeed())
-			log.Info("Created object", "secret", client.ObjectKeyFromObject(secret))
+			// Verify that the sharder successfully injects the shard label.
+			// The webhook has failurePolicy=Ignore, so we might need to delete the secret and try again until the injection
+			// succeeds.
+			Eventually(ctx, func(g Gomega) *corev1.Secret {
+				// if the secret has already been created, reset it and try again
+				if secret.ResourceVersion != "" {
+					g.Expect(testClient.Delete(ctx, secret)).To(Or(Succeed(), BeNotFoundError()))
+					secret.ResourceVersion = ""
+				}
 
-			Expect(secret).To(And(
+				g.Expect(testClient.Create(ctx, secret)).To(Succeed())
+				return secret
+			}).Should(And(
 				HaveLabelWithValue(controllerRing.LabelShard(), BeElementOf(shards)),
 				Not(HaveLabel(controllerRing.LabelDrain())),
 			))
 			shard = secret.Labels[controllerRing.LabelShard()]
-		}, SpecTimeout(ShortTimeout))
+
+			log.Info("Created object", "secret", client.ObjectKeyFromObject(secret), "shard", shard)
+		}, SpecTimeout(MediumTimeout))
 
 		It("should assign the controlled object to the same shard", func(ctx SpecContext) {
 			configMap := &corev1.ConfigMap{}
@@ -115,7 +126,7 @@ var _ = Describe("Example Controller", Label("checksum-controller"), func() {
 				HaveLabelWithValue(controllerRing.LabelShard(), Equal(shard)),
 				Not(HaveLabel(controllerRing.LabelDrain())),
 			))
-		}, SpecTimeout(ShortTimeout))
+		}, SpecTimeout(MediumTimeout))
 	})
 })
 

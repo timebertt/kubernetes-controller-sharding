@@ -40,7 +40,8 @@ func TestE2E(t *testing.T) {
 }
 
 const (
-	ShortTimeout = 10 * time.Second
+	ShortTimeout  = 10 * time.Second
+	MediumTimeout = time.Minute
 )
 
 var (
