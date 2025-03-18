@@ -13,7 +13,6 @@ spec:
       - name: checksum-controller
         image: checksum-controller:latest
         args:
-        - --controllerring=checksum-controller
         - --zap-log-level=debug
         env:
         - name: DISABLE_HTTP2

@@ -80,6 +80,7 @@ This example sharded controller is also useful for developing the sharding compo
 type options struct {
 	zapOptions         *zap.Options
 	controllerRingName string
+	namespace          string
 	leaseNamespace     string
 	shardName          string
 }
@@ -92,11 +93,13 @@ func newOptions() *options {
 		},
 
 		controllerRingName: "checksum-controller",
+		namespace:          metav1.NamespaceDefault,
 	}
 }
 
 func (o *options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.controllerRingName, "controllerring", o.controllerRingName, "Name of the ControllerRing the shard belongs to.")
+	fs.StringVar(&o.namespace, "namespace", o.namespace, "Namespace to watch objects in.")
 	fs.StringVar(&o.leaseNamespace, "lease-namespace", o.leaseNamespace, "Namespace to use for the shard lease. Defaults to the pod's namespace if running in-cluster.")
 	fs.StringVar(&o.shardName, "shard-name", o.shardName, "Name of the shard. Defaults to the instance's hostname.")
 
@@ -153,8 +156,8 @@ func (o *options) run(ctx context.Context) error {
 
 		// FILTERED WATCH CACHE
 		Cache: cache.Options{
-			// This controller only acts on objects in the default namespace.
-			DefaultNamespaces: map[string]cache.Config{metav1.NamespaceDefault: {}},
+			// This controller only acts on objects in a single configured namespace.
+			DefaultNamespaces: map[string]cache.Config{o.namespace: {}},
 			// Configure cache to only watch objects that are assigned to this shard.
 			// This controller only watches sharded objects, so we can configure the label selector on the cache's global level.
 			// If your controller watches sharded objects as well as non-sharded objects, use cache.Options.ByObject to configure
