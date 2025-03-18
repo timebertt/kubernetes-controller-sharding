@@ -31,16 +31,16 @@ import (
 	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
 )
 
-var _ = Describe("Example Controller", Label("checksum-controller"), Ordered, func() {
-	const controllerRingName = "checksum-controller"
+const controllerRingName = "checksum-controller"
 
+var _ = Describe("Example Controller", Label("checksum-controller"), func() {
 	var controllerRing *shardingv1alpha1.ControllerRing
 
-	BeforeAll(func() {
+	BeforeEach(func() {
 		controllerRing = &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: controllerRingName}}
-	})
+	}, OncePerOrdered)
 
-	Describe("setup", func() {
+	Describe("setup", Ordered, func() {
 		It("the Deployment should be healthy", func(ctx SpecContext) {
 			deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: controllerRingName, Namespace: metav1.NamespaceDefault}}
 			Eventually(ctx, Object(deployment)).Should(And(
@@ -73,7 +73,7 @@ var _ = Describe("Example Controller", Label("checksum-controller"), Ordered, fu
 		}, SpecTimeout(ShortTimeout))
 	})
 
-	Describe("creating objects", func() {
+	Describe("creating objects", Ordered, func() {
 		var (
 			secret *corev1.Secret
 			shard  string
@@ -94,7 +94,7 @@ var _ = Describe("Example Controller", Label("checksum-controller"), Ordered, fu
 		})
 
 		It("should assign the main object to a healthy shard", func(ctx SpecContext) {
-			shards := getReadyShards(ctx, controllerRingName)
+			shards := getReadyShards(ctx)
 
 			Expect(testClient.Create(ctx, secret)).To(Succeed())
 			log.Info("Created object", "secret", client.ObjectKeyFromObject(secret))
@@ -119,7 +119,7 @@ var _ = Describe("Example Controller", Label("checksum-controller"), Ordered, fu
 	})
 })
 
-func getReadyShards(ctx SpecContext, controllerRingName string) []string {
+func getReadyShards(ctx SpecContext) []string {
 	GinkgoHelper()
 
 	leaseList := &coordinationv1.LeaseList{}
