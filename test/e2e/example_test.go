@@ -17,6 +17,8 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
+	"fmt"
 	"maps"
 	"strconv"
 
@@ -24,9 +26,12 @@ import (
 	. "github.com/onsi/gomega"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
@@ -174,6 +179,20 @@ var _ = Describe("Example Controller", Label(checksumControllerName), func() {
 			Expect(usedShards.UnsortedList()).To(ConsistOf(shards), "should use all available shards")
 		}, SpecTimeout(MediumTimeout))
 	})
+
+	Describe("removing a shard", Ordered, func() {
+		itControllerRingShouldBeReady(3, 3)
+		itShouldGetReadyShards(3)
+
+		objectLabels := itShouldCreateObjects()
+		itObjectsShouldBeAssignedToShards(objectLabels)
+
+		itShouldScaleTheController(2)
+		itControllerRingShouldHaveAvailableShard(2)
+		itShouldGetReadyShards(2)
+
+		itObjectsShouldBeAssignedToShards(objectLabels)
+	})
 })
 
 func itControllerRingShouldBeReady(expectedShards, expectedAvailableShards int) {
@@ -182,6 +201,22 @@ func itControllerRingShouldBeReady(expectedShards, expectedAvailableShards int) 
 	It("the ControllerRing should be ready", func(ctx SpecContext) {
 		Eventually(ctx, Object(controllerRing)).Should(And(
 			HaveField("Status.Shards", BeEquivalentTo(expectedShards)),
+			HaveField("Status.AvailableShards", BeEquivalentTo(expectedAvailableShards)),
+			HaveField("Status.Conditions", ConsistOf(
+				MatchCondition(
+					OfType(shardingv1alpha1.ControllerRingReady),
+					WithStatus(metav1.ConditionTrue),
+				),
+			)),
+		))
+	}, SpecTimeout(ShortTimeout))
+}
+
+func itControllerRingShouldHaveAvailableShard(expectedAvailableShards int) {
+	GinkgoHelper()
+
+	It(fmt.Sprintf("the ControllerRing should be ready and should have %d available shards", expectedAvailableShards), func(ctx SpecContext) {
+		Eventually(ctx, Object(controllerRing)).Should(And(
 			HaveField("Status.AvailableShards", BeEquivalentTo(expectedAvailableShards)),
 			HaveField("Status.Conditions", ConsistOf(
 				MatchCondition(
@@ -229,6 +264,49 @@ func itShouldCreateObjects() map[string]string {
 	}, SpecTimeout(MediumTimeout))
 
 	return labels
+}
+
+func itShouldScaleTheController(replicas int32) {
+	GinkgoHelper()
+
+	It(fmt.Sprintf("should scale the controller to %d replicas", replicas), func(ctx SpecContext) {
+		deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: checksumControllerName, Namespace: namespace.Name}}
+
+		patch := client.MergeFrom(&autoscalingv1.Scale{})
+		scale := &autoscalingv1.Scale{Spec: autoscalingv1.ScaleSpec{Replicas: replicas}}
+		Expect(testClient.SubResource("scale").Patch(ctx, deployment, patch, client.WithSubResourceBody(scale), &client.SubResourcePatchOptions{})).To(Succeed())
+	}, NodeTimeout(ShortTimeout))
+}
+
+func itObjectsShouldBeAssignedToShards(labels map[string]string) {
+	GinkgoHelper()
+
+	It("should assign the Secrets to the available shards", func(ctx SpecContext) {
+		eventuallyObjectsShouldBeAssignedToShards(ctx, &corev1.SecretList{}, labels)
+	}, NodeTimeout(MediumTimeout))
+
+	It("should assign the ConfigMaps to the available shards", func(ctx SpecContext) {
+		eventuallyObjectsShouldBeAssignedToShards(ctx, &corev1.SecretList{}, labels)
+	}, NodeTimeout(MediumTimeout))
+}
+
+func eventuallyObjectsShouldBeAssignedToShards(ctx context.Context, list client.ObjectList, labels map[string]string) {
+	GinkgoHelper()
+
+	Eventually(ctx, func(g Gomega) {
+		g.Expect(ObjectList(list, client.InNamespace(namespace.Name), client.MatchingLabels(labels))()).To(HaveField("Items", HaveLen(objectCount)))
+
+		usedShards := sets.New[string]()
+		Expect(meta.EachListItem(list, func(obj runtime.Object) error {
+			g.Expect(obj).To(HaveLabelWithValue(controllerRing.LabelShard(), Not(BeEmpty())), "object %T %s should be assigned")
+			g.Expect(obj).NotTo(HaveLabel(controllerRing.LabelDrain()), "object %T %s should not have drain label")
+
+			usedShards.Insert(obj.(client.Object).GetLabels()[controllerRing.LabelShard()])
+			return nil
+		})).To(Succeed())
+
+		g.Expect(usedShards.UnsortedList()).To(ConsistOf(shards), "should use all available shards")
+	}).Should(Succeed())
 }
 
 func toMapOfConfigMap(configMaps []corev1.ConfigMap) map[string]*corev1.ConfigMap {
