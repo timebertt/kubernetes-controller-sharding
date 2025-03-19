@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"maps"
 	"strconv"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,10 +34,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/leases"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test"
 	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
 )
@@ -183,6 +186,29 @@ var _ = Describe("Example Controller", Label(checksumControllerName), func() {
 	describeScaleController("adding a shard", 4)
 
 	describeScaleController("removing a shard", 2)
+
+	Describe("graceful shard termination", Ordered, func() {
+		lease := &coordinationv1.Lease{}
+
+		BeforeAll(func() {
+			*lease = *newLease(60)
+		})
+
+		itControllerRingShouldBeReady(3, 3)
+
+		itShouldCreateShardLease(lease)
+		itShardShouldHaveState(lease, leases.Ready)
+		itControllerRingShouldHaveAvailableShard(4)
+
+		It("should release the shard lease", func(ctx SpecContext) {
+			patch := client.MergeFrom(lease.DeepCopy())
+			lease.Spec.HolderIdentity = nil
+			Expect(testClient.Patch(ctx, lease, patch)).To(Succeed())
+		}, SpecTimeout(ShortTimeout))
+
+		itShardShouldHaveState(lease, leases.Dead)
+		itControllerRingShouldHaveAvailableShard(3)
+	})
 })
 
 func describeScaleController(text string, replicas int32) {
@@ -243,13 +269,35 @@ func itShouldGetReadyShards(expectedCount int) {
 		leaseList := &coordinationv1.LeaseList{}
 		Eventually(ctx, ObjectList(leaseList, client.InNamespace(namespace.Name), client.MatchingLabels{
 			shardingv1alpha1.LabelControllerRing: controllerRing.Name,
-			shardingv1alpha1.LabelState:          "ready",
+			shardingv1alpha1.LabelState:          leases.Ready.String(),
 		})).Should(HaveField("Items", HaveLen(expectedCount)))
 
 		shards = make([]string, len(leaseList.Items))
 		for i, lease := range leaseList.Items {
 			shards[i] = lease.Name
 		}
+	}, SpecTimeout(ShortTimeout))
+}
+
+func itShouldCreateShardLease(lease *coordinationv1.Lease) {
+	GinkgoHelper()
+
+	It("should create a new shard lease", func(ctx SpecContext) {
+		microNow := metav1.NewMicroTime(time.Now())
+		lease.Spec.AcquireTime = ptr.To(microNow)
+		lease.Spec.RenewTime = ptr.To(microNow)
+
+		Expect(testClient.Create(ctx, lease)).To(Succeed())
+	}, SpecTimeout(ShortTimeout))
+}
+
+func itShardShouldHaveState(lease *coordinationv1.Lease, state leases.ShardState) {
+	GinkgoHelper()
+
+	It("the shard should have state "+state.String(), func(ctx SpecContext) {
+		Eventually(ctx, Object(lease)).Should(
+			HaveLabelWithValue(shardingv1alpha1.LabelState, state.String()),
+		)
 	}, SpecTimeout(ShortTimeout))
 }
 
@@ -313,6 +361,24 @@ func eventuallyObjectsShouldBeAssignedToShards(ctx context.Context, list client.
 
 		g.Expect(usedShards.UnsortedList()).To(ConsistOf(shards), "should use all available shards")
 	}).Should(Succeed())
+}
+
+func newLease(leaseDurationSeconds int32) *coordinationv1.Lease {
+	name := "test-" + test.RandomSuffix()
+
+	return &coordinationv1.Lease{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace.Name,
+			Labels: map[string]string{
+				shardingv1alpha1.LabelControllerRing: controllerRing.Name,
+			},
+		},
+		Spec: coordinationv1.LeaseSpec{
+			HolderIdentity:       ptr.To(name),
+			LeaseDurationSeconds: ptr.To[int32](leaseDurationSeconds),
+		},
+	}
 }
 
 func toMapOfConfigMap(configMaps []corev1.ConfigMap) map[string]*corev1.ConfigMap {
