@@ -69,7 +69,7 @@ var _ = Describe("Example Controller", Label(checksumControllerName), func() {
 			))
 		}, SpecTimeout(ShortTimeout))
 
-		itControllerRingShouldBeReady(3, 3)
+		itControllerRingShouldBeReady()
 		itShouldGetReadyShards(3)
 
 		It("there should not be any shard leases other than the 3 ready leases", func(ctx SpecContext) {
@@ -117,7 +117,7 @@ var _ = Describe("Example Controller", Label(checksumControllerName), func() {
 			}}
 		})
 
-		itControllerRingShouldBeReady(3, 3)
+		itControllerRingShouldBeReady()
 		itShouldGetReadyShards(3)
 
 		It("should assign the main object to a healthy shard", func(ctx SpecContext) {
@@ -194,7 +194,7 @@ var _ = Describe("Example Controller", Label(checksumControllerName), func() {
 			*lease = *newLease(60)
 		})
 
-		itControllerRingShouldBeReady(3, 3)
+		itControllerRingShouldBeReady()
 
 		itShouldCreateShardLease(lease)
 		itShardShouldHaveState(lease, leases.Ready)
@@ -217,7 +217,7 @@ var _ = Describe("Example Controller", Label(checksumControllerName), func() {
 			*lease = *newLease(10)
 		})
 
-		itControllerRingShouldBeReady(3, 3)
+		itControllerRingShouldBeReady()
 
 		itShouldCreateShardLease(lease)
 		itShardShouldHaveState(lease, leases.Ready)
@@ -242,7 +242,7 @@ var _ = Describe("Example Controller", Label(checksumControllerName), func() {
 
 func describeScaleController(text string, replicas int32) {
 	Describe(text, Ordered, func() {
-		itControllerRingShouldBeReady(3, 3)
+		itControllerRingShouldBeReady()
 		itShouldGetReadyShards(3)
 
 		objectLabels := itShouldCreateObjects()
@@ -256,13 +256,13 @@ func describeScaleController(text string, replicas int32) {
 	})
 }
 
-func itControllerRingShouldBeReady(expectedShards, expectedAvailableShards int) {
+func itControllerRingShouldBeReady() {
 	GinkgoHelper()
 
 	It("the ControllerRing should be ready", func(ctx SpecContext) {
 		Eventually(ctx, Object(controllerRing)).Should(And(
-			HaveField("Status.Shards", BeEquivalentTo(expectedShards)),
-			HaveField("Status.AvailableShards", BeEquivalentTo(expectedAvailableShards)),
+			HaveField("Status.Shards", BeEquivalentTo(3)),
+			HaveField("Status.AvailableShards", BeEquivalentTo(3)),
 			HaveField("Status.Conditions", ConsistOf(
 				MatchCondition(
 					OfType(shardingv1alpha1.ControllerRingReady),
