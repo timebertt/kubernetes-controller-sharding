@@ -209,6 +209,35 @@ var _ = Describe("Example Controller", Label(checksumControllerName), func() {
 		itShardShouldHaveState(lease, leases.Dead)
 		itControllerRingShouldHaveAvailableShard(3)
 	})
+
+	Describe("shard failure detection", Ordered, func() {
+		lease := &coordinationv1.Lease{}
+
+		BeforeAll(func() {
+			*lease = *newLease(10)
+		})
+
+		itControllerRingShouldBeReady(3, 3)
+
+		itShouldCreateShardLease(lease)
+		itShardShouldHaveState(lease, leases.Ready)
+		itControllerRingShouldHaveAvailableShard(4)
+
+		It("should transition the shard lease to state expired", func(ctx SpecContext) {
+			Eventually(ctx, Object(lease)).Should(
+				HaveLabelWithValue(shardingv1alpha1.LabelState, leases.Expired.String()),
+			)
+		}, SpecTimeout(15*time.Second))
+
+		It("should acquire the shard lease", func(ctx SpecContext) {
+			Eventually(ctx, Object(lease)).Should(And(
+				HaveField("Spec.HolderIdentity", HaveValue(Equal(shardingv1alpha1.IdentityShardLeaseController))),
+				HaveLabelWithValue(shardingv1alpha1.LabelState, leases.Dead.String()),
+			), "lease should be acquired by sharder")
+		}, SpecTimeout(15*time.Second))
+
+		itControllerRingShouldHaveAvailableShard(3)
+	})
 })
 
 func describeScaleController(text string, replicas int32) {
