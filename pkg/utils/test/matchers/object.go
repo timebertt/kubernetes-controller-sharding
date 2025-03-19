@@ -22,16 +22,26 @@ import (
 )
 
 // HaveName succeeds if the actual object has a matching name.
-func HaveName(name interface{}) gomegatypes.GomegaMatcher {
+func HaveName(name string) gomegatypes.GomegaMatcher {
 	return HaveField("ObjectMeta.Name", name)
 }
 
+// HaveNames succeeds if the actual list consists of matching names.
+func HaveNames(names ...string) gomegatypes.GomegaMatcher {
+	matchers := make([]any, len(names))
+	for i, n := range names {
+		matchers[i] = HaveName(n)
+	}
+
+	return HaveField("Items", ConsistOf(matchers...))
+}
+
 // HaveLabel succeeds if the actual object has a label with a matching key.
-func HaveLabel(key interface{}) gomegatypes.GomegaMatcher {
+func HaveLabel(key any) gomegatypes.GomegaMatcher {
 	return HaveField("ObjectMeta.Labels", HaveKey(key))
 }
 
 // HaveLabelWithValue succeeds if the actual object has a label with a matching key and value.
-func HaveLabelWithValue(key, value interface{}) gomegatypes.GomegaMatcher {
+func HaveLabelWithValue(key, value any) gomegatypes.GomegaMatcher {
 	return HaveField("ObjectMeta.Labels", HaveKeyWithValue(key, value))
 }

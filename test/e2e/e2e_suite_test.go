@@ -69,6 +69,9 @@ var _ = BeforeSuite(func() {
 
 	restConfig, err := config.GetConfig()
 	Expect(err).NotTo(HaveOccurred())
+	// gotta go fast during tests
+	restConfig.QPS = 100
+	restConfig.Burst = 150
 
 	scheme := runtime.NewScheme()
 	schemeBuilder := runtime.NewSchemeBuilder(
