@@ -180,20 +180,26 @@ var _ = Describe("Example Controller", Label(checksumControllerName), func() {
 		}, SpecTimeout(MediumTimeout))
 	})
 
-	Describe("removing a shard", Ordered, func() {
+	describeScaleController("adding a shard", 4)
+
+	describeScaleController("removing a shard", 2)
+})
+
+func describeScaleController(text string, replicas int32) {
+	Describe(text, Ordered, func() {
 		itControllerRingShouldBeReady(3, 3)
 		itShouldGetReadyShards(3)
 
 		objectLabels := itShouldCreateObjects()
 		itObjectsShouldBeAssignedToShards(objectLabels)
 
-		itShouldScaleTheController(2)
-		itControllerRingShouldHaveAvailableShard(2)
-		itShouldGetReadyShards(2)
+		itShouldScaleTheController(replicas)
+		itControllerRingShouldHaveAvailableShard(replicas)
+		itShouldGetReadyShards(int(replicas))
 
 		itObjectsShouldBeAssignedToShards(objectLabels)
 	})
-})
+}
 
 func itControllerRingShouldBeReady(expectedShards, expectedAvailableShards int) {
 	GinkgoHelper()
@@ -212,7 +218,7 @@ func itControllerRingShouldBeReady(expectedShards, expectedAvailableShards int) 
 	}, SpecTimeout(ShortTimeout))
 }
 
-func itControllerRingShouldHaveAvailableShard(expectedAvailableShards int) {
+func itControllerRingShouldHaveAvailableShard(expectedAvailableShards int32) {
 	GinkgoHelper()
 
 	It(fmt.Sprintf("the ControllerRing should be ready and should have %d available shards", expectedAvailableShards), func(ctx SpecContext) {
