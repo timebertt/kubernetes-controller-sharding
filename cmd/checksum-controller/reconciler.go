@@ -21,6 +21,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"maps"
 
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -112,6 +113,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "checksums-" + secret.Name,
 			Namespace: secret.Namespace,
+			Labels:    maps.Clone(secret.Labels),
 		},
 		Data: make(map[string]string, len(secret.Data)),
 	}

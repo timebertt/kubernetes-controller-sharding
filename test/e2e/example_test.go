@@ -17,6 +17,9 @@ limitations under the License.
 package e2e
 
 import (
+	"maps"
+	"strconv"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
@@ -24,6 +27,7 @@ import (
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	. "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
@@ -32,9 +36,14 @@ import (
 	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
 )
 
-const namePrefixChecksums = "checksums-"
+const (
+	checksumControllerName = "checksum-controller"
+	namePrefixChecksums    = "checksums-"
 
-var _ = Describe("Example Controller", Label("checksum-controller"), func() {
+	objectCount = 100
+)
+
+var _ = Describe("Example Controller", Label(checksumControllerName), func() {
 	Describe("setup", Ordered, func() {
 		It("the sharder Deployment should be healthy", func(ctx SpecContext) {
 			deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "sharder", Namespace: shardingv1alpha1.NamespaceSystem}}
@@ -45,7 +54,7 @@ var _ = Describe("Example Controller", Label("checksum-controller"), func() {
 		}, SpecTimeout(ShortTimeout))
 
 		It("the controller Deployment should be healthy", func(ctx SpecContext) {
-			deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "checksum-controller", Namespace: namespace.Name}}
+			deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: checksumControllerName, Namespace: namespace.Name}}
 			Eventually(ctx, Object(deployment)).Should(And(
 				HaveField("Spec.Replicas", HaveValue(BeEquivalentTo(3))),
 				HaveField("Status.AvailableReplicas", BeEquivalentTo(3)),
@@ -134,6 +143,36 @@ var _ = Describe("Example Controller", Label("checksum-controller"), func() {
 				Not(HaveLabel(controllerRing.LabelDrain())),
 			))
 		}, SpecTimeout(MediumTimeout))
+
+		objectLabels := itShouldCreateObjects()
+
+		It("should assign objects to all shards", func(ctx SpecContext) {
+			var usedShards sets.Set[string]
+			Eventually(ctx, func(g Gomega) {
+				secretsList := &corev1.SecretList{}
+				g.Expect(ObjectList(secretsList, client.InNamespace(namespace.Name), client.MatchingLabels(objectLabels))()).To(HaveField("Items", HaveLen(objectCount)))
+
+				configMapList := &corev1.ConfigMapList{}
+				g.Expect(ObjectList(configMapList, client.InNamespace(namespace.Name), client.MatchingLabels(objectLabels))()).To(HaveField("Items", HaveLen(objectCount)))
+				configMaps := toMapOfConfigMap(configMapList.Items)
+
+				usedShards = sets.New[string]()
+				for _, secret := range secretsList.Items {
+					g.Expect(secret).To(HaveLabelWithValue(controllerRing.LabelShard(), BeElementOf(shards)))
+					g.Expect(secret).NotTo(HaveLabel(controllerRing.LabelDrain()))
+
+					configMap := configMaps[namePrefixChecksums+secret.Name]
+					g.Expect(configMap).NotTo(BeNil(), "there should be a checksum ConfigMap for Secret %s", secret.Name)
+
+					g.Expect(configMap).NotTo(HaveLabel(controllerRing.LabelDrain()))
+					g.Expect(configMap.Labels[controllerRing.LabelShard()]).To(Equal(secret.Labels[controllerRing.LabelShard()]),
+						"ConfigMap %s should be assigned to the same shard as the owning Secret", configMap.Name)
+					usedShards.Insert(secret.Labels[controllerRing.LabelShard()])
+				}
+			}).Should(Succeed(), "ConfigMaps should be assigned to the same shard as the owning Secrets")
+
+			Expect(usedShards.UnsortedList()).To(ConsistOf(shards), "should use all available shards")
+		}, SpecTimeout(MediumTimeout))
 	})
 })
 
@@ -171,4 +210,31 @@ func itShouldGetReadyShards(expectedCount int) {
 			shards[i] = lease.Name
 		}
 	}, SpecTimeout(ShortTimeout))
+}
+
+func itShouldCreateObjects() map[string]string {
+	GinkgoHelper()
+
+	labels := map[string]string{testID + "-objects": testRunID + test.RandomSuffix()}
+
+	It("should create many objects", func(ctx SpecContext) {
+		for i := 0; i < objectCount; i++ {
+			newSecret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace.Name,
+				Name:      "foo-" + strconv.Itoa(i),
+				Labels:    maps.Clone(labels),
+			}}
+			Expect(testClient.Create(ctx, newSecret)).To(Succeed(), "should create secret %s", newSecret.Name)
+		}
+	}, SpecTimeout(MediumTimeout))
+
+	return labels
+}
+
+func toMapOfConfigMap(configMaps []corev1.ConfigMap) map[string]*corev1.ConfigMap {
+	out := make(map[string]*corev1.ConfigMap, len(configMaps))
+	for _, configMap := range configMaps {
+		out[configMap.Name] = &configMap
+	}
+	return out
 }
