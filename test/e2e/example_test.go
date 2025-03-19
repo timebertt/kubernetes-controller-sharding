@@ -19,6 +19,7 @@ package e2e
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -35,7 +36,15 @@ const namePrefixChecksums = "checksums-"
 
 var _ = Describe("Example Controller", Label("checksum-controller"), func() {
 	Describe("setup", Ordered, func() {
-		It("the Deployment should be healthy", func(ctx SpecContext) {
+		It("the sharder Deployment should be healthy", func(ctx SpecContext) {
+			deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "sharder", Namespace: shardingv1alpha1.NamespaceSystem}}
+			Eventually(ctx, Object(deployment)).Should(And(
+				HaveField("Spec.Replicas", HaveValue(BeEquivalentTo(2))),
+				HaveField("Status.AvailableReplicas", BeEquivalentTo(2)),
+			))
+		}, SpecTimeout(ShortTimeout))
+
+		It("the controller Deployment should be healthy", func(ctx SpecContext) {
 			deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "checksum-controller", Namespace: namespace.Name}}
 			Eventually(ctx, Object(deployment)).Should(And(
 				HaveField("Spec.Replicas", HaveValue(BeEquivalentTo(3))),
@@ -43,18 +52,39 @@ var _ = Describe("Example Controller", Label("checksum-controller"), func() {
 			))
 		}, SpecTimeout(ShortTimeout))
 
-		It("there should be 3 ready shard leases", func(ctx SpecContext) {
-			leaseList := &coordinationv1.LeaseList{}
-			Eventually(ctx, ObjectList(leaseList, client.InNamespace(namespace.Name), client.MatchingLabelsSelector{
-				Selector: controllerRing.LeaseSelector(),
-			})).Should(HaveField("Items", And(
-				HaveLen(3),
-				HaveEach(HaveLabelWithValue(shardingv1alpha1.LabelState, "ready")),
-			)))
-		}, SpecTimeout(ShortTimeout))
-
 		itControllerRingShouldBeReady(3, 3)
 		itShouldGetReadyShards(3)
+
+		It("there should not be any shard leases other than the 3 ready leases", func(ctx SpecContext) {
+			leaseList := &coordinationv1.LeaseList{}
+			Eventually(ctx, ObjectList(leaseList, client.InNamespace(namespace.Name),
+				client.MatchingLabels{shardingv1alpha1.LabelControllerRing: controllerRing.Name},
+			)).Should(HaveNames(shards...))
+		}, SpecTimeout(ShortTimeout))
+
+		It("should create the MutatingWebhookConfiguration", func(ctx SpecContext) {
+			webhookConfig := &admissionregistrationv1.MutatingWebhookConfiguration{
+				ObjectMeta: metav1.ObjectMeta{Name: "controllerring-" + controllerRing.Name},
+			}
+			Eventually(ctx, Object(webhookConfig)).Should(And(
+				HaveLabelWithValue(shardingv1alpha1.LabelControllerRing, controllerRing.Name),
+				HaveField("Webhooks", ConsistOf(And(
+					HaveField("NamespaceSelector", Equal(&metav1.LabelSelector{
+						MatchLabels: map[string]string{corev1.LabelMetadataName: namespace.Name},
+					})),
+					HaveField("ObjectSelector", Equal(&metav1.LabelSelector{
+						MatchExpressions: []metav1.LabelSelectorRequirement{{
+							Key:      controllerRing.LabelShard(),
+							Operator: metav1.LabelSelectorOpDoesNotExist,
+						}},
+					})),
+					HaveField("Rules", ConsistOf(
+						HaveField("Resources", ConsistOf("secrets")),
+						HaveField("Resources", ConsistOf("configmaps")),
+					)),
+				))),
+			))
+		}, SpecTimeout(ShortTimeout))
 	})
 
 	Describe("creating objects", Ordered, func() {
@@ -136,14 +166,9 @@ func itShouldGetReadyShards(expectedCount int) {
 			shardingv1alpha1.LabelState:          "ready",
 		})).Should(HaveField("Items", HaveLen(expectedCount)))
 
-		shards = toShardNames(leaseList.Items)
-	}, SpecTimeout(MediumTimeout))
-}
-
-func toShardNames(leaseList []coordinationv1.Lease) []string {
-	out := make([]string, len(leaseList))
-	for i, lease := range leaseList {
-		out[i] = lease.Name
-	}
-	return out
+		shards = make([]string, len(leaseList.Items))
+		for i, lease := range leaseList.Items {
+			shards[i] = lease.Name
+		}
+	}, SpecTimeout(ShortTimeout))
 }
