@@ -21,6 +21,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"maps"
 	"os"
 	"strconv"
 
@@ -225,7 +226,7 @@ func (r *WebsiteReconciler) ConfigMapForWebsite(serverName string, website *webh
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serverName,
 			Namespace: website.Namespace,
-			Labels:    getLabelsForServer(website.Name, serverName),
+			Labels:    mergeMaps(website.Labels, getLabelsForServer(serverName, website.Name)),
 		},
 		Data: map[string]string{
 			keyIndexHTML: indexHTML,
@@ -246,10 +247,10 @@ func (r *WebsiteReconciler) ServiceForWebsite(serverName string, website *webhos
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serverName,
 			Namespace: website.Namespace,
-			Labels:    getLabelsForServer(website.Name, serverName),
+			Labels:    mergeMaps(website.Labels, getLabelsForServer(serverName, website.Name)),
 		},
 		Spec: corev1.ServiceSpec{
-			Selector: getLabelsForServer(website.Name, serverName),
+			Selector: getLabelsForServer(serverName, website.Name),
 			Type:     corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{{
 				Name:       portNameHTTP,
@@ -273,7 +274,7 @@ func (r *WebsiteReconciler) IngressForWebsite(serverName string, website *webhos
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serverName,
 			Namespace: website.Namespace,
-			Labels:    getLabelsForServer(website.Name, serverName),
+			Labels:    mergeMaps(website.Labels, getLabelsForServer(serverName, website.Name)),
 		},
 	}
 
@@ -361,17 +362,17 @@ func (r *WebsiteReconciler) DeploymentForWebsite(serverName string, website *web
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serverName,
 			Namespace: website.Namespace,
-			Labels:    getLabelsForServer(website.Name, serverName),
+			Labels:    mergeMaps(website.Labels, getLabelsForServer(serverName, website.Name)),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: getLabelsForServer(website.Name, serverName),
+				MatchLabels: getLabelsForServer(serverName, website.Name),
 			},
 			Replicas:             ptr.To[int32](1),
 			RevisionHistoryLimit: ptr.To[int32](2),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: getLabelsForServer(website.Name, serverName),
+					Labels: getLabelsForServer(serverName, website.Name),
 					Annotations: map[string]string{
 						"checksum/configmap": configMapChecksum,
 					},
@@ -432,13 +433,21 @@ func (r *WebsiteReconciler) DeploymentForWebsite(serverName string, website *web
 	return deployment, ctrl.SetControllerReference(website, deployment, r.Scheme)
 }
 
-func getLabelsForServer(name, serverName string) map[string]string {
+func getLabelsForServer(serverName, name string) map[string]string {
 	return map[string]string{
 		"app":        "website",
 		"website":    name,
 		"server":     serverName,
 		"managed-by": "webhosting-operator",
 	}
+}
+
+func mergeMaps[M interface{ ~map[K]V }, K comparable, V any](mm ...M) M {
+	out := M{}
+	for _, m := range mm {
+		maps.Copy(out, m)
+	}
+	return out
 }
 
 func calculateServerName(website *webhostingv1alpha1.Website) string {
