@@ -438,7 +438,7 @@ func getLabelsForServer(serverName, name string) map[string]string {
 		"app":        "website",
 		"website":    name,
 		"server":     serverName,
-		"managed-by": "webhosting-operator",
+		"managed-by": webhostingv1alpha1.WebhostingOperatorName,
 	}
 }
 

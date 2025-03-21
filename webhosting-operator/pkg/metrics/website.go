@@ -144,8 +144,8 @@ var (
 				prometheus.GaugeValue,
 				1,
 				append(staticLabels,
-					website.Labels[shardingv1alpha1.LabelShard("webhosting-operator")],
-					website.Labels[shardingv1alpha1.LabelDrain("webhosting-operator")],
+					website.Labels[shardingv1alpha1.LabelShard(webhostingv1alpha1.WebhostingOperatorName)],
+					website.Labels[shardingv1alpha1.LabelDrain(webhostingv1alpha1.WebhostingOperatorName)],
 				)...,
 			)
 		},

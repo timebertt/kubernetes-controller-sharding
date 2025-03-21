@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
+	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/generator"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/experiment/tracker"
 	"github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/utils"
@@ -178,8 +179,8 @@ func (s *Scenario) prepare(ctx context.Context) (func(context.Context) error, er
 	// This allows calculating rates of individual runs without considering metrics of adjacent runs.
 	s.Log.Info("Restarting/labeling observed components")
 	observedComponents := []struct{ namespace, name string }{
-		{"sharding-system", "sharder"},
-		{"webhosting-system", "webhosting-operator"},
+		{shardingv1alpha1.NamespaceSystem, "sharder"},
+		{webhostingv1alpha1.NamespaceSystem, webhostingv1alpha1.WebhostingOperatorName},
 	}
 
 	for _, c := range observedComponents {
@@ -198,7 +199,7 @@ func (s *Scenario) prepare(ctx context.Context) (func(context.Context) error, er
 	// clean up orphaned leases after instances have been terminated
 	// this only speeds up the cleaning and allows us to start sooner, but is not required otherwise
 	if err := s.Client.DeleteAllOf(ctx, &coordinationv1.Lease{},
-		client.InNamespace("webhosting-system"), client.MatchingLabels{"alpha.sharding.timebertt.dev/state": "dead"},
+		client.InNamespace(webhostingv1alpha1.NamespaceSystem), client.MatchingLabels{"alpha.sharding.timebertt.dev/state": "dead"},
 	); err != nil {
 		return nil, err
 	}
@@ -250,7 +251,7 @@ func (s *Scenario) waitForShardLeases(ctx context.Context) error {
 	if err := wait.PollUntilContextTimeout(ctx, 2*time.Second, 2*time.Minute, false, func(ctx context.Context) (done bool, err error) {
 		leaseList := &coordinationv1.LeaseList{}
 		if err := s.Client.List(ctx, leaseList,
-			client.InNamespace("webhosting-system"), client.MatchingLabels{shardingv1alpha1.LabelControllerRing: "webhosting-operator"},
+			client.InNamespace(webhostingv1alpha1.NamespaceSystem), client.MatchingLabels{shardingv1alpha1.LabelControllerRing: webhostingv1alpha1.WebhostingOperatorName},
 		); err != nil {
 			return true, err
 		}

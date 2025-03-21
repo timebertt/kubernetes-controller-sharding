@@ -24,6 +24,8 @@ import (
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
 	"k8s.io/utils/ptr"
+
+	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -65,10 +67,10 @@ func SetDefaults_LeaderElectionConfiguration(obj *componentbaseconfigv1alpha1.Le
 	componentbaseconfigv1alpha1.RecommendedDefaultLeaderElectionConfiguration(obj)
 
 	if obj.ResourceName == "" {
-		obj.ResourceName = "webhosting-operator"
+		obj.ResourceName = webhostingv1alpha1.WebhostingOperatorName
 	}
 	if obj.ResourceNamespace == "" {
-		obj.ResourceNamespace = "webhosting-system"
+		obj.ResourceNamespace = webhostingv1alpha1.NamespaceSystem
 	}
 }
 

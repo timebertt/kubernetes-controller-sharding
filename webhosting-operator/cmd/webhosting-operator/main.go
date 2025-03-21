@@ -272,7 +272,7 @@ func (o *options) applyOptionsOverrides() error {
 		}
 
 		// SHARD LEASE
-		o.controllerRingName = "webhosting-operator"
+		o.controllerRingName = webhostingv1alpha1.WebhostingOperatorName
 		shardLease, err := shardlease.NewResourceLock(o.restConfig, shardlease.Options{
 			ControllerRingName: o.controllerRingName,
 		})
