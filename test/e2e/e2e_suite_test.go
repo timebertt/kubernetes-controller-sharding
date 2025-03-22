@@ -33,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
@@ -98,6 +99,8 @@ var _ = BeforeSuite(func() {
 var (
 	controllerRing *shardingv1alpha1.ControllerRing
 	namespace      *corev1.Namespace
+
+	controllerDeployment *appsv1.Deployment
 )
 
 var _ = BeforeEach(func(ctx SpecContext) {
@@ -120,7 +123,7 @@ var _ = BeforeEach(func(ctx SpecContext) {
 
 	By("Set up test ControllerRing")
 	// Deploy a dedicated ControllerRing instance for this test case
-	defaultControllerRing := &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: "checksum-controller"}}
+	defaultControllerRing := &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: checksumControllerName}}
 	Expect(komega.Get(defaultControllerRing)()).To(Succeed())
 
 	controllerRing = defaultControllerRing.DeepCopy()
@@ -138,6 +141,8 @@ var _ = BeforeEach(func(ctx SpecContext) {
 	}, NodeTimeout(ShortTimeout))
 
 	By("Set up test controller")
+	controllerDeployment = &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Namespace: namespace.Name, Name: checksumControllerName}}
+
 	// Deploy a dedicated controller instance to this test case's namespace.
 	// Copy all relevant objects from the default namespace.
 	for _, objList := range []client.ObjectList{
@@ -146,7 +151,7 @@ var _ = BeforeEach(func(ctx SpecContext) {
 		&rbacv1.RoleList{},
 		&rbacv1.RoleBindingList{},
 	} {
-		Expect(testClient.List(ctx, objList, client.InNamespace(metav1.NamespaceDefault), client.MatchingLabels{"app.kubernetes.io/component": "checksum-controller"})).
+		Expect(testClient.List(ctx, objList, client.InNamespace(metav1.NamespaceDefault), client.MatchingLabels{"app.kubernetes.io/component": checksumControllerName})).
 			Should(Succeed(), "should list %T in default namespace", objList)
 
 		Expect(meta.EachListItem(objList, func(object runtime.Object) error {
@@ -156,6 +161,7 @@ var _ = BeforeEach(func(ctx SpecContext) {
 
 			switch o := obj.(type) {
 			case *appsv1.Deployment:
+				o.Spec.Replicas = ptr.To[int32](3)
 				o.Spec.Template.Spec.Containers[0].Args = append(o.Spec.Template.Spec.Containers[0].Args,
 					"--controllerring="+controllerRing.Name,
 					"--namespace="+namespace.Name,
