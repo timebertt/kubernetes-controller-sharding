@@ -304,7 +304,7 @@ func (r *WebsiteReconciler) IngressForWebsite(serverName string, website *webhos
 
 	applyIngressConfigToIngress(r.Config.Ingress, ingress)
 
-	if isGeneratedByExperiment(website) {
+	if isGeneratedByE2ETestOrExperiment(website) {
 		// don't actually expose website ingresses in load tests
 		// use fake ingress class to prevent overloading ingress controller (this is not what we want to load test)
 		ingress.Spec.IngressClassName = ptr.To("fake")
@@ -424,7 +424,7 @@ func (r *WebsiteReconciler) DeploymentForWebsite(serverName string, website *web
 		},
 	}
 
-	if isGeneratedByExperiment(website) {
+	if isGeneratedByE2ETestOrExperiment(website) {
 		// don't actually run website pods in load tests
 		// otherwise, we would need an immense amount of compute power for running dummy websites
 		deployment.Spec.Replicas = ptr.To[int32](0)
@@ -611,6 +611,6 @@ var ConfigMapDataChanged = predicate.Funcs{
 	},
 }
 
-func isGeneratedByExperiment(obj client.Object) bool {
-	return obj.GetLabels()["generated-by"] == "experiment"
+func isGeneratedByE2ETestOrExperiment(obj client.Object) bool {
+	return obj.GetLabels()["e2e-webhosting-operator"] != "" || obj.GetLabels()["generated-by"] == "experiment"
 }
