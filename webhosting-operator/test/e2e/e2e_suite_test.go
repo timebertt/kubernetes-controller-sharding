@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Tim Ebert.
+Copyright 2025 Tim Ebert.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	"maps"
 	"testing"
 	"time"
@@ -28,29 +27,28 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test"
 	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
+	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 )
 
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Controller Sharding E2E Test Suite")
+	RunSpecs(t, "Webhosting Operator E2E Test Suite")
 }
 
 const (
-	testID = "e2e-controller-sharding"
+	testID = "e2e-webhosting-operator"
 
 	ShortTimeout  = 10 * time.Second
 	MediumTimeout = time.Minute
@@ -78,6 +76,7 @@ var _ = BeforeSuite(func() {
 	schemeBuilder := runtime.NewSchemeBuilder(
 		clientgoscheme.AddToScheme,
 		shardingv1alpha1.AddToScheme,
+		webhostingv1alpha1.AddToScheme,
 	)
 	Expect(schemeBuilder.AddToScheme(scheme)).To(Succeed())
 
@@ -109,12 +108,16 @@ var _ = BeforeEach(func(ctx SpecContext) {
 		GenerateName: testRunID + "-",
 		Labels:       maps.Clone(testRunLabels),
 	}}
+	namespace.Labels[webhostingv1alpha1.LabelKeyProject] = webhostingv1alpha1.LabelValueProject
 
 	// We create a dedicated test namespace and clean it up for every test case to ensure a clean test environment.
 	Expect(testClient.Create(ctx, namespace)).To(Succeed())
 	log.Info("Created test Namespace", "namespace", namespace.Name)
 
 	DeferCleanup(func(ctx SpecContext) {
+		By("Delete all Websites in test Namespace")
+		Expect(testClient.DeleteAllOf(ctx, &webhostingv1alpha1.Website{}, client.InNamespace(namespace.Name))).To(Succeed())
+
 		By("Delete test Namespace")
 		Eventually(ctx, func() error {
 			return testClient.Delete(ctx, namespace)
@@ -122,58 +125,28 @@ var _ = BeforeEach(func(ctx SpecContext) {
 	}, NodeTimeout(MediumTimeout))
 
 	By("Set up test ControllerRing")
-	// Deploy a dedicated ControllerRing instance for this test case
-	defaultControllerRing := &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: checksumControllerName}}
-	Expect(komega.Get(defaultControllerRing)()).To(Succeed())
+	controllerRing = &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: webhostingv1alpha1.WebhostingOperatorName}}
 
-	controllerRing = defaultControllerRing.DeepCopy()
-	controllerRing.Name = namespace.Name
-	controllerRing.ResourceVersion = ""
-	maps.Copy(controllerRing.Labels, testRunLabels)
-	controllerRing.Spec.NamespaceSelector.MatchLabels[corev1.LabelMetadataName] = namespace.Name
-	Expect(testClient.Create(ctx, controllerRing)).To(Succeed())
+	By("Scaling checksum-controller")
+	controllerDeployment = &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: webhostingv1alpha1.WebhostingOperatorName, Namespace: webhostingv1alpha1.NamespaceSystem}}
+	scaleController(ctx, 3)
 
 	DeferCleanup(func(ctx SpecContext) {
-		By("Delete test ControllerRing")
-		Eventually(ctx, func() error {
-			return testClient.Delete(ctx, controllerRing)
-		}).Should(Or(Succeed(), BeNotFoundError()))
+		By("Scaling checksum-controller")
+		scaleController(ctx, 3)
 	}, NodeTimeout(ShortTimeout))
 
-	By("Set up test controller")
-	controllerDeployment = &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Namespace: namespace.Name, Name: checksumControllerName}}
-
-	// Deploy a dedicated controller instance to this test case's namespace.
-	// Copy all relevant objects from the default namespace.
-	for _, objList := range []client.ObjectList{
-		&appsv1.DeploymentList{},
-		&corev1.ServiceAccountList{},
-		&rbacv1.RoleList{},
-		&rbacv1.RoleBindingList{},
-	} {
-		Expect(testClient.List(ctx, objList, client.InNamespace(metav1.NamespaceDefault), client.MatchingLabels{"app.kubernetes.io/component": checksumControllerName})).
-			Should(Succeed(), "should list %T in default namespace", objList)
-
-		Expect(meta.EachListItem(objList, func(object runtime.Object) error {
-			obj := object.DeepCopyObject().(client.Object)
-			obj.SetNamespace(namespace.Name)
-			obj.SetResourceVersion("")
-
-			switch o := obj.(type) {
-			case *appsv1.Deployment:
-				o.Spec.Replicas = ptr.To[int32](3)
-				o.Spec.Template.Spec.Containers[0].Args = append(o.Spec.Template.Spec.Containers[0].Args,
-					"--controllerring="+controllerRing.Name,
-					"--namespace="+namespace.Name,
-				)
-			case *rbacv1.RoleBinding:
-				o.Subjects[0].Namespace = namespace.Name
-			}
-
-			if err := testClient.Create(ctx, obj); err != nil {
-				return fmt.Errorf("error copying object %T %q to %s namespace: %w", obj, client.ObjectKeyFromObject(obj), namespace.Name, err)
-			}
-			return nil
-		})).To(Succeed(), "should copy %T", objList)
+	By("Set up test Theme")
+	theme = &webhostingv1alpha1.Theme{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   namespace.Name,
+			Labels: maps.Clone(testRunLabels),
+		},
+		Spec: webhostingv1alpha1.ThemeSpec{
+			Color:      "cyan",
+			FontFamily: "arial",
+		},
 	}
+	Expect(controllerutil.SetOwnerReference(namespace, theme, testClient.Scheme(), controllerutil.WithBlockOwnerDeletion(true))).To(Succeed())
+	Expect(testClient.Create(ctx, theme)).To(Succeed())
 }, NodeTimeout(MediumTimeout), OncePerOrdered)

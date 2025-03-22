@@ -117,6 +117,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		},
 		Data: make(map[string]string, len(secret.Data)),
 	}
+	configMap.Labels["secret"] = secret.Name
 
 	// Calculate the checksum for every Secret key and populate it in the ConfigMap.
 	for key, data := range secret.Data {

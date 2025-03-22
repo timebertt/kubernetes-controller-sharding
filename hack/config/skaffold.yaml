@@ -109,6 +109,10 @@ deploy:
               - bash
               - -c
               - |
+                kubectl wait --for=condition=Available=true deploy -n kyverno kyverno-admission-controller --timeout=120s
+                kubectl wait --for=create validatingwebhookconfiguration kyverno-policy-validating-webhook-cfg
+                kubectl wait --for=create mutatingwebhookconfiguration kyverno-resource-mutating-webhook-cfg
+
                 for i in $(seq 1 20); do
                   # create dummy policy with dry-run enabled to test availability of webhook
                   if kubectl create --dry-run=server -f <(yq '.metadata.name |= "test-kyverno"' hack/config/policy/shoot/sharder-scheduling.yaml) ; then
@@ -141,11 +145,36 @@ profiles:
             - --server-side
             - --force-conflicts
         defaultNamespace: ""
+  - name: ci
+    activation:
+      - env: CI=.+
+    manifests:
+      kustomize:
+        paths:
+          - hack/config/policy/ci
+    deploy:
+      kubectl:
+        flags:
+          apply:
+            - --server-side
+            - --force-conflicts
+        defaultNamespace: ""
+        hooks:
+          after:
+          - host:
+              command:
+              - /usr/bin/env
+              - bash
+              - -c
+              - kubectl wait --for=condition=Ready=true clusterpolicy no-requests-limits --timeout=30s
 ---
 apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
   name: sharder
+requires:
+  - configs:
+      - policy
 build:
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/sharder
@@ -191,6 +220,9 @@ apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
   name: checksum-controller
+requires:
+  - configs:
+      - policy
 build:
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/checksum-controller
@@ -312,8 +344,8 @@ metadata:
   name: webhosting-operator
 requires:
   - configs:
+      - policy
       - monitoring-crds
-      - kyverno
 build:
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator
@@ -389,6 +421,7 @@ metadata:
   name: experiment
 requires:
   - configs:
+      - policy
       - monitoring-crds
 profiles:
   - name: expirement

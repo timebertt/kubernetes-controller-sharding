@@ -1,0 +1,46 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: no-requests-limits
+spec:
+  failurePolicy: Fail
+  rules:
+  # drop resource requests to allow scheduling all controller instances on a resource-restricted kind cluster (e.g., in CI)
+  - name: no-requests-limits
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          selector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - controller-sharding
+            - key: app.kubernetes.io/component
+              operator: In
+              values:
+              - sharder
+              - checksum-controller
+          operations:
+          - CREATE
+      - resources:
+          kinds:
+          - Pod
+          selector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - webhosting-operator
+          operations:
+          - CREATE
+    mutate:
+      foreach:
+      - list: request.object.spec.containers
+        patchStrategicMerge:
+          spec:
+            containers:
+            - (name): "{{element.name}}"
+              resources: null

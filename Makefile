@@ -88,7 +88,7 @@ test-kyverno: $(KYVERNO) ## Run kyverno policy tests.
 
 .PHONY: test-e2e
 test-e2e: $(GINKGO) ## Run e2e tests.
-	./hack/test-e2e.sh $(GINKGO_FLAGS) ./test/e2e/...
+	./hack/test-e2e.sh $(GINKGO_FLAGS) ./test/e2e/... ./webhosting-operator/test/e2e/...
 
 .PHONY: skaffold-fix
 skaffold-fix: $(SKAFFOLD) ## Upgrade skaffold configuration to the latest apiVersion.

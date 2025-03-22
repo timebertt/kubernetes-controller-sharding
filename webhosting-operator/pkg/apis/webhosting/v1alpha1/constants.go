@@ -21,6 +21,10 @@ import (
 )
 
 const (
+	// NamespaceSystem is the namespace where the webhosting-operator runs.
+	NamespaceSystem = "webhosting-system"
+	// WebhostingOperatorName is the name of the webhosting-operator Deployment, ControllerRing, etc.
+	WebhostingOperatorName = "webhosting-operator"
 	// LabelKeyProject is the label key on Namespaces for identifying webhosting projects.
 	LabelKeyProject = "webhosting.timebertt.dev/project"
 	// LabelValueProject is the label value for LabelKeyProject on Namespaces for identifying webhosting projects.
