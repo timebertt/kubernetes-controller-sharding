@@ -116,7 +116,7 @@ func generateSamples(ctx context.Context, c client.Client) error {
 					Name:      "sample-" + utils.RandomName(8),
 					Namespace: project,
 					Labels: map[string]string{
-						"generated-by": "sample-generator",
+						"generated-by": "samples-generator",
 					},
 				},
 				Spec: webhostingv1alpha1.WebsiteSpec{

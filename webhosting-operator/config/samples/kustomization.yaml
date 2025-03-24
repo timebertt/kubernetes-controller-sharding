@@ -5,5 +5,5 @@ resources:
 - project_namespace.yaml
 - theme_exciting.yaml
 - theme_lame.yaml
-- website_homepage.yaml
-- website_official.yaml
+- website_kubecon.yaml
+- website_library.yaml
