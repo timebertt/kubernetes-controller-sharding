@@ -2,6 +2,7 @@
 .envrc
 hack/kind_kubeconfig.yaml
 .gitguardian.yaml
+.ko.yaml
 
 # Binaries for programs and plugins
 *.exe

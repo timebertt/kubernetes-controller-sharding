@@ -80,7 +80,6 @@ func main() {
 	opts.AddFlags(flag.CommandLine)
 
 	zapOpts := zap.Options{
-		Development: true,
 		TimeEncoder: zapcore.ISO8601TimeEncoder,
 	}
 	zapOpts.BindFlags(flag.CommandLine)

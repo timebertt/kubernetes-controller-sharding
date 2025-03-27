@@ -61,8 +61,7 @@ func init() {
 
 func main() {
 	zapOpts := zap.Options{
-		Development: true,
-		TimeEncoder: zapcore.RFC3339TimeEncoder,
+		TimeEncoder: zapcore.ISO8601TimeEncoder,
 	}
 
 	var (

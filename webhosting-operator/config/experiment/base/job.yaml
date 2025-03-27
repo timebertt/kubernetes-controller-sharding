@@ -13,7 +13,7 @@ spec:
       - name: experiment
         image: experiment:latest
         args:
-        - --zap-log-level=info
+        - --zap-devel
         env:
         - name: RUN_ID
           valueFrom:

@@ -1,17 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 
-generatorOptions:
-  disableNameSuffixHash: true
-
-configMapGenerator:
-- name: webhosting-operator
-  namespace: webhosting-system
-  files:
-  - config.yaml
-
 patches:
-- path: manager_patch.yaml
 - target:
     group: apps
     kind: Deployment
@@ -20,4 +10,4 @@ patches:
   patch: |
     - op: add
       path: /spec/template/spec/containers/0/args/-
-      value: --config=/config.yaml
+      value: --zap-devel

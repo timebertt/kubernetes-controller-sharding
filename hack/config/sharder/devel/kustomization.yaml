@@ -11,9 +11,6 @@ patches:
     name: sharder
     namespace: sharding-system
   patch: |
-    - op: test
-      path: /spec/template/spec/containers/0/args/0
-      value: --zap-log-level=info
-    - op: replace
-      path: /spec/template/spec/containers/0/args/0
-      value: --zap-log-level=debug
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --zap-devel

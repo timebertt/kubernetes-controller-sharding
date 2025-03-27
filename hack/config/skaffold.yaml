@@ -172,9 +172,6 @@ apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
   name: sharder
-requires:
-  - configs:
-      - policy
 build:
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/sharder
@@ -208,21 +205,19 @@ deploy:
         - --force-conflicts
     defaultNamespace: ""
 profiles:
-  - name: kind
+  - name: devel
     activation:
       - kubeContext: kind-.*
+      - env: DEVEL=true
     patches:
       - op: replace
         path: /manifests/kustomize/paths/0
-        value: hack/config/sharder/local
+        value: hack/config/sharder/devel
 ---
 apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
   name: checksum-controller
-requires:
-  - configs:
-      - policy
 build:
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/checksum-controller
@@ -342,10 +337,6 @@ apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
   name: webhosting-operator
-requires:
-  - configs:
-      - policy
-      - monitoring-crds
 build:
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator
@@ -382,6 +373,14 @@ deploy:
               - make
               - generate-fast-webhosting
 profiles:
+  - name: devel
+    activation:
+      - kubeContext: kind-.*
+      - env: DEVEL=true
+    patches:
+      - op: replace
+        path: /manifests/kustomize/paths/0
+        value: webhosting-operator/config/manager/overlays/devel
   - name: debug
     activation:
       - command: debug
@@ -403,26 +402,47 @@ profiles:
     patches:
       - op: replace
         path: /manifests/kustomize/paths/0
-        # default configuration: only run operator shards and use external sharding implementation via ControllerRing
+        # default configuration: run sharded operator and use external sharding implementation via ControllerRing
         value: webhosting-operator/config/manager/overlays/shoot/default
       - op: add
         path: /manifests/kustomize/paths/-
         value: webhosting-operator/config/policy
+  - name: shoot-devel
+    requiresAllActivations: true
+    activation:
+      - kubeContext: .*--sharding.*
+      - env: DEVEL=true
+    patches:
+      - op: replace
+        path: /manifests/kustomize/paths/0
+        # default configuration + devel mode
+        value: webhosting-operator/config/manager/overlays/shoot/devel
   - name: shoot-non-sharded
+    requiresAllActivations: true
+    activation:
+      - kubeContext: .*--sharding.*
+      - env: ENABLE_SHARDING=false
     patches:
       - op: replace
         path: /manifests/kustomize/paths/0
         # singleton controller without sharding for comparison
         value: webhosting-operator/config/manager/overlays/shoot/non-sharded
+  - name: shoot-non-sharded-devel
+    requiresAllActivations: true
+    activation:
+      - kubeContext: .*--sharding.*
+      - env: ENABLE_SHARDING=false
+      - env: DEVEL=true
+    patches:
+      - op: replace
+        path: /manifests/kustomize/paths/0
+        # non-sharded configuration + devel mode
+        value: webhosting-operator/config/manager/overlays/shoot/non-sharded-devel
 ---
 apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
   name: experiment
-requires:
-  - configs:
-      - policy
-      - monitoring-crds
 profiles:
   - name: expirement
     activation:

@@ -22,7 +22,6 @@ spec:
       - name: sharder
         image: sharder:latest
         args:
-        - --zap-log-level=info
         - --config=/config.yaml
         volumeMounts:
         - name: config
