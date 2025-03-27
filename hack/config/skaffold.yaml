@@ -172,9 +172,6 @@ apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
   name: sharder
-requires:
-  - configs:
-      - policy
 build:
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/sharder
@@ -220,9 +217,6 @@ apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
   name: checksum-controller
-requires:
-  - configs:
-      - policy
 build:
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/checksum-controller
@@ -342,10 +336,6 @@ apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
   name: webhosting-operator
-requires:
-  - configs:
-      - policy
-      - monitoring-crds
 build:
   artifacts:
     - image: ghcr.io/timebertt/kubernetes-controller-sharding/webhosting-operator
@@ -419,10 +409,6 @@ apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
   name: experiment
-requires:
-  - configs:
-      - policy
-      - monitoring-crds
 profiles:
   - name: expirement
     activation:
