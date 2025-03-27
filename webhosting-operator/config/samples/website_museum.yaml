@@ -1,7 +1,7 @@
 apiVersion: webhosting.timebertt.dev/v1alpha1
 kind: Website
 metadata:
-  name: homepage
+  name: museum
   namespace: project-foo
 spec:
-  theme: exciting
+  theme: lame

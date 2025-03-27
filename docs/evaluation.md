@@ -25,22 +25,26 @@ To perform a quick test of the webhosting-operator, create some example `Website
 $ kubectl apply -k webhosting-operator/config/samples
 ...
 
-$ kubectl -n project-foo get website,deploy,svc,ing -L shard.alpha.sharding.timebertt.dev/webhosting-operator
-NAME                                        THEME      PHASE   SINCE   AGE   WEBHOSTING-OPERATOR
-website.webhosting.timebertt.dev/homepage   exciting   Ready   6s      16s   webhosting-operator-98ff76b66-tdrtc
-website.webhosting.timebertt.dev/official   lame       Ready   5s      16s   webhosting-operator-98ff76b66-tdrtc
+$ kubectl -n project-foo get website,deploy,ing,svc,cm -L shard.alpha.sharding.timebertt.dev/webhosting-operator
+NAME                                       THEME      PHASE   SINCE   AGE   WEBHOSTING-OPERATOR
+website.webhosting.timebertt.dev/kubecon   exciting   Ready   1s      3s    webhosting-operator-5f7854768d-8n59m
+website.webhosting.timebertt.dev/library   lame       Ready   1s      3s    webhosting-operator-5f7854768d-j67tj
 
-NAME                              READY   UP-TO-DATE   AVAILABLE   AGE   WEBHOSTING-OPERATOR
-deployment.apps/homepage-98bad4   1/1     1            1           15s   webhosting-operator-98ff76b66-tdrtc
-deployment.apps/official-10ff22   1/1     1            1           15s   webhosting-operator-98ff76b66-tdrtc
+NAME                             READY   UP-TO-DATE   AVAILABLE   AGE   WEBHOSTING-OPERATOR
+deployment.apps/kubecon-b5ed55   1/1     1            1           3s    webhosting-operator-5f7854768d-8n59m
+deployment.apps/library-185298   1/1     1            1           3s    webhosting-operator-5f7854768d-j67tj
 
-NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE   WEBHOSTING-OPERATOR
-service/homepage-98bad4   ClusterIP   100.82.128.107   <none>        8080/TCP   16s   webhosting-operator-98ff76b66-tdrtc
-service/official-10ff22   ClusterIP   100.82.194.21    <none>        8080/TCP   16s   webhosting-operator-98ff76b66-tdrtc
+NAME                                       CLASS   HOSTS                      ADDRESS   PORTS     AGE   WEBHOSTING-OPERATOR
+ingress.networking.k8s.io/kubecon-b5ed55   nginx   webhosting.timebertt.dev             80, 443   3s    webhosting-operator-5f7854768d-8n59m
+ingress.networking.k8s.io/library-185298   nginx   webhosting.timebertt.dev             80, 443   3s    webhosting-operator-5f7854768d-j67tj
 
-NAME                                        CLASS   HOSTS                      ADDRESS   PORTS     AGE   WEBHOSTING-OPERATOR
-ingress.networking.k8s.io/homepage-98bad4   nginx   webhosting.timebertt.dev             80, 443   16s   webhosting-operator-98ff76b66-tdrtc
-ingress.networking.k8s.io/official-10ff22   nginx   webhosting.timebertt.dev             80, 443   15s   webhosting-operator-98ff76b66-tdrtc
+NAME                     TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE   WEBHOSTING-OPERATOR
+service/kubecon-b5ed55   ClusterIP   100.82.167.176   <none>        8080/TCP   3s    webhosting-operator-5f7854768d-8n59m
+service/library-185298   ClusterIP   100.82.224.52    <none>        8080/TCP   3s    webhosting-operator-5f7854768d-j67tj
+
+NAME                       DATA   AGE   WEBHOSTING-OPERATOR
+configmap/kubecon-b5ed55   2      3s    webhosting-operator-5f7854768d-8n59m
+configmap/library-185298   2      3s    webhosting-operator-5f7854768d-j67tj
 ```
 
 You can now visit the created websites at http://localhost:8088/project-foo/homepage and http://localhost:8088/project-foo/official.

@@ -1,0 +1,7 @@
+apiVersion: webhosting.timebertt.dev/v1alpha1
+kind: Website
+metadata:
+  name: library
+  namespace: project-foo
+spec:
+  theme: lame
