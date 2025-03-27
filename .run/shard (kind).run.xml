@@ -2,7 +2,7 @@
   <configuration default="false" name="checksum-controller (kind)" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="kubernetes-controller-sharding" />
     <working_directory value="$PROJECT_DIR$" />
-    <parameters value="--zap-log-level=debug --shard-name=checksum-controller-host --lease-namespace=default" />
+    <parameters value="--zap-devel --shard-name=checksum-controller-host --lease-namespace=default" />
     <envs>
       <env name="KUBECONFIG" value="$PROJECT_DIR$/hack/kind_kubeconfig.yaml" />
     </envs>

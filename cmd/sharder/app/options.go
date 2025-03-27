@@ -63,7 +63,6 @@ type options struct {
 func newOptions() *options {
 	return &options{
 		zapOptions: &zap.Options{
-			Development: true,
 			TimeEncoder: zapcore.ISO8601TimeEncoder,
 		},
 	}

@@ -140,14 +140,14 @@ run: $(KUBECTL) generate-fast ## Run the sharder from your host and deploy prere
 	$(MAKE) deploy SKAFFOLD_MODULE=cert-manager
 	$(KUBECTL) apply --server-side --force-conflicts -k config/crds
 	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/certificates/host
-	go run ./cmd/sharder --config=hack/config/sharder/host/config.yaml --zap-log-level=debug
+	go run ./cmd/sharder --config=hack/config/sharder/host/config.yaml --zap-devel
 
 SHARD_NAME ?= checksum-controller-$(shell tr -dc bcdfghjklmnpqrstvwxz2456789 </dev/urandom | head -c 8)
 
 .PHONY: run-checksum-controller
 run-checksum-controller: $(KUBECTL) ## Run checksum-controller from your host and deploy prerequisites.
 	$(KUBECTL) apply --server-side --force-conflicts -k hack/config/checksum-controller/controllerring
-	go run ./cmd/checksum-controller --shard-name=$(SHARD_NAME) --lease-namespace=default --zap-log-level=debug
+	go run ./cmd/checksum-controller --shard-name=$(SHARD_NAME) --lease-namespace=default --zap-devel
 
 PUSH ?= false
 images: export KO_DOCKER_REPO = $(GHCR_REPO)
