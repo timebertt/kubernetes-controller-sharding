@@ -12,3 +12,12 @@ configMapGenerator:
 
 patches:
 - path: manager_patch.yaml
+- target:
+    group: apps
+    kind: Deployment
+    name: webhosting-operator
+    namespace: webhosting-system
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --config=/config.yaml

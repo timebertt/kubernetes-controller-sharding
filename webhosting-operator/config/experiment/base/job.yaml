@@ -12,8 +12,6 @@ spec:
       containers:
       - name: experiment
         image: experiment:latest
-        args:
-        - --zap-log-level=info
         env:
         - name: RUN_ID
           valueFrom:
