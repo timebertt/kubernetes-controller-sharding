@@ -389,11 +389,22 @@ profiles:
         path: /manifests/kustomize/paths/0
         value: webhosting-operator/config/manager/overlays/debug
   - name: non-sharded
+    activation:
+      - env: ENABLE_SHARDING=false
     patches:
       - op: replace
         path: /manifests/kustomize/paths/0
         # singleton controller without sharding for comparison
         value: webhosting-operator/config/manager/overlays/non-sharded
+  - name: non-sharded-devel
+    requiresAllActivations: true
+    activation:
+      - env: ENABLE_SHARDING=false
+      - env: DEVEL=true
+    patches:
+      - op: replace
+        path: /manifests/kustomize/paths/0
+        value: webhosting-operator/config/manager/overlays/non-sharded-devel
   # The following profiles are variants of the default and non-sharded profiles for running on the shoot cluster
   # with dns for websites enabled.
   - name: shoot
