@@ -27,7 +27,6 @@ import (
 	"github.com/spf13/pflag"
 	"go.uber.org/zap/zapcore"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
@@ -38,9 +37,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
-	shardlease "github.com/timebertt/kubernetes-controller-sharding/pkg/shard/lease"
 )
 
 func main() {
@@ -126,16 +122,6 @@ func (o *options) run(ctx context.Context) error {
 		return fmt.Errorf("failed getting rest config: %w", err)
 	}
 
-	log.Info("Setting up shard lease")
-	shardLease, err := shardlease.NewResourceLock(restConfig, shardlease.Options{
-		ControllerRingName: o.controllerRingName,
-		LeaseNamespace:     o.leaseNamespace, // optional, can be empty
-		ShardName:          o.shardName,      // optional, can be empty
-	})
-	if err != nil {
-		return fmt.Errorf("failed creating shard lease: %w", err)
-	}
-
 	log.Info("Setting up manager")
 	mgr, err := manager.New(restConfig, manager.Options{
 		Metrics: metricsserver.Options{
@@ -145,25 +131,12 @@ func (o *options) run(ctx context.Context) error {
 
 		GracefulShutdownTimeout: ptr.To(5 * time.Second),
 
-		// SHARD LEASE
-		// Use manager's leader election mechanism for maintaining the shard lease.
-		// With this, controllers will only run as long as manager holds the shard lease.
-		// After graceful termination, the shard lease will be released.
-		LeaderElection:                      true,
-		LeaderElectionResourceLockInterface: shardLease,
-		LeaderElectionReleaseOnCancel:       true,
+		LeaderElection:                true,
+		LeaderElectionReleaseOnCancel: true,
 
-		// FILTERED WATCH CACHE
 		Cache: cache.Options{
 			// This controller only acts on objects in a single configured namespace.
 			DefaultNamespaces: map[string]cache.Config{o.namespace: {}},
-			// Configure cache to only watch objects that are assigned to this shard.
-			// This controller only watches sharded objects, so we can configure the label selector on the cache's global level.
-			// If your controller watches sharded objects as well as non-sharded objects, use cache.Options.ByObject to configure
-			// the label selector on object level.
-			DefaultLabelSelector: labels.SelectorFromSet(labels.Set{
-				shardingv1alpha1.LabelShard(o.controllerRingName): shardLease.Identity(),
-			}),
 		},
 	})
 	if err != nil {
@@ -171,7 +144,7 @@ func (o *options) run(ctx context.Context) error {
 	}
 
 	log.Info("Setting up controller")
-	if err := (&Reconciler{}).AddToManager(mgr, o.controllerRingName, shardLease.Identity()); err != nil {
+	if err := (&Reconciler{}).AddToManager(mgr); err != nil {
 		return fmt.Errorf("failed adding controller: %w", err)
 	}
 

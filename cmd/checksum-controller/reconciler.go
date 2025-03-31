@@ -36,8 +36,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	shardcontroller "github.com/timebertt/kubernetes-controller-sharding/pkg/shard/controller"
 )
 
 // Reconciler watches Secrets and creates a ConfigMap for every Secret containing the Secret data's checksums.
@@ -47,29 +45,19 @@ type Reconciler struct {
 }
 
 // AddToManager adds Reconciler to the given manager.
-func (r *Reconciler) AddToManager(mgr manager.Manager, controllerRingName, shardName string) error {
+func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 	if r.Client == nil {
 		r.Client = mgr.GetClient()
 	}
 
-	// ACKNOWLEDGE DRAIN OPERATIONS
-	// Use the shardcontroller package as helpers for:
-	// - a predicate that triggers when the drain label is present (even if the actual predicates don't trigger)
-	// - wrapping the actual reconciler a reconciler that handles the drain operation for us
 	return builder.ControllerManagedBy(mgr).
 		Named("secret-checksums").
-		For(&corev1.Secret{}, builder.WithPredicates(shardcontroller.Predicate(controllerRingName, shardName, SecretDataChanged()))).
+		For(&corev1.Secret{}, builder.WithPredicates(SecretDataChanged())).
 		Owns(&corev1.ConfigMap{}, builder.WithPredicates(ObjectDeleted())).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
 		}).
-		Complete(
-			shardcontroller.NewShardedReconciler(mgr).
-				For(&corev1.Secret{}).
-				InControllerRing(controllerRingName).
-				WithShardName(shardName).
-				MustBuild(r),
-		)
+		Complete(r)
 }
 
 // SecretDataChanged returns a predicate that is similar to predicate.GenerationChangedPredicate but for Secrets
