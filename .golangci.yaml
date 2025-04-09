@@ -1,6 +1,7 @@
+version: "2"
+
 run:
   concurrency: 4
-  timeout: 10m
 
 linters:
   enable:
@@ -14,68 +15,65 @@ linters:
   - nolintlint
   - prealloc
   - revive
-  - stylecheck
+  - staticcheck
   - unconvert
   - unparam
   - whitespace
 
-linters-settings:
-  importas:
-    alias:
-    - pkg: github.com/timebertt/kubernetes-controller-sharding/apis/(\w+)/(v[\w\d]+)
-      alias: $1$2
-    - pkg: github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/(\w+)/(v[\w\d]+)
-      alias: $1$2
-    - pkg: k8s.io/api/(\w+)/(v[\w\d]+)
-      alias: $1$2
-    - pkg: k8s.io/apimachinery/pkg/apis/(\w+)/(v[\w\d]+)
-      alias: $1$2
-    - pkg: k8s.io/apimachinery/pkg/api/([^m]\w+)
-      alias: api${1}
-    - pkg: k8s.io/apimachinery/pkg/util/(\w+)
-      alias: util${1}
-    - pkg: k8s.io/client-go/tools/clientcmd/api/(\w+)
-      alias: clientcmd${1}
-    - pkg: k8s.io/client-go/tools/cache
-      alias: toolscache
-    - pkg: k8s.io/component-base/config/(v[\w\d]+)
-      alias: componentbaseconfig$1
-    - pkg: k8s.io/utils/clock/testing
-      alias: testclock
-    - pkg: sigs.k8s.io/controller-runtime/pkg/client/fake
-      alias: fakeclient
-    - pkg: sigs.k8s.io/controller-runtime/pkg/log/zap
-      alias: logzap
-    - pkg: sigs.k8s.io/controller-runtime/pkg/log
-      alias: logf
-  misspell:
-    locale: US
-  nolintlint:
-    require-specific: true
-  revive:
+  settings:
+    importas:
+      alias:
+      - pkg: github.com/timebertt/kubernetes-controller-sharding/apis/(\w+)/(v[\w\d]+)
+        alias: $1$2
+      - pkg: github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/apis/(\w+)/(v[\w\d]+)
+        alias: $1$2
+      - pkg: k8s.io/api/(\w+)/(v[\w\d]+)
+        alias: $1$2
+      - pkg: k8s.io/apimachinery/pkg/apis/(\w+)/(v[\w\d]+)
+        alias: $1$2
+      - pkg: k8s.io/apimachinery/pkg/api/([^m]\w+)
+        alias: api${1}
+      - pkg: k8s.io/apimachinery/pkg/util/(\w+)
+        alias: util${1}
+      - pkg: k8s.io/client-go/tools/clientcmd/api/(\w+)
+        alias: clientcmd${1}
+      - pkg: k8s.io/client-go/tools/cache
+        alias: toolscache
+      - pkg: k8s.io/component-base/config/(v[\w\d]+)
+        alias: componentbaseconfig$1
+      - pkg: k8s.io/utils/clock/testing
+        alias: testclock
+      - pkg: sigs.k8s.io/controller-runtime/pkg/client/fake
+        alias: fakeclient
+      - pkg: sigs.k8s.io/controller-runtime/pkg/log/zap
+        alias: logzap
+      - pkg: sigs.k8s.io/controller-runtime/pkg/log
+        alias: logf
+    misspell:
+      locale: US
+    nolintlint:
+      require-specific: true
+    revive:
+      rules:
+      - name: context-as-argument
+      - name: duplicated-imports
+      - name: early-return
+      - name: exported
+      - name: unreachable-code
+
+  exclusions:
+    generated: strict
+
+    presets:
+    - comments
+    - common-false-positives
+    - std-error-handling
+
     rules:
-    - name: context-as-argument
-    - name: duplicated-imports
-    - name: early-return
-    - name: exported
-    - name: unreachable-code
-
-issues:
-  exclude-files:
-  - "zz_generated\\..*\\.go$"
-
-  exclude-rules:
-  - linters:
-    - stylecheck
-    text: "ST1003:.+func SetDefaults_"
-  - linters:
-    - stylecheck
-    text: "ST1001: should not use dot imports"
-    path: "pkg/utils/test"
-  - linters:
-    - nolintlint
-    text: "should be written without leading space"
-
-  exclude:
-  # ginkgolinter false positive: https://github.com/nunnatsa/ginkgolinter/issues/190
-  - the MatchError matcher used to assert a non error type \(ctx\)
+    - linters:
+      - staticcheck
+      path: pkg/utils/test
+      text: 'ST1001: should not use dot imports'
+    - linters:
+      - nolintlint
+      text: should be written without leading space
