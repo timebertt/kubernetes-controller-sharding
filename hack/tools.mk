@@ -63,10 +63,10 @@ $(KYVERNO): $(call tool_version_file,$(KYVERNO),$(KYVERNO_VERSION))
 	chmod +x $(KYVERNO)
 
 SETUP_ENVTEST := $(TOOLS_BIN_DIR)/setup-envtest
-# upgrade setup-envtest every time we upgrade controller-runtime, although the resulting version might be newer than the controller-runtime release
-SETUP_ENVTEST_VERSION ?= $(call version_gomod,sigs.k8s.io/controller-runtime)
-$(SETUP_ENVTEST): $(call tool_version_file,$(SETUP_ENVTEST),$(SETUP_ENVTEST_VERSION))
-	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-$(subst v,,$(shell echo $(SETUP_ENVTEST_VERSION) | cut -d. -f1,2))
+CONTROLLER_RUNTIME_VERSION ?= $(call version_gomod,sigs.k8s.io/controller-runtime)
+$(SETUP_ENVTEST): $(call tool_version_file,$(SETUP_ENVTEST),$(CONTROLLER_RUNTIME_VERSION))
+	curl -Lo $(SETUP_ENVTEST) https://github.com/kubernetes-sigs/controller-runtime/releases/download/$(CONTROLLER_RUNTIME_VERSION)/setup-envtest-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+	chmod +x $(SETUP_ENVTEST)
 
 SKAFFOLD := $(TOOLS_BIN_DIR)/skaffold
 # renovate: datasource=github-releases depName=GoogleContainerTools/skaffold
