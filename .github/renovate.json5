@@ -127,10 +127,11 @@
       automerge: true,
     },
     {
-      // jsonpatch has to be kept in sync with k8s and controller-runtime dependencies
+      // jsonpatch major version has to be kept in sync with k8s and controller-runtime dependencies
       matchDatasources: ['go'],
       matchPackageNames: ['gomodules.xyz/jsonpatch/*'],
-      enabled: false,
+      matchUpdateTypes: ['major'],
+      enabled: false
     },
     {
       // kind minor k8s version should be updated together with shoot k8s version
