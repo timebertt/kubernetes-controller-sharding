@@ -237,7 +237,7 @@ func prepareOutputDir() error {
 		outputDir = "."
 	}
 
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0750); err != nil {
 		return err
 	}
 
@@ -303,7 +303,7 @@ func (q Query) writeResult(data metricData) error {
 		out = os.Stdout
 		fmt.Println("# " + fileName)
 	} else {
-		file, err := os.OpenFile(filepath.Join(outputDir, fileName), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+		file, err := os.OpenFile(filepath.Join(outputDir, fileName), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
 			return err
 		}
@@ -418,7 +418,7 @@ type matrixData struct {
 }
 
 func (m *matrixData) IsEmpty() bool {
-	return m.Matrix.Len() == 0
+	return m.Len() == 0
 }
 
 func (m *matrixData) GetLabelNames() model.LabelNames {
@@ -477,7 +477,7 @@ type vectorData struct {
 }
 
 func (v *vectorData) IsEmpty() bool {
-	return v.Vector.Len() == 0
+	return v.Len() == 0
 }
 
 func (v *vectorData) GetLabelNames() model.LabelNames {

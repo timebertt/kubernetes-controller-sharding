@@ -49,8 +49,8 @@ type Scenario struct {
 
 	Log     logr.Logger
 	Manager manager.Manager
-	client.Client
-	done chan struct{}
+	Client  client.Client
+	done    chan struct{}
 
 	RunID    string
 	Labels   map[string]string
