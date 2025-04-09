@@ -145,6 +145,11 @@
       addLabels: ['no-release-note']
     },
     {
+      matchDatasources: ['go'],
+      matchPackageNames: ['github.com/onsi/gomega', 'github.com/onsi/ginkgo/*', 'k8s.io/utils'],
+      addLabels: ['no-release-note']
+    },
+    {
       // combine upgrade of manifests and image tag in one PR
       groupName: 'external-dns',
       matchPackageNames: ['/external-dns/'],
