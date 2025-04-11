@@ -22,7 +22,7 @@ jobs:
     - uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
-    - uses: ko-build/setup-ko@v0.8
+    - uses: ko-build/setup-ko@v0.9
       with:
         version: ${{ env.KO_VERSION }}
     - name: Prepare image metadata
