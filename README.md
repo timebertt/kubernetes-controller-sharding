@@ -9,8 +9,8 @@ Remove the limitation to have only a single active replica (leader) per controll
 
 See [Getting Started With Controller Sharding](docs/getting-started.md) for a quick start with this project.
 
-> [!NOTE]
-> If you're attending KubeCon EU 2025 in London, swing by for my talk about this project! Find my talk on the [schedule](https://sched.co/1txFG).
+I presented this project at KubeCon Europe 2025.
+Check out the [recording](https://youtu.be/OTzd9eTtLRA) for a 30-minute overview with demos!
 
 ## About ℹ️
 
@@ -77,6 +77,3 @@ See [Design](docs/design.md) for more details on the sharding architecture and d
 ## Discussion 💬
 
 Feel free to contact me on the [Kubernetes Slack](https://kubernetes.slack.com/) ([get an invitation](https://slack.k8s.io/)): [@timebertt](https://kubernetes.slack.com/team/UF8C35Z0D).
-
-Also check out my talk at KubeCon EU 2025 about this project (see the [schedule](https://sched.co/1txFG)).
-Reach out on Slack or try to grab me for a chat at the STACKIT or Gardener booth!
