@@ -57,7 +57,7 @@ $(KUBECTL): $(call tool_version_file,$(KUBECTL),$(KUBECTL_VERSION))
 
 KYVERNO := $(TOOLS_BIN_DIR)/kyverno
 # renovate: datasource=github-releases depName=kyverno/kyverno
-KYVERNO_VERSION ?= v1.13.4
+KYVERNO_VERSION ?= v1.14.0
 $(KYVERNO): $(call tool_version_file,$(KYVERNO),$(KYVERNO_VERSION))
 	curl -Lo - https://github.com/kyverno/kyverno/releases/download/$(KYVERNO_VERSION)/kyverno-cli_$(KYVERNO_VERSION)_$(shell uname -s | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed 's/aarch64/arm64/').tar.gz | tar -xzmf - -C $(TOOLS_BIN_DIR) kyverno
 	chmod +x $(KYVERNO)
