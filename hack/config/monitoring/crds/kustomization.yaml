@@ -7,7 +7,7 @@ labels:
   pairs:
     app.kubernetes.io/name: prometheus-operator
     app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: 0.76.2
+    app.kubernetes.io/version: 0.83.0
 
 resources:
 - 0alertmanagerConfigCustomResourceDefinition.yaml

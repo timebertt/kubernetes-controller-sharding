@@ -5,7 +5,7 @@ metadata:
     app.kubernetes.io/component: exporter
     app.kubernetes.io/name: node-exporter
     app.kubernetes.io/part-of: kube-prometheus
-    app.kubernetes.io/version: 1.8.2
+    app.kubernetes.io/version: 1.9.1
     prometheus: k8s
     role: alert-rules
   name: node-exporter-rules
@@ -156,7 +156,7 @@ spec:
         severity: warning
     - alert: NodeHighNumberConntrackEntriesUsed
       annotations:
-        description: '{{ $value | humanizePercentage }} of conntrack entries are used.'
+        description: '{{ $labels.instance }} {{ $value | humanizePercentage }} of conntrack entries are used.'
         runbook_url: https://runbooks.prometheus-operator.dev/runbooks/node/nodehighnumberconntrackentriesused
         summary: Number of conntrack are getting close to the limit.
       expr: |
@@ -254,7 +254,7 @@ spec:
         runbook_url: https://runbooks.prometheus-operator.dev/runbooks/node/nodecpuhighusage
         summary: High CPU usage.
       expr: |
-        sum without(mode) (avg without (cpu) (rate(node_cpu_seconds_total{job="node-exporter", mode!="idle"}[2m]))) * 100 > 90
+        sum without(mode) (avg without (cpu) (rate(node_cpu_seconds_total{job="node-exporter", mode!~"idle|iowait"}[2m]))) * 100 > 90
       for: 15m
       labels:
         severity: info
@@ -314,6 +314,16 @@ spec:
       expr: |
         node_systemd_unit_state{job="node-exporter", state="failed"} == 1
       for: 5m
+      labels:
+        severity: warning
+    - alert: NodeSystemdServiceCrashlooping
+      annotations:
+        description: Systemd service {{ $labels.name }} has being restarted too many times at {{ $labels.instance }} for the last 15 minutes. Please check if service is crash looping.
+        runbook_url: https://runbooks.prometheus-operator.dev/runbooks/node/nodesystemdservicecrashlooping
+        summary: Systemd service keeps restaring, possibly crash looping.
+      expr: |
+        increase(node_systemd_service_restart_total{job="node-exporter"}[5m]) > 2
+      for: 15m
       labels:
         severity: warning
     - alert: NodeBondingDegraded
