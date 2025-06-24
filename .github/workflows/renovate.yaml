@@ -32,7 +32,7 @@ jobs:
     # Run `make generate` and commit all changes if any.
     - run: make tidy generate
       if: steps.safety.outputs.skip != 'true'
-    - uses: stefanzweifel/git-auto-commit-action@v5
+    - uses: stefanzweifel/git-auto-commit-action@v6
       if: steps.safety.outputs.skip != 'true'
       with:
         commit_message: |
