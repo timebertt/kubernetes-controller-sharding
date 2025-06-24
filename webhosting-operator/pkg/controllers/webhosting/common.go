@@ -29,6 +29,7 @@ func SilenceConflicts(r reconcile.Reconciler) reconcile.Reconciler {
 	return reconcile.Func(func(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 		result, err := r.Reconcile(ctx, request)
 		if apierrors.IsConflict(err) {
+			// nolint:staticcheck // this should be a valid use case of Result.Requeue
 			result.Requeue = true
 			// RequeueAfter takes precedence over Requeue, set it to zero in case it was returned alongside a conflict error
 			result.RequeueAfter = 0
