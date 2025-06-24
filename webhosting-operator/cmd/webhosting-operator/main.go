@@ -24,7 +24,6 @@ import (
 	goruntime "runtime"
 	"strconv"
 
-	"github.com/prometheus/client_golang/prometheus/collectors"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap/zapcore"
 	appsv1 "k8s.io/api/apps/v1"
@@ -43,7 +42,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
@@ -101,10 +99,6 @@ func main() {
 	})); err != nil {
 		setupLog.Error(err, "Failed to set GOMAXPROCS")
 	}
-
-	// replace deprecated legacy go collector
-	metrics.Registry.Unregister(collectors.NewGoCollector())
-	metrics.Registry.MustRegister(collectors.NewGoCollector(collectors.WithGoCollectorRuntimeMetrics(collectors.MetricsAll)))
 
 	mgr, err := ctrl.NewManager(opts.restConfig, opts.managerOptions)
 	if err != nil {
