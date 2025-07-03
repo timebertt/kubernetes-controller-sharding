@@ -35,9 +35,6 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 
 func SetObjectDefaults_WebhostingOperatorConfig(in *WebhostingOperatorConfig) {
 	SetDefaults_WebhostingOperatorConfig(in)
-	if in.ClientConnection != nil {
-		SetDefaults_ClientConnectionConfiguration(in.ClientConnection)
-	}
 	if in.LeaderElection != nil {
 		SetDefaults_LeaderElectionConfiguration(in.LeaderElection)
 	}

@@ -50,16 +50,6 @@ func SetDefaults_SharderConfig(obj *SharderConfig) {
 	}
 }
 
-func SetDefaults_ClientConnectionConfiguration(obj *componentbaseconfigv1alpha1.ClientConnectionConfiguration) {
-	// increase default rate limiter settings to make sharder and controller more responsive
-	if obj.QPS == 0 {
-		obj.QPS = 100
-	}
-	if obj.Burst == 0 {
-		obj.Burst = 150
-	}
-}
-
 func SetDefaults_LeaderElectionConfiguration(obj *componentbaseconfigv1alpha1.LeaderElectionConfiguration) {
 	if obj.ResourceLock == "" {
 		obj.ResourceLock = resourcelock.LeasesResourceLock

@@ -37,13 +37,10 @@ var _ = Describe("SharderConfig defaulting", func() {
 	})
 
 	Context("ClientConnectionConfiguration", func() {
-		It("should set default values", func() {
+		It("should not set any default values", func() {
 			SetObjectDefaults_SharderConfig(obj)
 
-			Expect(obj.ClientConnection).To(Equal(&componentbaseconfigv1alpha1.ClientConnectionConfiguration{
-				QPS:   100,
-				Burst: 150,
-			}))
+			Expect(obj.ClientConnection).To(Equal(&componentbaseconfigv1alpha1.ClientConnectionConfiguration{}))
 		})
 	})
 
