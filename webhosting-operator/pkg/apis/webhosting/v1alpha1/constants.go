@@ -29,6 +29,10 @@ const (
 	LabelKeyProject = "webhosting.timebertt.dev/project"
 	// LabelValueProject is the label value for LabelKeyProject on Namespaces for identifying webhosting projects.
 	LabelValueProject = "true"
+
+	// LabelKeySkipWorkload is the label key on Websites for instructing webhosting-operator to skip any actual workload
+	// for the website. Any value is accepted as truthy.
+	LabelKeySkipWorkload = "skip-workload"
 )
 
 var (

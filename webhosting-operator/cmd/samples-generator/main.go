@@ -43,8 +43,9 @@ import (
 var (
 	scheme = runtime.NewScheme()
 
-	count      int
-	namespaces []string
+	count        int
+	namespaces   []string
+	skipWorkload bool
 )
 
 func init() {
@@ -70,6 +71,7 @@ func main() {
 
 	cmd.Flags().IntVarP(&count, "count", "c", count, "number of websites to generate per project")
 	cmd.Flags().StringSliceVarP(&namespaces, "namespace", "n", namespaces, "project namespaces to generate websites in")
+	cmd.Flags().BoolVar(&skipWorkload, "skip-workload", false, "don't run any actual workload for the generated websites")
 
 	if err := cmd.ExecuteContext(signals.SetupSignalHandler()); err != nil {
 		fmt.Printf("Error generating samples: %v\n", err)
@@ -111,7 +113,7 @@ func generateSamples(ctx context.Context, c client.Client) error {
 		}
 
 		for i := 0; i < websiteCount; i++ {
-			if err := c.Create(ctx, &webhostingv1alpha1.Website{
+			website := &webhostingv1alpha1.Website{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "sample-" + utils.RandomName(8),
 					Namespace: project,
@@ -122,7 +124,13 @@ func generateSamples(ctx context.Context, c client.Client) error {
 				Spec: webhostingv1alpha1.WebsiteSpec{
 					Theme: utils.PickRandom(themes),
 				},
-			}); err != nil {
+			}
+
+			if skipWorkload {
+				website.Labels[webhostingv1alpha1.LabelKeySkipWorkload] = "true"
+			}
+
+			if err := c.Create(ctx, website); err != nil {
 				return err
 			}
 		}

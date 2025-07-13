@@ -128,11 +128,14 @@ func describeScaleController(text string, replicas int32) {
 }
 
 func newWebsite(name string) *webhostingv1alpha1.Website {
+	labels := maps.Clone(testRunLabels)
+	labels[webhostingv1alpha1.LabelKeySkipWorkload] = "true"
+
 	return &webhostingv1alpha1.Website{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace.Name,
-			Labels:    maps.Clone(testRunLabels),
+			Labels:    labels,
 		},
 		Spec: webhostingv1alpha1.WebsiteSpec{
 			Theme: theme.Name,

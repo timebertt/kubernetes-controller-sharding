@@ -80,6 +80,8 @@ func (s *Scenario) AddToManager(mgr manager.Manager) error {
 	s.Labels = map[string]string{
 		"generated-by": "experiment",
 		"scenario":     s.ScenarioName,
+
+		webhostingv1alpha1.LabelKeySkipWorkload: "true",
 	}
 
 	return mgr.Add(s)
