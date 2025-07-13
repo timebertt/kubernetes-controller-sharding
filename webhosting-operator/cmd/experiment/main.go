@@ -90,12 +90,8 @@ func main() {
 				log.Error(err, "Failed to set GOMAXPROCS")
 			}
 
-			restConfig := ctrl.GetConfigOrDie()
-			restConfig.QPS = 1000
-			restConfig.Burst = 1200
-
 			var err error
-			mgr, err = ctrl.NewManager(restConfig, ctrl.Options{
+			mgr, err = ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 				Scheme:                 scheme,
 				HealthProbeBindAddress: ":8081",
 				Metrics: metricsserver.Options{

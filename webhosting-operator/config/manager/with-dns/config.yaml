@@ -1,8 +1,5 @@
 apiVersion: config.webhosting.timebertt.dev/v1alpha1
 kind: WebhostingOperatorConfig
-clientConnection:
-  qps: 800
-  burst: 1000
 ingress:
   hosts:
   - webhosting.timebertt.dev
