@@ -7,24 +7,29 @@ spec:
   addons:
     kubernetesDashboard:
       enabled: false
-  cloudProfileName: stackit
+  cloudProfile:
+    kind: CloudProfile
+    name: stackit
   controlPlane:
     highAvailability:
       failureTolerance:
         type: zone
-  extensions:
-  - type: shoot-yawol
   hibernation:
     schedules:
-    - start: "0 6 * * *"
-      location: Europe/Berlin
+    - location: Europe/Berlin
+      start: 0 5 * * *
   kubernetes:
-    enableStaticTokenKubeconfig: false
+    kubeAPIServer:
+      requests:
+        maxMutatingInflight: 200
+        maxNonMutatingInflight: 400
     kubeControllerManager:
       nodeCIDRMaskSize: 24
     kubeProxy:
       mode: IPTables
-    version: "1.31"
+    kubelet:
+      serializeImagePulls: false
+    version: "1.32"
   maintenance:
     autoUpdate:
       kubernetesVersion: true
@@ -33,6 +38,8 @@ spec:
       begin: 030000+0200
       end: 040000+0200
   networking:
+    ipFamilies:
+    - IPv4
     nodes: 10.250.0.0/16
     pods: 100.64.0.0/13
     services: 100.82.0.0/16
@@ -48,7 +55,7 @@ spec:
     controlPlaneConfig:
       apiVersion: openstack.provider.extensions.gardener.cloud/v1alpha1
       kind: ControlPlaneConfig
-      loadBalancerProvider: yawol
+      loadBalancerProvider: stackit
     infrastructureConfig:
       apiVersion: openstack.provider.extensions.gardener.cloud/v1alpha1
       kind: InfrastructureConfig
@@ -81,6 +88,8 @@ spec:
     - name: sharding
       cri:
         name: containerd
+      labels:
+        dedicated-for: sharding
       machine:
         architecture: amd64
         image:
@@ -92,12 +101,10 @@ spec:
       minimum: 2
       systemComponents:
         allow: false
-      labels:
-        dedicated-for: sharding
       taints:
-      - key: dedicated-for
+      - effect: NoSchedule
+        key: dedicated-for
         value: sharding
-        effect: NoSchedule
       volume:
         size: 50Gi
         type: storage_premium_perf1
@@ -107,6 +114,8 @@ spec:
     - name: experiment
       cri:
         name: containerd
+      labels:
+        dedicated-for: experiment
       machine:
         architecture: amd64
         image:
@@ -118,12 +127,10 @@ spec:
       minimum: 0
       systemComponents:
         allow: false
-      labels:
-        dedicated-for: experiment
       taints:
-      - key: dedicated-for
+      - effect: NoSchedule
+        key: dedicated-for
         value: experiment
-        effect: NoSchedule
       volume:
         size: 50Gi
         type: storage_premium_perf1

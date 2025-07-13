@@ -4,7 +4,7 @@ set -o nounset
 set -o pipefail
 set -o errexit
 
-ENVTEST_K8S_VERSION=${ENVTEST_K8S_VERSION:-"1.31"}
+ENVTEST_K8S_VERSION=${ENVTEST_K8S_VERSION:-"1.32"}
 
 # shellcheck disable=SC1090
 # --use-env allows overwriting the envtest tools path via the KUBEBUILDER_ASSETS env var
