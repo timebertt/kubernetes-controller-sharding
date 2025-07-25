@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -38,13 +39,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -79,18 +81,9 @@ type WebsiteReconciler struct {
 //+kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;watch;update;patch;delete
 
 // Reconcile reconciles a Website object.
-func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *WebsiteReconciler) Reconcile(ctx context.Context, website *webhostingv1alpha1.Website) (reconcile.Result, error) {
 	log := logf.FromContext(ctx)
-	log.V(1).Info("reconciling website")
-
-	website := &webhostingv1alpha1.Website{}
-	if err := r.Client.Get(ctx, req.NamespacedName, website); err != nil {
-		if apierrors.IsNotFound(err) {
-			log.Info("Object is gone, stop reconciling")
-			return ctrl.Result{}, nil
-		}
-		return ctrl.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
-	}
+	log.V(1).Info("Reconciling website")
 
 	before := website.DeepCopy()
 	// always update the status with the latest observed generation
@@ -107,12 +100,7 @@ func (r *WebsiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 		if err := r.Client.Status().Update(ctx, website); err != nil {
 			// unable to update status, requeue with backoff
-			if reconcileErr != nil {
-				// if a reconcile error happened as well, prefer this error
-				return reconcile.Result{}, reconcileErr
-			}
-
-			return reconcile.Result{}, fmt.Errorf("failed updating Website status: %w", err)
+			return reconcile.Result{}, errors.Join(reconcileErr, fmt.Errorf("failed updating Website status: %w", err))
 		}
 	}
 
@@ -146,42 +134,28 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 		if apierrors.IsNotFound(err) {
 			return r.recordError(website, "ThemeNotFound", "Theme %s not found", website.Spec.Theme)
 		}
-		return r.recordError(website, "ReconcilerError", "Error getting Theme %s: %v", website.Spec.Theme, err)
+		return r.recordError(website, reasonReconcilerError, "Error getting Theme %s: %v", website.Spec.Theme, err)
 	}
 
 	serverName := calculateServerName(website)
 
 	// create downstream objects
-	configMap, err := r.ConfigMapForWebsite(serverName, website, theme)
+	configMap, err := r.reconcileConfigMap(ctx, log, serverName, website, theme)
 	if err != nil {
-		return r.recordError(website, "ReconcilerError", "Error computing ConfigMap: %v", err)
-	}
-	if err := r.Client.Patch(ctx, configMap, client.Apply, client.ForceOwnership); err != nil {
-		return r.recordError(website, "ReconcilerError", "Error applying ConfigMap: %v", err)
+		return r.recordError(website, reasonReconcilerError, "Error reconciling ConfigMap: %v", err)
 	}
 
-	service, err := r.ServiceForWebsite(serverName, website)
-	if err != nil {
-		return r.recordError(website, "ReconcilerError", "Error computing Service: %v", err)
-	}
-	if err := r.Client.Patch(ctx, service, client.Apply, client.ForceOwnership); err != nil {
-		return r.recordError(website, "ReconcilerError", "Error applying Service: %v", err)
+	if err := r.reconcileService(ctx, log, serverName, website); err != nil {
+		return r.recordError(website, reasonReconcilerError, "Error reconciling Service: %v", err)
 	}
 
-	ingress, err := r.IngressForWebsite(serverName, website)
-	if err != nil {
-		return r.recordError(website, "ReconcilerError", "Error computing Ingress: %v", err)
-	}
-	if err := r.Client.Patch(ctx, ingress, client.Apply, client.ForceOwnership); err != nil {
-		return r.recordError(website, "ReconcilerError", "Error applying Ingress: %v", err)
+	if err := r.reconcileIngress(ctx, log, serverName, website); err != nil {
+		return r.recordError(website, reasonReconcilerError, "Error reconciling Ingress: %v", err)
 	}
 
-	deployment, err := r.DeploymentForWebsite(serverName, website, configMap)
+	deployment, err := r.reconcileDeployment(ctx, log, serverName, website, configMap)
 	if err != nil {
-		return r.recordError(website, "ReconcilerError", "Error computing Deployment: %v", err)
-	}
-	if err := r.Client.Patch(ctx, deployment, client.Apply, client.ForceOwnership); err != nil {
-		return r.recordError(website, "ReconcilerError", "Error applying Deployment: %v", err)
+		return r.recordError(website, reasonReconcilerError, "Error reconciling Deployment: %v", err)
 	}
 
 	// update status
@@ -193,6 +167,8 @@ func (r *WebsiteReconciler) reconcileWebsite(ctx context.Context, log logr.Logge
 
 	return nil
 }
+
+const reasonReconcilerError = "ReconcilerError"
 
 func (r *WebsiteReconciler) recordError(website *webhostingv1alpha1.Website, reason, messageFmt string, args ...interface{}) error {
 	r.Recorder.Eventf(website, corev1.EventTypeWarning, reason, messageFmt, args...)
@@ -207,8 +183,7 @@ const (
 	portNameHTTP = "http"
 )
 
-// ConfigMapForWebsite creates a ConfigMap object to be applied for the given website.
-func (r *WebsiteReconciler) ConfigMapForWebsite(serverName string, website *webhostingv1alpha1.Website, theme *webhostingv1alpha1.Theme) (*corev1.ConfigMap, error) {
+func (r *WebsiteReconciler) reconcileConfigMap(ctx context.Context, log logr.Logger, serverName string, website *webhostingv1alpha1.Website, theme *webhostingv1alpha1.Theme) (*corev1.ConfigMap, error) {
 	indexHTML, err := templates.RenderIndexHTML(serverName, website, theme)
 	if err != nil {
 		return nil, err
@@ -218,108 +193,111 @@ func (r *WebsiteReconciler) ConfigMapForWebsite(serverName string, website *webh
 		return nil, err
 	}
 
-	configMap := &corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: corev1.SchemeGroupVersion.String(),
-			Kind:       "ConfigMap",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      serverName,
-			Namespace: website.Namespace,
-			Labels:    mergeMaps(website.Labels, getLabelsForServer(serverName, website.Name)),
-		},
-		Data: map[string]string{
-			keyIndexHTML: indexHTML,
-			keyNginxConf: nginxConf,
-		},
-	}
-
-	return configMap, ctrl.SetControllerReference(website, configMap, r.Scheme)
-}
-
-// ServiceForWebsite creates a Service object to be applied for the given website.
-func (r *WebsiteReconciler) ServiceForWebsite(serverName string, website *webhostingv1alpha1.Website) (*corev1.Service, error) {
-	service := &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: corev1.SchemeGroupVersion.String(),
-			Kind:       "Service",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      serverName,
-			Namespace: website.Namespace,
-			Labels:    mergeMaps(website.Labels, getLabelsForServer(serverName, website.Name)),
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: getLabelsForServer(serverName, website.Name),
-			Type:     corev1.ServiceTypeClusterIP,
-			Ports: []corev1.ServicePort{{
-				Name:       portNameHTTP,
-				Port:       8080,
-				TargetPort: intstr.FromString(portNameHTTP),
-				Protocol:   corev1.ProtocolTCP,
-			}},
-		},
-	}
-
-	return service, ctrl.SetControllerReference(website, service, r.Scheme)
-}
-
-// IngressForWebsite creates a Ingress object to be applied for the given website.
-func (r *WebsiteReconciler) IngressForWebsite(serverName string, website *webhostingv1alpha1.Website) (*networkingv1.Ingress, error) {
-	ingress := &networkingv1.Ingress{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: networkingv1.SchemeGroupVersion.String(),
-			Kind:       "Ingress",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      serverName,
-			Namespace: website.Namespace,
-			Labels:    mergeMaps(website.Labels, getLabelsForServer(serverName, website.Name)),
-		},
-	}
-
-	// base ingress rule value
-	pathType := networkingv1.PathTypePrefix
-	ingressRuleValue := networkingv1.IngressRuleValue{
-		HTTP: &networkingv1.HTTPIngressRuleValue{
-			Paths: []networkingv1.HTTPIngressPath{{
-				Path:     fmt.Sprintf("/%s/%s", website.Namespace, website.Name),
-				PathType: &pathType,
-				Backend: networkingv1.IngressBackend{
-					Service: &networkingv1.IngressServiceBackend{
-						Name: serverName,
-						Port: networkingv1.ServiceBackendPort{
-							Name: portNameHTTP,
-						},
-					},
-				},
-			}},
-		},
-	}
-
-	// add default rule without hosts
-	ingress.Spec.Rules = []networkingv1.IngressRule{{
-		IngressRuleValue: ingressRuleValue,
+	configMap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+		Name:      serverName,
+		Namespace: website.Namespace,
 	}}
 
-	applyIngressConfigToIngress(r.Config.Ingress, ingress)
+	res, err := controllerutil.CreateOrPatch(ctx, r.Client, configMap, func() error {
+		configMap.Labels = mergeMaps(website.Labels, getLabelsForServer(serverName, website.Name))
 
-	if skipWorkload(website) {
-		// don't actually expose website ingresses in load tests
-		// use fake ingress class to prevent overloading ingress controller (this is not what we want to load test)
-		ingress.Spec.IngressClassName = ptr.To("fake")
+		configMap.Data = map[string]string{
+			keyIndexHTML: indexHTML,
+			keyNginxConf: nginxConf,
+		}
+
+		return controllerutil.SetControllerReference(website, configMap, r.Scheme)
+	})
+	if res != controllerutil.OperationResultNone {
+		log.V(1).Info("Reconciled ConfigMap", "result", res)
 	}
+	return configMap, err
+}
 
-	return ingress, ctrl.SetControllerReference(website, ingress, r.Scheme)
+func (r *WebsiteReconciler) reconcileService(ctx context.Context, log logr.Logger, serverName string, website *webhostingv1alpha1.Website) error {
+	service := &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+		Name:      serverName,
+		Namespace: website.Namespace,
+	}}
+
+	res, err := controllerutil.CreateOrPatch(ctx, r.Client, service, func() error {
+		service.Labels = mergeMaps(website.Labels, getLabelsForServer(serverName, website.Name))
+
+		service.Spec.Type = corev1.ServiceTypeClusterIP
+		service.Spec.Selector = getLabelsForServer(serverName, website.Name)
+		service.Spec.Ports = []corev1.ServicePort{{
+			Name:       portNameHTTP,
+			Port:       8080,
+			TargetPort: intstr.FromString(portNameHTTP),
+			Protocol:   corev1.ProtocolTCP,
+		}}
+
+		return controllerutil.SetControllerReference(website, service, r.Scheme)
+	})
+	if res != controllerutil.OperationResultNone {
+		log.V(1).Info("Reconciled Service", "result", res)
+	}
+	return err
+}
+
+func (r *WebsiteReconciler) reconcileIngress(ctx context.Context, log logr.Logger, serverName string, website *webhostingv1alpha1.Website) error {
+	ingress := &networkingv1.Ingress{ObjectMeta: metav1.ObjectMeta{
+		Name:      serverName,
+		Namespace: website.Namespace,
+	}}
+
+	res, err := controllerutil.CreateOrPatch(ctx, r.Client, ingress, func() error {
+		ingress.Labels = mergeMaps(website.Labels, getLabelsForServer(serverName, website.Name))
+
+		// base ingress rule value
+		pathType := networkingv1.PathTypePrefix
+		ingressRuleValue := networkingv1.IngressRuleValue{
+			HTTP: &networkingv1.HTTPIngressRuleValue{
+				Paths: []networkingv1.HTTPIngressPath{{
+					Path:     fmt.Sprintf("/%s/%s", website.Namespace, website.Name),
+					PathType: &pathType,
+					Backend: networkingv1.IngressBackend{
+						Service: &networkingv1.IngressServiceBackend{
+							Name: serverName,
+							Port: networkingv1.ServiceBackendPort{
+								Name: portNameHTTP,
+							},
+						},
+					},
+				}},
+			},
+		}
+
+		// add default rule without hosts
+		ingress.Spec.Rules = []networkingv1.IngressRule{{
+			IngressRuleValue: ingressRuleValue,
+		}}
+
+		applyIngressConfigToIngress(r.Config.Ingress, ingress)
+
+		if skipWorkload(website) {
+			// don't actually expose website ingresses in load tests
+			// use fake ingress class to prevent overloading ingress controller (this is not what we want to load test)
+			ingress.Spec.IngressClassName = ptr.To("fake")
+		} else if ptr.Deref(ingress.Spec.IngressClassName, "") == "fake" {
+			ingress.Spec.IngressClassName = nil
+		}
+
+		return controllerutil.SetControllerReference(website, ingress, r.Scheme)
+	})
+	if res != controllerutil.OperationResultNone {
+		log.V(1).Info("Reconciled Ingress", "result", res)
+	}
+	return err
 }
 
 func applyIngressConfigToIngress(config *configv1alpha1.IngressConfiguration, ingress *networkingv1.Ingress) {
 	if config == nil {
-		// nothing to apply, go with defaults
-		return
+		config = &configv1alpha1.IngressConfiguration{}
 	}
 
 	// apply annotations
+	ingress.Annotations = nil
 	for key, value := range config.Annotations {
 		metav1.SetMetaDataAnnotation(&ingress.ObjectMeta, key, value)
 	}
@@ -339,6 +317,7 @@ func applyIngressConfigToIngress(config *configv1alpha1.IngressConfiguration, in
 	}
 
 	// apply TLS config
+	ingress.Spec.TLS = nil
 	if len(config.TLS) > 0 {
 		ingress.Spec.TLS = make([]networkingv1.IngressTLS, len(config.TLS))
 		for i, tls := range config.TLS {
@@ -347,90 +326,91 @@ func applyIngressConfigToIngress(config *configv1alpha1.IngressConfiguration, in
 	}
 }
 
-// DeploymentForWebsite creates a Deployment object to be applied for the given website.
-func (r *WebsiteReconciler) DeploymentForWebsite(serverName string, website *webhostingv1alpha1.Website, configMap *corev1.ConfigMap) (*appsv1.Deployment, error) {
+func (r *WebsiteReconciler) reconcileDeployment(ctx context.Context, log logr.Logger, serverName string, website *webhostingv1alpha1.Website, configMap *corev1.ConfigMap) (*appsv1.Deployment, error) {
 	configMapChecksum, err := calculateConfigMapChecksum(configMap)
 	if err != nil {
 		return nil, fmt.Errorf("error calculating checksum of ConfigMap: %w", err)
 	}
 
-	deployment := &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: appsv1.SchemeGroupVersion.String(),
-			Kind:       "Deployment",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      serverName,
-			Namespace: website.Namespace,
-			Labels:    mergeMaps(website.Labels, getLabelsForServer(serverName, website.Name)),
-		},
-		Spec: appsv1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: getLabelsForServer(serverName, website.Name),
-			},
-			Replicas:             ptr.To[int32](1),
-			RevisionHistoryLimit: ptr.To[int32](2),
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: getLabelsForServer(serverName, website.Name),
-					Annotations: map[string]string{
-						"checksum/configmap": configMapChecksum,
-					},
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{{
-						Name:  "nginx",
-						Image: "nginx:1.21-alpine",
-						Ports: []corev1.ContainerPort{{
-							Name:          portNameHTTP,
-							ContainerPort: 80,
-							Protocol:      corev1.ProtocolTCP,
-						}},
-						VolumeMounts: []corev1.VolumeMount{{
-							Name:      "website-data",
-							ReadOnly:  true,
-							MountPath: "/usr/share/nginx/html",
-						}, {
-							Name:      "website-config",
-							ReadOnly:  true,
-							MountPath: "/etc/nginx/conf.d",
-						}},
+	deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+		Name:      serverName,
+		Namespace: website.Namespace,
+	}}
+
+	res, err := controllerutil.CreateOrPatch(ctx, r.Client, deployment, func() error {
+		deployment.Labels = mergeMaps(website.Labels, getLabelsForServer(serverName, website.Name))
+
+		deployment.Spec.Selector = &metav1.LabelSelector{
+			MatchLabels: getLabelsForServer(serverName, website.Name),
+		}
+		deployment.Spec.RevisionHistoryLimit = ptr.To[int32](2)
+		deployment.Spec.Template.Labels = getLabelsForServer(serverName, website.Name)
+		deployment.Spec.Template.Annotations = map[string]string{
+			"checksum/configmap": configMapChecksum,
+		}
+
+		if len(deployment.Spec.Template.Spec.Containers) != 1 {
+			deployment.Spec.Template.Spec.Containers = []corev1.Container{{}}
+		}
+		container := &deployment.Spec.Template.Spec.Containers[0]
+
+		container.Name = "nginx"
+		container.Image = "nginx:1.29-alpine"
+		container.ImagePullPolicy = corev1.PullIfNotPresent
+		container.Ports = []corev1.ContainerPort{{
+			Name:          portNameHTTP,
+			ContainerPort: 80,
+			Protocol:      corev1.ProtocolTCP,
+		}}
+		container.VolumeMounts = []corev1.VolumeMount{{
+			Name:      "website-data",
+			ReadOnly:  true,
+			MountPath: "/usr/share/nginx/html",
+		}, {
+			Name:      "website-config",
+			ReadOnly:  true,
+			MountPath: "/etc/nginx/conf.d",
+		}}
+
+		deployment.Spec.Template.Spec.Volumes = []corev1.Volume{{
+			Name: "website-data",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{Name: configMap.Name},
+					Items: []corev1.KeyToPath{{
+						Key:  keyIndexHTML,
+						Path: "index.html",
 					}},
-					Volumes: []corev1.Volume{{
-						Name: "website-data",
-						VolumeSource: corev1.VolumeSource{
-							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{Name: configMap.Name},
-								Items: []corev1.KeyToPath{{
-									Key:  keyIndexHTML,
-									Path: "index.html",
-								}},
-							},
-						},
-					}, {
-						Name: "website-config",
-						VolumeSource: corev1.VolumeSource{
-							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{Name: configMap.Name},
-								Items: []corev1.KeyToPath{{
-									Key:  keyNginxConf,
-									Path: "nginx.conf",
-								}},
-							},
-						},
-					}},
+					DefaultMode: ptr.To(corev1.ConfigMapVolumeSourceDefaultMode),
 				},
 			},
-		},
-	}
+		}, {
+			Name: "website-config",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{Name: configMap.Name},
+					Items: []corev1.KeyToPath{{
+						Key:  keyNginxConf,
+						Path: "nginx.conf",
+					}},
+					DefaultMode: ptr.To(corev1.ConfigMapVolumeSourceDefaultMode),
+				},
+			},
+		}}
 
-	if skipWorkload(website) {
-		// don't actually run website pods in load tests
-		// otherwise, we would need an immense amount of compute power for running dummy websites
-		deployment.Spec.Replicas = ptr.To[int32](0)
-	}
+		deployment.Spec.Replicas = ptr.To[int32](1)
+		if skipWorkload(website) {
+			// don't actually run website pods in load tests
+			// otherwise, we would need an immense amount of compute power for running dummy websites
+			deployment.Spec.Replicas = ptr.To[int32](0)
+		}
 
-	return deployment, ctrl.SetControllerReference(website, deployment, r.Scheme)
+		return controllerutil.SetControllerReference(website, deployment, r.Scheme)
+	})
+	if res != controllerutil.OperationResultNone {
+		log.V(1).Info("Reconciled Deployment", "result", res)
+	}
+	return deployment, err
 }
 
 func getLabelsForServer(serverName, name string) map[string]string {
@@ -477,9 +457,9 @@ const (
 )
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager, enableSharding bool, controllerRingName, shardName string) error {
+func (r *WebsiteReconciler) SetupWithManager(mgr manager.Manager, enableSharding bool, controllerRingName, shardName string) error {
 	if r.Client == nil {
-		r.Client = client.WithFieldOwner(mgr.GetClient(), ControllerName+"-controller")
+		r.Client = mgr.GetClient()
 	}
 	if r.Scheme == nil {
 		r.Scheme = mgr.GetScheme()
@@ -502,7 +482,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager, enableSharding bo
 	var (
 		// trigger on spec change and annotation changes (manual trigger for testing purposes)
 		websitePredicate = predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{})
-		reconciler       = SilenceConflicts(r)
+		reconciler       = SilenceConflicts(reconcile.AsReconciler[*webhostingv1alpha1.Website](r.Client, r))
 	)
 
 	if enableSharding {
@@ -519,7 +499,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr ctrl.Manager, enableSharding bo
 			MustBuild(reconciler)
 	}
 
-	c, err := ctrl.NewControllerManagedBy(mgr).
+	c, err := builder.ControllerManagedBy(mgr).
 		Named(ControllerName).
 		For(&webhostingv1alpha1.Website{}, builder.WithPredicates(websitePredicate)).
 		// watch deployments in order to update phase on relevant changes
