@@ -18,14 +18,14 @@ results:
   - shoot--timebertt--sharding/kube-apiserver-awake
   kind: Deployment
   result: pass
-  patchedResource: kube-apiserver-awake_expected.yaml
+  patchedResources: kube-apiserver-awake_expected.yaml
 - policy: shoot--timebertt--sharding/kube-apiserver
   rule: replicas
   resources:
   - shoot--timebertt--sharding/kube-apiserver-null
   kind: Deployment
   result: pass
-  patchedResource: kube-apiserver-null_expected.yaml
+  patchedResources: kube-apiserver-null_expected.yaml
 - policy: shoot--timebertt--sharding/kube-apiserver
   rule: replicas
   resources:
