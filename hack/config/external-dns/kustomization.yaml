@@ -5,11 +5,23 @@ namespace: external-dns
 
 images:
 - name: registry.k8s.io/external-dns/external-dns
-  newTag: v0.17.0
+  newTag: v0.18.0
 
 resources:
 - namespace.yaml
-- https://github.com/kubernetes-sigs/external-dns//kustomize?ref=v0.17.0
+- https://github.com/kubernetes-sigs/external-dns//kustomize?ref=v0.18.0
 
 patches:
 - path: patch-deployment.yaml
+# Add permissions for endpointslices needed for https://github.com/kubernetes-sigs/external-dns/pull/5493.
+# TODO: drop this patch once https://github.com/kubernetes-sigs/external-dns/pull/5573 has been released.
+- target:
+    kind: ClusterRole
+    name: external-dns
+  patch: |
+    - op: add
+      path: /rules/-
+      value:
+        apiGroups: ["discovery.k8s.io"]
+        resources: ["endpointslices"]
+        verbs: ["get","watch","list"]
