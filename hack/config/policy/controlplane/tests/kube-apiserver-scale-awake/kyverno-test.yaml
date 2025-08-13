@@ -15,4 +15,4 @@ results:
   - shoot--timebertt--sharding/kube-apiserver
   kind: Scale
   result: pass
-  patchedResource: scale_expected.yaml
+  patchedResources: scale_expected.yaml
