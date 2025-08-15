@@ -23,7 +23,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"go.uber.org/automaxprocs/maxprocs"
 	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
 	"k8s.io/klog/v2"
@@ -81,15 +80,6 @@ func NewCommand() *cobra.Command {
 }
 
 func run(ctx context.Context, log logr.Logger, opts *options) error {
-	// This is like importing the automaxprocs package for its init func (it will in turn call maxprocs.Set).
-	// Here we pass a custom logger, so that the result of the library gets logged to the same logger we use for the
-	// component itself.
-	if _, err := maxprocs.Set(maxprocs.Logger(func(s string, i ...interface{}) {
-		log.Info(fmt.Sprintf(s, i...))
-	})); err != nil {
-		log.Error(err, "Failed to set GOMAXPROCS")
-	}
-
 	log.Info("Setting up manager")
 	mgr, err := manager.New(opts.restConfig, opts.managerOptions)
 	if err != nil {
