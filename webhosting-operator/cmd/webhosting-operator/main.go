@@ -24,7 +24,6 @@ import (
 	goruntime "runtime"
 	"strconv"
 
-	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap/zapcore"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -89,15 +88,6 @@ func main() {
 	if err := opts.Complete(); err != nil {
 		setupLog.Error(err, "unable to load config")
 		os.Exit(1)
-	}
-
-	// This is like importing the automaxprocs package for its init func (it will in turn call maxprocs.Set).
-	// Here we pass a custom logger, so that the result of the library gets logged to the same logger we use for the
-	// component itself.
-	if _, err := maxprocs.Set(maxprocs.Logger(func(s string, i ...interface{}) {
-		setupLog.Info(fmt.Sprintf(s, i...))
-	})); err != nil {
-		setupLog.Error(err, "Failed to set GOMAXPROCS")
 	}
 
 	mgr, err := ctrl.NewManager(opts.restConfig, opts.managerOptions)
