@@ -19,7 +19,6 @@ package sharder
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -31,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -170,21 +170,21 @@ type workItem struct {
 
 func (o *Operation) ResyncControllerRing(ctx context.Context, log logr.Logger) error {
 	var (
-		wg   sync.WaitGroup
+		wg   wait.Group
 		errs = make(chan error)
 		work = make(chan *workItem, o.Concurrency)
 	)
 
 	// Compile all objects that need to be moved or drained, and add them to the queue.
 	// The buffer limit of the queue applies backpressure on the work generator (throttling list paging as needed).
-	wg.Go(func() {
+	wg.Start(func() {
 		o.compileWorkItemsForRing(ctx, work, errs)
 		close(work)
 	})
 
 	// read work items from the queue and perform drains/movements with the configured concurrency
 	for i := 0; i < o.Concurrency; i++ {
-		wg.Go(func() {
+		wg.Start(func() {
 			for o.processNextWorkItem(ctx, log, work, errs) {
 			}
 		})
