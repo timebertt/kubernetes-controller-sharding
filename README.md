@@ -12,6 +12,9 @@ See [Getting Started With Controller Sharding](docs/getting-started.md) for a qu
 I presented this project at KubeCon Europe 2025.
 Check out the [recording](https://youtu.be/OTzd9eTtLRA) for a 30-minute overview with demos!
 
+> [!NOTE]
+> If you're attending the ContainerDays Conference 2025 in Hamburg, swing by for a talk about this project! Find my talk on the [agenda](https://www.containerdays.io/containerdays-conference-2025/agenda/#sz-session-896315).
+
 ## About ℹ️
 
 I started this project as part of my Master's studies in Computer Science at the [DHBW Center for Advanced Studies](https://www.cas.dhbw.de/) (CAS).
@@ -76,4 +79,4 @@ See [Design](docs/design.md) for more details on the sharding architecture and d
 
 ## Discussion 💬
 
-Feel free to contact me on the [Kubernetes Slack](https://kubernetes.slack.com/) ([get an invitation](https://slack.k8s.io/)): [@timebertt](https://kubernetes.slack.com/team/UF8C35Z0D).
+Feel free to contact me on [LinkedIn](https://www.linkedin.com/in/timebertt/) or the [Kubernetes Slack](https://kubernetes.slack.com/) ([get an invitation](https://slack.k8s.io/)): [@timebertt](https://kubernetes.slack.com/team/UF8C35Z0D).
