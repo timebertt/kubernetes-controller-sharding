@@ -95,6 +95,9 @@ func SetDefaults_SharderController(obj *SharderController) {
 	if obj.SyncPeriod == nil {
 		obj.SyncPeriod = &metav1.Duration{Duration: 5 * time.Minute}
 	}
+	if obj.ConcurrentMoves == nil {
+		obj.ConcurrentMoves = ptr.To[int32](100)
+	}
 }
 
 func SetDefaults_Webhook(obj *Webhook) {

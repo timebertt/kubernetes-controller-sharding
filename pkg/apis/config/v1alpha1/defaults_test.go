@@ -91,7 +91,8 @@ var _ = Describe("SharderConfig defaulting", func() {
 
 			Expect(obj.Controller).To(Equal(Controller{
 				Sharder: &SharderController{
-					SyncPeriod: &metav1.Duration{Duration: 5 * time.Minute},
+					SyncPeriod:      &metav1.Duration{Duration: 5 * time.Minute},
+					ConcurrentMoves: ptr.To[int32](100),
 				},
 			}))
 		})
