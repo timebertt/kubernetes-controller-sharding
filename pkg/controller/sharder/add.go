@@ -17,13 +17,17 @@ limitations under the License.
 package sharder
 
 import (
+	"time"
+
 	coordinationv1 "k8s.io/api/coordination/v1"
+	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
 	shardinghandler "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/handler"
@@ -55,6 +59,11 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
+			// This custom rate limiter differs from the default in these aspects:
+			// - no overall rate limiting, only per-item rate limiting
+			// - start at 5s base delay, faster retries are probably wasted load on the API server
+			// - cap delay at the configured sync period
+			RateLimiter: workqueue.NewTypedItemExponentialFailureRateLimiter[reconcile.Request](5*time.Second, r.Config.Controller.Sharder.SyncPeriod.Duration),
 		}).
 		Complete(r)
 }
