@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/controller"
+	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/metrics"
 	healthzutils "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/healthz"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/webhook"
 )
@@ -102,6 +103,11 @@ func run(ctx context.Context, log logr.Logger, opts *options) error {
 	log.Info("Adding webhooks to manager")
 	if err := webhook.AddToManager(ctx, mgr, opts.config); err != nil {
 		return fmt.Errorf("failed adding webhooks to manager: %w", err)
+	}
+
+	log.Info("Adding metrics to manager")
+	if err = shardingmetrics.AddToManager(mgr); err != nil {
+		return fmt.Errorf("failed adding metrics to manager: %w", err)
 	}
 
 	log.Info("Starting manager")

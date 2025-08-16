@@ -22,9 +22,9 @@ import (
 	coordinationv1 "k8s.io/api/coordination/v1"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
+	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/metrics"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/consistenthash"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/leases"
-	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/metrics"
 )
 
 // FromLeases creates a ring from the given membership information (shard leases). It transforms shard leases into a

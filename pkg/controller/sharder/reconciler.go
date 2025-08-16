@@ -38,10 +38,10 @@ import (
 
 	configv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/config/v1alpha1"
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
+	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/metrics"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/consistenthash"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/key"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/leases"
-	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/metrics"
 	"github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/ring"
 	utilclient "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/client"
 	utilerrors "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/errors"
