@@ -44,9 +44,5 @@ Be sure to mount your webhook server cert to `/tmp/k8s-webhook-server/serving-ce
 
 ## Monitoring (optional)
 
-`config/monitoring/sharder` contains a `ServiceMonitor` for configuring metrics scraping for the sharder using the [prometheus-operator](https://prometheus-operator.dev/).
-
-`config/monitoring/sharding-exporter` contains a small exporter for metrics on the state of `ControllerRings` and shards based on the [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) [custom resource metrics feature](https://github.com/kubernetes/kube-state-metrics/blob/main/docs/customresourcestate-metrics.md).
-
-Use the `config/monitoring` configuration to apply both configurations together.
-Also see [Monitoring the Sharding Components](monitoring.md) for more information on the exposed metrics.
+`config/monitoring` contains a `ServiceMonitor` for configuring metrics scraping for the sharder using the [prometheus-operator](https://prometheus-operator.dev/).
+See [Monitoring the Sharding Components](monitoring.md) for more information on the exposed metrics.
