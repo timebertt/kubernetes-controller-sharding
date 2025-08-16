@@ -24,8 +24,8 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
+  "id": 5,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
       "collapsed": false,
@@ -58,8 +58,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -94,7 +93,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.2.0",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -102,7 +101,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(kube_shard_state{controllerring=\"$controllerring\", state=~\"ready|expired|uncertain\"}) or vector(0)",
+          "expr": "max(max(controller_sharding_controllerring_status_available_shards{controllerring=\"$controllerring\"}) by(controllerring)) or vector(0)",
           "hide": false,
           "range": true,
           "refId": "A"
@@ -128,8 +127,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -164,7 +162,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.2.0",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -172,7 +170,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(kube_shard_info{controllerring=\"$controllerring\"}) or vector(0)",
+          "expr": "max(max(controller_sharding_controllerring_status_shards{controllerring=\"$controllerring\"}) by(controllerring)) or vector(0)",
           "range": true,
           "refId": "A"
         }
@@ -232,8 +230,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -353,10 +350,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -365,7 +364,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(kube_shard_state{controllerring=\"$controllerring\"}) by (state)",
+          "expr": "sum(max(controller_sharding_shard_state{controllerring=\"$controllerring\"}) without(instance, pod)) by (state)",
           "hide": false,
           "instant": false,
           "interval": "",
@@ -394,8 +393,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
-                "value": null
+                "color": "red"
               },
               {
                 "color": "orange",
@@ -437,7 +435,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "11.2.0",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -446,7 +444,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "(sum(kube_shard_state{controllerring=\"$controllerring\",state=\"ready\"}) or vector(0)) / (sum(kube_shard_info{controllerring=\"$controllerring\"}) or vector(0)) * 100",
+          "expr": "(max(max(controller_sharding_controllerring_status_available_shards{controllerring=\"$controllerring\"}) by(controllerring)) or vector(0)) / (max(max(controller_sharding_controllerring_status_shards{controllerring=\"$controllerring\"}) by(controllerring)) or vector(0)) * 100",
           "instant": true,
           "range": false,
           "refId": "A"
@@ -502,11 +500,12 @@
           "values": false
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
-      "pluginVersion": "8.5.5",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -515,7 +514,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(namespace_shard:kube_website_shard:sum{namespace=~\"$project\",shard!=\"\"} or 0*sum(kube_shard_info{controllerring=\"$controllerring\"}) by (shard)) by (shard) / ignoring(shard) group_left sum(namespace_shard:kube_website_shard:sum{namespace=~\"$project\"}) or vector(0)",
+          "expr": "sum(namespace_shard:kube_website_shard:sum{namespace=~\"$project\",shard!=\"\"} or 0*max(controller_sharding_shard_info{controllerring=\"$controllerring\"}) by (shard)) by (shard) / ignoring(shard) group_left sum(namespace_shard:kube_website_shard:sum{namespace=~\"$project\"}) or vector(0)",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
@@ -526,6 +525,7 @@
       "type": "piechart"
     },
     {
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -533,6 +533,7 @@
         "y": 7
       },
       "id": 2,
+      "panels": [],
       "title": "Object Distribution",
       "type": "row"
     },
@@ -588,8 +589,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -619,10 +619,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -631,7 +633,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(namespace_shard:kube_website_shard:sum{namespace=~\"$project\",shard!=\"\"} or 0*sum(kube_shard_info{controllerring=\"$controllerring\"}) by (shard)) by (shard)",
+          "expr": "sum(namespace_shard:kube_website_shard:sum{namespace=~\"$project\",shard!=\"\"} or 0*max(controller_sharding_shard_info{controllerring=\"$controllerring\"}) by (shard)) by (shard)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{shard}}",
@@ -693,8 +695,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -724,10 +725,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -736,7 +739,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(namespace_shard:kube_website_shard:sum{namespace=~\"$project\",shard!=\"\"} or 0*sum(kube_shard_info{controllerring=\"$controllerring\"}) by (shard)) by (shard) / ignoring(shard) group_left sum(namespace_shard:kube_website_shard:sum{namespace=~\"$project\"})",
+          "expr": "sum(namespace_shard:kube_website_shard:sum{namespace=~\"$project\",shard!=\"\"} or 0*max(controller_sharding_shard_info{controllerring=\"$controllerring\"}) by (shard)) by (shard) / ignoring(shard) group_left sum(namespace_shard:kube_website_shard:sum{namespace=~\"$project\"})",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -800,8 +803,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -892,10 +894,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -904,7 +908,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(namespace_shard_drain:kube_website_shard:sum{namespace=~\"$project\",shard!=\"\",drain=\"\"} * on(shard) group_left kube_shard_state{controllerring=\"$controllerring\",state=\"ready\"}) or vector(0)",
+          "expr": "sum(namespace_shard_drain:kube_website_shard:sum{namespace=~\"$project\",shard!=\"\",drain=\"\"} * on(shard) group_left max(controller_sharding_shard_state{controllerring=\"$controllerring\",state=\"ready\"}) without(instance,pod)) or vector(0)",
           "instant": false,
           "interval": "",
           "legendFormat": "Assigned",
@@ -1025,8 +1029,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -1049,10 +1052,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1153,8 +1158,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -1177,10 +1181,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1253,8 +1259,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -1277,10 +1282,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1352,8 +1359,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -1376,10 +1382,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1479,8 +1487,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -1503,10 +1510,12 @@
           "showLegend": false
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -1527,8 +1536,9 @@
       "type": "timeseries"
     }
   ],
+  "preload": false,
   "refresh": "10s",
-  "schemaVersion": 39,
+  "schemaVersion": 41,
   "tags": [
     "webhosting-operator"
   ],
@@ -1536,26 +1546,20 @@
     "list": [
       {
         "current": {
-          "selected": true,
           "text": "prometheus",
           "value": "P1809F7CD0C75ACF3"
         },
-        "hide": 0,
         "includeAll": false,
-        "multi": false,
         "name": "datasource",
         "options": [],
         "query": "prometheus",
-        "queryValue": "",
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
         "type": "datasource"
       },
       {
         "allValue": ".*",
         "current": {
-          "selected": false,
           "text": "webhosting-operator",
           "value": "webhosting-operator"
         },
@@ -1563,27 +1567,23 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(controller_sharding_assignments_total,controllerring)",
-        "hide": 0,
+        "definition": "label_values(controller_sharding_controllerring_metadata_generation,controllerring)",
         "includeAll": false,
-        "multi": false,
         "name": "controllerring",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(controller_sharding_assignments_total,controllerring)",
+          "query": "label_values(controller_sharding_controllerring_metadata_generation,controllerring)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
         "regex": "",
-        "skipUrlSync": false,
         "sort": 1,
         "type": "query"
       },
       {
         "allValue": ".*",
         "current": {
-          "selected": true,
           "text": [
             "All"
           ],
@@ -1596,7 +1596,6 @@
           "uid": "${datasource}"
         },
         "definition": "label_values(controller_sharding_assignments_total{controllerring=\"$controllerring\"},group)",
-        "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "group",
@@ -1608,14 +1607,12 @@
         },
         "refresh": 2,
         "regex": "",
-        "skipUrlSync": false,
         "sort": 1,
         "type": "query"
       },
       {
         "allValue": ".*",
         "current": {
-          "selected": true,
           "text": [
             "All"
           ],
@@ -1628,7 +1625,6 @@
           "uid": "${datasource}"
         },
         "definition": "label_values(controller_sharding_assignments_total{controllerring=\"$controllerring\", group=~\"$group\"},resource)",
-        "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "resource",
@@ -1640,14 +1636,12 @@
         },
         "refresh": 2,
         "regex": "",
-        "skipUrlSync": false,
         "sort": 1,
         "type": "query"
       },
       {
         "allValue": ".*",
         "current": {
-          "selected": true,
           "text": [
             "All"
           ],
@@ -1660,7 +1654,6 @@
           "uid": "${datasource}"
         },
         "definition": "label_values(kube_namespace_status_phase{job=\"kube-state-metrics\", namespace=~\"project-.+\"},namespace)",
-        "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "project",
@@ -1671,7 +1664,6 @@
         },
         "refresh": 2,
         "regex": "",
-        "skipUrlSync": false,
         "sort": 1,
         "type": "query"
       }
@@ -1685,6 +1677,5 @@
   "timezone": "",
   "title": "Sharding",
   "uid": "7liIybkVk",
-  "version": 1,
-  "weekStart": ""
+  "version": 1
 }
