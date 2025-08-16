@@ -28,6 +28,10 @@ const Namespace = "controller_sharding"
 
 // AddToManager adds all metrics exporters for sharding objects to the manager.
 func AddToManager(mgr manager.Manager) error {
+	if err := ShardExporter.AddToManager(mgr); err != nil {
+		return fmt.Errorf("failed to add shard exporter: %w", err)
+	}
+
 	for _, collector := range []prometheus.Collector{
 		AssignmentsTotal,
 		MovementsTotal,

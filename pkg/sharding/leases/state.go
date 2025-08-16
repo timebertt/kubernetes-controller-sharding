@@ -42,6 +42,9 @@ const (
 	Ready
 )
 
+// KnownShardStates is a list of all known shard states.
+var KnownShardStates = []ShardState{Orphaned, Dead, Uncertain, Expired, Ready}
+
 // String returns a string representation of this ShardState.
 func (s ShardState) String() string {
 	switch s {
