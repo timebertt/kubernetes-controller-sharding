@@ -19,6 +19,7 @@ package sharder
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
@@ -80,6 +81,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+
+	log.Info("Starting resync of object assignments for ControllerRing")
+	defer func(start time.Time) {
+		log.V(1).Info("Finished resync of object assignments for ControllerRing", "duration", r.Clock.Since(start))
+	}(r.Clock.Now())
 
 	if err := o.ResyncControllerRing(ctx, log); err != nil {
 		return reconcile.Result{}, err
