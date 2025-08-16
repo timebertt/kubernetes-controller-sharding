@@ -83,10 +83,15 @@ type Controller struct {
 
 // SharderController configures the sharder controller.
 type SharderController struct {
-	// SyncPeriod configures how often a periodic resync of all object assignments in a ring in performed.
+	// SyncPeriod configures how often a periodic resync of all object assignments in a ring is performed.
 	// Defaults to 5m
 	// +optional
 	SyncPeriod *metav1.Duration `json:"syncPeriod,omitempty"`
+	// ConcurrentMoves configures how many objects of the same ControllerRing are moved (or drained) concurrently at
+	// maximum.
+	// Defaults to 100
+	// +optional
+	ConcurrentMoves *int32 `json:"concurrentMoves,omitempty"`
 }
 
 // Webhook configures webhooks and the webhook server.
