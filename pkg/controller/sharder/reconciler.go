@@ -28,7 +28,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -117,6 +119,7 @@ func (r *Reconciler) NewOperation(ctx context.Context, controllerRing *shardingv
 		Namespaces:     namespaces,
 		HashRing:       hashRing,
 		Shards:         shards,
+		Concurrency:    int(*r.Config.Controller.Sharder.ConcurrentMoves),
 	}, nil
 }
 
@@ -152,38 +155,73 @@ type Operation struct {
 	Namespaces     sets.Set[string]
 	HashRing       *consistenthash.Ring
 	Shards         leases.Shards
+
+	Concurrency int
+}
+
+type workItem struct {
+	drain           bool
+	gr              metav1.GroupResource
+	gvk             schema.GroupVersionKind
+	key             client.ObjectKey
+	resourceVersion string
+	currentShard    string
 }
 
 func (o *Operation) ResyncControllerRing(ctx context.Context, log logr.Logger) error {
-	allErrs := &multierror.Error{
-		ErrorFormat: utilerrors.FormatErrors,
+	var (
+		wg   wait.Group
+		errs = make(chan error)
+		work = make(chan *workItem, o.Concurrency)
+	)
+
+	// Compile all objects that need to be moved or drained, and add them to the queue.
+	// The buffer limit of the queue applies backpressure on the work generator (throttling list paging as needed).
+	wg.Start(func() {
+		o.compileWorkItemsForRing(ctx, work, errs)
+		close(work)
+	})
+
+	// read work items from the queue and perform drains/movements with the configured concurrency
+	for i := 0; i < o.Concurrency; i++ {
+		wg.Start(func() {
+			for o.processNextWorkItem(ctx, log, work, errs) {
+			}
+		})
 	}
 
-	// resync all ring resources
-	for _, ringResource := range o.ControllerRing.Spec.Resources {
-		allErrs = multierror.Append(allErrs,
-			o.resyncResource(ctx, log, ringResource.GroupResource, false),
-		)
-
-		for _, controlledResource := range ringResource.ControlledResources {
-			allErrs = multierror.Append(allErrs,
-				o.resyncResource(ctx, log, controlledResource, true),
-			)
-		}
-	}
+	// wait for all processors, then stop collecting errors
+	go func() {
+		wg.Wait()
+		close(errs)
+	}()
 
 	// collect all errors and return a combined error if any occurred
+	allErrs := &multierror.Error{ErrorFormat: utilerrors.FormatErrors}
+	for err := range errs {
+		allErrs = multierror.Append(allErrs, err)
+	}
+
 	return allErrs.ErrorOrNil()
 }
 
-func (o *Operation) resyncResource(
+func (o *Operation) compileWorkItemsForRing(ctx context.Context, work chan<- *workItem, errs chan<- error) {
+	// check all ring resources
+	for _, ringResource := range o.ControllerRing.Spec.Resources {
+		errs <- o.compileWorkItemsForResource(ctx, ringResource.GroupResource, false, work)
+
+		for _, controlledResource := range ringResource.ControlledResources {
+			errs <- o.compileWorkItemsForResource(ctx, controlledResource, true, work)
+		}
+	}
+}
+
+func (o *Operation) compileWorkItemsForResource(
 	ctx context.Context,
-	log logr.Logger,
 	gr metav1.GroupResource,
 	controlled bool,
+	work chan<- *workItem,
 ) error {
-	log = log.WithValues("resource", gr)
-
 	gvks, err := o.Client.RESTMapper().KindsFor(schema.GroupVersionResource{Group: gr.Group, Resource: gr.Resource})
 	if err != nil {
 		return fmt.Errorf("error determining kinds for resource %q: %w", gr.String(), err)
@@ -202,7 +240,11 @@ func (o *Operation) resyncResource(
 				return nil
 			}
 
-			allErrs = multierror.Append(allErrs, o.resyncObject(ctx, log, gr, controlled, obj.(*metav1.PartialObjectMetadata)))
+			if w, err := o.workItemForObject(gr, controlled, obj.(*metav1.PartialObjectMetadata)); err != nil {
+				allErrs = multierror.Append(allErrs, err)
+			} else if w != nil {
+				work <- w
+			}
 			return nil
 		},
 		// List a recent version from the API server's watch cache by setting resourceVersion=0. This reduces the load on etcd
@@ -226,15 +268,11 @@ var (
 	KeyForController = key.ForController
 )
 
-func (o *Operation) resyncObject(
-	ctx context.Context,
-	log logr.Logger,
+func (o *Operation) workItemForObject(
 	gr metav1.GroupResource,
 	controlled bool,
 	obj *metav1.PartialObjectMetadata,
-) error {
-	log = log.WithValues("object", client.ObjectKeyFromObject(obj))
-
+) (*workItem, error) {
 	keyFunc := KeyForObject
 	if controlled {
 		keyFunc = KeyForController
@@ -242,11 +280,11 @@ func (o *Operation) resyncObject(
 
 	hashKey, err := keyFunc(obj)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if hashKey == "" {
 		// object should not be assigned
-		return nil
+		return nil, nil
 	}
 
 	var (
@@ -256,45 +294,109 @@ func (o *Operation) resyncObject(
 
 	if desiredShard == "" {
 		// if no shard is available, there's nothing we can do
-		return nil
+		return nil, nil
 	}
 
 	if desiredShard == currentShard {
 		// object is correctly assigned, nothing to do here
-		return nil
+		return nil, nil
+	}
+
+	w := &workItem{
+		gr:              gr,
+		gvk:             obj.GroupVersionKind(),
+		key:             client.ObjectKeyFromObject(obj),
+		resourceVersion: obj.ResourceVersion,
+		currentShard:    currentShard,
 	}
 
 	if currentShard != "" && o.Shards.ByID(currentShard).State.IsAvailable() && !controlled {
 		// If the object should be moved and the current shard is still available, we need to drain it.
 		// We only drain non-controlled objects, the controller's main object is used as a synchronization point for
 		// preventing concurrent reconciliations.
-		log.V(1).Info("Draining object from shard", "currentShard", currentShard)
-
-		patch := client.MergeFromWithOptions(obj.DeepCopy(), client.MergeFromWithOptimisticLock{})
-		metav1.SetMetaDataLabel(&obj.ObjectMeta, o.ControllerRing.LabelDrain(), "true")
-		if err := o.Client.Patch(ctx, obj, patch); err != nil {
-			return fmt.Errorf("error draining %s %q: %w", gr.String(), client.ObjectKeyFromObject(obj), err)
-		}
-
-		shardingmetrics.DrainsTotal.WithLabelValues(
-			o.ControllerRing.Name, gr.Group, gr.Resource,
-		).Inc()
-
-		// object will go through the sharder webhook when shard removes the drain label, which will perform the assignment
-		return nil
+		w.drain = true
 	}
 
 	// At this point, the object is either unassigned or the current shard is not available.
 	// We send a (potentially empty) patch to trigger an assignment by the sharder webhook.
-	log.V(1).Info("Moving object")
+	return w, nil
+}
 
-	patch := client.MergeFromWithOptions(obj.DeepCopy(), client.MergeFromWithOptimisticLock{})
-	// remove drain label if it is still present, this might happen when trying to drain an object from a shard that
-	// just got unavailable
-	delete(obj.Labels, o.ControllerRing.LabelShard())
-	delete(obj.Labels, o.ControllerRing.LabelDrain())
-	if err := o.Client.Patch(ctx, obj, patch); err != nil {
-		return fmt.Errorf("error triggering assignment for %s %q: %w", gr.String(), client.ObjectKeyFromObject(obj), err)
+func (o *Operation) processNextWorkItem(
+	ctx context.Context,
+	log logr.Logger,
+	work <-chan *workItem,
+	errs chan<- error,
+) bool {
+	select {
+	case <-ctx.Done():
+		// stop when context is canceled
+		return false
+	case w, ok := <-work:
+		if !ok {
+			// stop when work queue is closed (all items have been processed)
+			return false
+		}
+
+		obj := &metav1.PartialObjectMetadata{}
+		obj.SetGroupVersionKind(w.gvk)
+		obj.SetName(w.key.Name)
+		obj.SetNamespace(w.key.Namespace)
+		obj.SetResourceVersion(w.resourceVersion)
+
+		log = log.WithValues("resource", w.gr, "object", w.key)
+		if w.drain {
+			log.V(1).Info("Draining object from shard", "currentShard", w.currentShard)
+			errs <- o.drainObject(ctx, obj, w.gr)
+		} else {
+			log.V(1).Info("Moving object")
+			errs <- o.moveObject(ctx, obj, w.gr)
+		}
+	}
+
+	return true
+}
+
+func (o *Operation) drainObject(
+	ctx context.Context,
+	obj *metav1.PartialObjectMetadata,
+	gr metav1.GroupResource,
+) error {
+	patch := fmt.Sprintf(
+		// - use optimistic locking by including the object's current resourceVersion
+		// - add drain label; object will go through the sharder webhook when shard removes the drain label, which will
+		//   perform the assignment
+		`{"metadata":{"resourceVersion":"%s","labels":{"%s":"true"}}}`,
+		obj.ResourceVersion, o.ControllerRing.LabelDrain(),
+	)
+
+	if err := o.Client.Patch(ctx, obj, client.RawPatch(types.MergePatchType, []byte(patch))); err != nil {
+		return fmt.Errorf("error draining %s %q: %w", gr.String(), client.ObjectKeyFromObject(obj), err)
+	}
+
+	shardingmetrics.DrainsTotal.WithLabelValues(
+		o.ControllerRing.Name, gr.Group, gr.Resource,
+	).Inc()
+
+	return nil
+}
+
+func (o *Operation) moveObject(
+	ctx context.Context,
+	obj *metav1.PartialObjectMetadata,
+	gr metav1.GroupResource,
+) error {
+	patch := fmt.Sprintf(
+		// - use optimistic locking by including the object's current resourceVersion
+		// - remove shard label
+		// - remove drain label if it is still present, this might happen when trying to drain an object from a shard that
+		//   just got unavailable
+		`{"metadata":{"resourceVersion":"%s","labels":{"%s":null,"%s":null}}}`,
+		obj.ResourceVersion, o.ControllerRing.LabelShard(), o.ControllerRing.LabelDrain(),
+	)
+
+	if err := o.Client.Patch(ctx, obj, client.RawPatch(types.MergePatchType, []byte(patch))); err != nil {
+		return fmt.Errorf("error moving %s %q: %w", gr.String(), client.ObjectKeyFromObject(obj), err)
 	}
 
 	shardingmetrics.MovementsTotal.WithLabelValues(
