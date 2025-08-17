@@ -18,11 +18,7 @@ package metrics
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
-
-const Namespace = "controller_sharding"
 
 var (
 	// AssignmentsTotal is a prometheus counter metric which holds the total number of shard assignments by the sharder
@@ -61,12 +57,3 @@ var (
 		Help:      "Total number of hash ring calculations per ControllerRing",
 	}, []string{"controllerring"})
 )
-
-func init() {
-	metrics.Registry.MustRegister(
-		AssignmentsTotal,
-		MovementsTotal,
-		DrainsTotal,
-		RingCalculationsTotal,
-	)
-}

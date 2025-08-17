@@ -19,7 +19,7 @@ package sharder
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/sharding/metrics"
+	shardingmetrics "github.com/timebertt/kubernetes-controller-sharding/pkg/metrics"
 )
 
 type Metrics interface {

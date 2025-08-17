@@ -17,198 +17,91 @@ limitations under the License.
 package metrics
 
 import (
-	"context"
-	"fmt"
-	"time"
-
 	"github.com/prometheus/client_golang/prometheus"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	shardingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/pkg/apis/sharding/v1alpha1"
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/metrics/exporter"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 )
 
-const websiteSubsystem = "website"
+var WebsiteExporter = exporter.Exporter[*webhostingv1alpha1.Website, *webhostingv1alpha1.WebsiteList]{
+	Namespace: namespace,
+	Subsystem: "website",
 
-type WebsiteExporter struct {
-	client.Reader
-}
+	StaticLabelKeys: []string{"namespace", "website", "uid"},
+	GenerateStaticLabelValues: func(website *webhostingv1alpha1.Website) []string {
+		return []string{website.Namespace, website.Name, string(website.UID)}
+	},
 
-func (e *WebsiteExporter) AddToManager(mgr manager.Manager) error {
-	if e.Reader == nil {
-		e.Reader = mgr.GetCache()
-	}
+	Metrics: []exporter.Metric[*webhostingv1alpha1.Website]{
+		{
+			Name:      "info",
+			Help:      "Information about a Website",
+			LabelKeys: []string{"theme"},
 
-	return mgr.Add(e)
-}
-
-// NeedLeaderElection tells the manager to run the exporter in all instances.
-func (e *WebsiteExporter) NeedLeaderElection() bool {
-	return false
-}
-
-// Start registers this collector in the controller-runtime metrics registry.
-// When Start runs, caches have already been started, so we are ready to export metrics.
-func (e *WebsiteExporter) Start(_ context.Context) error {
-	if err := metrics.Registry.Register(e); err != nil {
-		return fmt.Errorf("failed to register website exporter: %w", err)
-	}
-
-	return nil
-}
-
-func (e *WebsiteExporter) Describe(ch chan<- *prometheus.Desc) {
-	for _, desc := range websiteMetrics {
-		ch <- desc.desc
-	}
-}
-
-func (e *WebsiteExporter) Collect(ch chan<- prometheus.Metric) {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	defer cancel()
-
-	websiteList := &webhostingv1alpha1.WebsiteList{}
-	if err := e.List(ctx, websiteList); err != nil {
-		for _, desc := range websiteMetrics {
-			ch <- prometheus.NewInvalidMetric(desc.desc, fmt.Errorf("error listing websites: %w", err))
-		}
-
-		return
-	}
-
-	for _, website := range websiteList.Items {
-		staticLabels := generateWebsiteStaticLabels(&website)
-
-		for _, desc := range websiteMetrics {
-			desc.generate(desc.desc, &website, staticLabels, ch)
-		}
-	}
-}
-
-var (
-	websiteMetrics = []metric[*webhostingv1alpha1.Website]{
-		websiteInfo,
-		websiteShard,
-		websiteGeneration,
-		websiteObservedGeneration,
-		websiteStatusPhase,
-	}
-
-	websiteStaticLabels = []string{
-		"namespace",
-		"website",
-		"uid",
-	}
-)
-
-func generateWebsiteStaticLabels(website *webhostingv1alpha1.Website) []string {
-	return []string{
-		website.Namespace,
-		website.Name,
-		string(website.UID),
-	}
-}
-
-var (
-	websiteInfo = metric[*webhostingv1alpha1.Website]{
-		desc: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, websiteSubsystem, "info"),
-			"Information about a Website",
-			append(websiteStaticLabels, "theme"),
-			nil,
-		),
-
-		generate: func(desc *prometheus.Desc, website *webhostingv1alpha1.Website, staticLabels []string, ch chan<- prometheus.Metric) {
-			ch <- prometheus.MustNewConstMetric(
-				desc,
-				prometheus.GaugeValue,
-				1,
-				append(staticLabels, website.Spec.Theme)...,
-			)
-		},
-	}
-
-	websiteShard = metric[*webhostingv1alpha1.Website]{
-		desc: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, websiteSubsystem, "shard"),
-			"Sharding information about a Website",
-			append(websiteStaticLabels, "shard", "drain"),
-			nil,
-		),
-
-		generate: func(desc *prometheus.Desc, website *webhostingv1alpha1.Website, staticLabels []string, ch chan<- prometheus.Metric) {
-			ch <- prometheus.MustNewConstMetric(
-				desc,
-				prometheus.GaugeValue,
-				1,
-				append(staticLabels,
-					website.Labels[shardingv1alpha1.LabelShard(webhostingv1alpha1.WebhostingOperatorName)],
-					website.Labels[shardingv1alpha1.LabelDrain(webhostingv1alpha1.WebhostingOperatorName)],
-				)...,
-			)
-		},
-	}
-
-	websiteGeneration = metric[*webhostingv1alpha1.Website]{
-		desc: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, websiteSubsystem, "metadata_generation"),
-			"The generation of a Website",
-			websiteStaticLabels,
-			nil,
-		),
-
-		generate: func(desc *prometheus.Desc, website *webhostingv1alpha1.Website, staticLabels []string, ch chan<- prometheus.Metric) {
-			ch <- prometheus.MustNewConstMetric(
-				desc,
-				prometheus.GaugeValue,
-				float64(website.Generation),
-				staticLabels...,
-			)
-		},
-	}
-
-	websiteObservedGeneration = metric[*webhostingv1alpha1.Website]{
-		desc: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, websiteSubsystem, "observed_generation"),
-			"The latest generation observed by the Website controller",
-			websiteStaticLabels,
-			nil,
-		),
-
-		generate: func(desc *prometheus.Desc, website *webhostingv1alpha1.Website, staticLabels []string, ch chan<- prometheus.Metric) {
-			ch <- prometheus.MustNewConstMetric(
-				desc,
-				prometheus.GaugeValue,
-				float64(website.Status.ObservedGeneration),
-				staticLabels...,
-			)
-		},
-	}
-
-	websiteStatusPhase = metric[*webhostingv1alpha1.Website]{
-		desc: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, websiteSubsystem, "status_phase"),
-			"The Website's current phase (StateSet)",
-			append(websiteStaticLabels, "phase"),
-			nil,
-		),
-
-		generate: func(desc *prometheus.Desc, website *webhostingv1alpha1.Website, staticLabels []string, ch chan<- prometheus.Metric) {
-			for _, phase := range webhostingv1alpha1.AllWebsitePhases {
-				value := 0
-				if website.Status.Phase == phase {
-					value = 1
-				}
-
+			Generate: func(desc *prometheus.Desc, website *webhostingv1alpha1.Website, staticLabelValues []string, ch chan<- prometheus.Metric) {
 				ch <- prometheus.MustNewConstMetric(
 					desc,
 					prometheus.GaugeValue,
-					float64(value),
-					append(staticLabels, string(phase))...,
+					1,
+					append(staticLabelValues, website.Spec.Theme)...,
 				)
-			}
+			},
 		},
-	}
-)
+		{
+			Name:      "shard",
+			Help:      "Sharding information about a Website",
+			LabelKeys: []string{"shard", "drain"},
+
+			Generate: func(desc *prometheus.Desc, website *webhostingv1alpha1.Website, staticLabelValues []string, ch chan<- prometheus.Metric) {
+				ch <- prometheus.MustNewConstMetric(
+					desc,
+					prometheus.GaugeValue,
+					1,
+					append(staticLabelValues,
+						website.Labels[shardingv1alpha1.LabelShard(webhostingv1alpha1.WebhostingOperatorName)],
+						website.Labels[shardingv1alpha1.LabelDrain(webhostingv1alpha1.WebhostingOperatorName)],
+					)...,
+				)
+			},
+		},
+		{
+			Name: "metadata_generation",
+			Help: "The generation of a Website",
+
+			Generate: func(desc *prometheus.Desc, website *webhostingv1alpha1.Website, staticLabelValues []string, ch chan<- prometheus.Metric) {
+				ch <- prometheus.MustNewConstMetric(
+					desc,
+					prometheus.GaugeValue,
+					float64(website.Generation),
+					staticLabelValues...,
+				)
+			},
+		},
+		{
+			Name: "observed_generation",
+			Help: "The latest generation observed by the Website controller",
+
+			Generate: func(desc *prometheus.Desc, website *webhostingv1alpha1.Website, staticLabelValues []string, ch chan<- prometheus.Metric) {
+				ch <- prometheus.MustNewConstMetric(
+					desc,
+					prometheus.GaugeValue,
+					float64(website.Status.ObservedGeneration),
+					staticLabelValues...,
+				)
+			},
+		},
+		{
+			Name:      "status_phase",
+			Help:      "The Website's current phase (StateSet)",
+			LabelKeys: []string{"phase"},
+
+			Generate: exporter.GenerateStateSet[*webhostingv1alpha1.Website](
+				exporter.KnownStates(webhostingv1alpha1.AllWebsitePhases), nil,
+				func(website *webhostingv1alpha1.Website) string {
+					return string(website.Status.Phase)
+				},
+			),
+		},
+	},
+}

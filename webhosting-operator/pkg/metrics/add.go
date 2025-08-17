@@ -19,8 +19,6 @@ package metrics
 import (
 	"fmt"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -28,18 +26,13 @@ const namespace = "kube"
 
 // AddToManager adds all metrics exporters for webhosting objects to the manager.
 func AddToManager(mgr manager.Manager) error {
-	if err := (&WebsiteExporter{}).AddToManager(mgr); err != nil {
+	if err := WebsiteExporter.AddToManager(mgr); err != nil {
 		return fmt.Errorf("failed to add website exporter: %w", err)
 	}
 
-	if err := (&ThemeExporter{}).AddToManager(mgr); err != nil {
+	if err := ThemeExporter.AddToManager(mgr); err != nil {
 		return fmt.Errorf("failed to add theme exporter: %w", err)
 	}
 
 	return nil
-}
-
-type metric[T client.Object] struct {
-	desc     *prometheus.Desc
-	generate func(desc *prometheus.Desc, obj T, staticLabels []string, ch chan<- prometheus.Metric)
 }
