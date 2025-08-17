@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"context"
+	"flag"
 	"maps"
 	"testing"
 	"time"
@@ -41,6 +42,14 @@ import (
 	. "github.com/timebertt/kubernetes-controller-sharding/pkg/utils/test/matchers"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 )
+
+var skipCleanup bool
+
+func TestMain(m *testing.M) {
+	flag.BoolVar(&skipCleanup, "skip-cleanup", false, "Skip cleanup after test failure")
+	flag.Parse()
+	m.Run()
+}
 
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -112,6 +121,10 @@ var _ = BeforeEach(func(ctx SpecContext) {
 	log.Info("Created test Namespace", "namespace", namespace.Name)
 
 	DeferCleanup(func(ctx SpecContext) {
+		if ctx.SpecReport().Failed() && skipCleanup {
+			Skip("Leaving state of test failure because --skip-cleanup is set to true")
+		}
+
 		By("Delete all Websites in test Namespace")
 		Expect(testClient.DeleteAllOf(ctx, &webhostingv1alpha1.Website{}, client.InNamespace(namespace.Name))).To(Succeed())
 
@@ -124,12 +137,16 @@ var _ = BeforeEach(func(ctx SpecContext) {
 	By("Set up test ControllerRing")
 	controllerRing = &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: webhostingv1alpha1.WebhostingOperatorName}}
 
-	By("Scaling checksum-controller")
+	By("Scaling webhosting-operator")
 	controllerDeployment = &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: webhostingv1alpha1.WebhostingOperatorName, Namespace: webhostingv1alpha1.NamespaceSystem}}
 	scaleController(ctx, 3)
 
 	DeferCleanup(func(ctx SpecContext) {
-		By("Scaling checksum-controller")
+		if ctx.SpecReport().Failed() && skipCleanup {
+			Skip("Leaving state of test failure because --skip-cleanup is set to true")
+		}
+
+		By("Scaling webhosting-operator")
 		scaleController(ctx, 3)
 	}, NodeTimeout(ShortTimeout))
 
