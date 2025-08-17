@@ -17,128 +17,48 @@ limitations under the License.
 package metrics
 
 import (
-	"context"
-	"fmt"
-	"time"
-
 	"github.com/prometheus/client_golang/prometheus"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
+	"github.com/timebertt/kubernetes-controller-sharding/pkg/metrics/exporter"
 	webhostingv1alpha1 "github.com/timebertt/kubernetes-controller-sharding/webhosting-operator/pkg/apis/webhosting/v1alpha1"
 )
 
-const themeSubsystem = "theme"
+var ThemeExporter = exporter.Exporter[*webhostingv1alpha1.Theme, *webhostingv1alpha1.ThemeList]{
+	Namespace: namespace,
+	Subsystem: "theme",
 
-type ThemeExporter struct {
-	client.Reader
-}
+	StaticLabelKeys: []string{"theme", "uid"},
+	GenerateStaticLabelValues: func(theme *webhostingv1alpha1.Theme) []string {
+		return []string{theme.Name, string(theme.UID)}
+	},
 
-func (e *ThemeExporter) AddToManager(mgr manager.Manager) error {
-	if e.Reader == nil {
-		e.Reader = mgr.GetCache()
-	}
+	Metrics: []exporter.Metric[*webhostingv1alpha1.Theme]{
+		{
+			Name:      "info",
+			Help:      "Information about a Theme",
+			LabelKeys: []string{"color", "font_family"},
 
-	return mgr.Add(e)
-}
-
-// NeedLeaderElection tells the manager to run the exporter in all instances.
-func (e *ThemeExporter) NeedLeaderElection() bool {
-	return false
-}
-
-// Start registers this collector in the controller-runtime metrics registry.
-// When Start runs, caches have already been started, so we are ready to export metrics.
-func (e *ThemeExporter) Start(_ context.Context) error {
-	if err := metrics.Registry.Register(e); err != nil {
-		return fmt.Errorf("failed to register theme exporter: %w", err)
-	}
-
-	return nil
-}
-
-func (e *ThemeExporter) Describe(ch chan<- *prometheus.Desc) {
-	for _, desc := range themeMetrics {
-		ch <- desc.desc
-	}
-}
-
-func (e *ThemeExporter) Collect(ch chan<- prometheus.Metric) {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	defer cancel()
-
-	themeList := &webhostingv1alpha1.ThemeList{}
-	if err := e.List(ctx, themeList); err != nil {
-		for _, desc := range themeMetrics {
-			ch <- prometheus.NewInvalidMetric(desc.desc, fmt.Errorf("error listing themes: %w", err))
-		}
-
-		return
-	}
-
-	for _, theme := range themeList.Items {
-		staticLabels := generateThemeStaticLabels(&theme)
-
-		for _, desc := range themeMetrics {
-			desc.generate(desc.desc, &theme, staticLabels, ch)
-		}
-	}
-}
-
-var (
-	themeMetrics = []metric[*webhostingv1alpha1.Theme]{
-		themeInfo,
-		themeGeneration,
-	}
-
-	themeStaticLabels = []string{
-		"theme",
-		"uid",
-	}
-)
-
-func generateThemeStaticLabels(theme *webhostingv1alpha1.Theme) []string {
-	return []string{
-		theme.Name,
-		string(theme.UID),
-	}
-}
-
-var (
-	themeInfo = metric[*webhostingv1alpha1.Theme]{
-		desc: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, themeSubsystem, "info"),
-			"Information about a Theme",
-			append(themeStaticLabels, "color", "font_family"),
-			nil,
-		),
-
-		generate: func(desc *prometheus.Desc, theme *webhostingv1alpha1.Theme, staticLabels []string, ch chan<- prometheus.Metric) {
-			ch <- prometheus.MustNewConstMetric(
-				desc,
-				prometheus.GaugeValue,
-				1,
-				append(staticLabels, theme.Spec.Color, theme.Spec.FontFamily)...,
-			)
+			Generate: func(desc *prometheus.Desc, theme *webhostingv1alpha1.Theme, staticLabelValues []string, ch chan<- prometheus.Metric) {
+				ch <- prometheus.MustNewConstMetric(
+					desc,
+					prometheus.GaugeValue,
+					1,
+					append(staticLabelValues, theme.Spec.Color, theme.Spec.FontFamily)...,
+				)
+			},
 		},
-	}
+		{
+			Name: "metadata_generation",
+			Help: "The generation of a Theme",
 
-	themeGeneration = metric[*webhostingv1alpha1.Theme]{
-		desc: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, themeSubsystem, "metadata_generation"),
-			"The generation of a Theme",
-			themeStaticLabels,
-			nil,
-		),
-
-		generate: func(desc *prometheus.Desc, theme *webhostingv1alpha1.Theme, staticLabels []string, ch chan<- prometheus.Metric) {
-			ch <- prometheus.MustNewConstMetric(
-				desc,
-				prometheus.GaugeValue,
-				float64(theme.Generation),
-				staticLabels...,
-			)
+			Generate: func(desc *prometheus.Desc, theme *webhostingv1alpha1.Theme, staticLabelValues []string, ch chan<- prometheus.Metric) {
+				ch <- prometheus.MustNewConstMetric(
+					desc,
+					prometheus.GaugeValue,
+					float64(theme.Generation),
+					staticLabelValues...,
+				)
+			},
 		},
-	}
-)
+	},
+}
