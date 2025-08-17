@@ -480,9 +480,13 @@ func (r *WebsiteReconciler) SetupWithManager(mgr manager.Manager, enableSharding
 	}
 
 	var (
-		// trigger on spec change and annotation changes (manual trigger for testing purposes)
-		websitePredicate = predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{})
-		reconciler       = SilenceConflicts(reconcile.AsReconciler[*webhostingv1alpha1.Website](r.Client, r))
+		// trigger on spec, status, and annotation changes (manual trigger for testing purposes)
+		websitePredicate = predicate.Or(
+			predicate.GenerationChangedPredicate{},
+			predicate.AnnotationChangedPredicate{},
+			WebsiteStatusChanged,
+		)
+		reconciler = SilenceConflicts(reconcile.AsReconciler[*webhostingv1alpha1.Website](r.Client, r))
 	)
 
 	if enableSharding {
@@ -549,6 +553,31 @@ func (r *WebsiteReconciler) MapThemeToWebsites(ctx context.Context, theme client
 		}
 	}
 	return requests
+}
+
+// WebsiteStatusChanged is a predicate that triggers when the Website status changes.
+// The controller skips updating the status if it didn't change the cached object. In fast consecutive retries, this
+// can lead to a Website in Error state, where the controller doesn't observe its own status update, and skips the
+// transition to Ready afterward because the cached object was still in Ready state.
+// To fix this, we trigger the controller one more time when observing its own status updates to ensure a correct
+// status. This shouldn't hurt the standard case, because the controller doesn't cause any API calls if not needed.
+var WebsiteStatusChanged = predicate.Funcs{
+	UpdateFunc: func(e event.UpdateEvent) bool {
+		if e.ObjectOld == nil || e.ObjectNew == nil {
+			return false
+		}
+
+		oldWebsite, ok := e.ObjectOld.(*webhostingv1alpha1.Website)
+		if !ok {
+			return false
+		}
+		newWebsite, ok := e.ObjectNew.(*webhostingv1alpha1.Website)
+		if !ok {
+			return false
+		}
+
+		return !apiequality.Semantic.DeepEqual(oldWebsite.Status, newWebsite.Status)
+	},
 }
 
 // DeploymentAvailabilityChanged is a predicate for filtering relevant Deployment events.
