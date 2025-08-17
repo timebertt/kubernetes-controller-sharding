@@ -486,7 +486,7 @@ func (r *WebsiteReconciler) SetupWithManager(mgr manager.Manager, enableSharding
 			predicate.AnnotationChangedPredicate{},
 			WebsiteStatusChanged,
 		)
-		reconciler = SilenceConflicts(reconcile.AsReconciler[*webhostingv1alpha1.Website](r.Client, r))
+		reconciler = reconcile.AsReconciler[*webhostingv1alpha1.Website](r.Client, r)
 	)
 
 	if enableSharding {

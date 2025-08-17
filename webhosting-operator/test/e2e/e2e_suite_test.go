@@ -124,12 +124,12 @@ var _ = BeforeEach(func(ctx SpecContext) {
 	By("Set up test ControllerRing")
 	controllerRing = &shardingv1alpha1.ControllerRing{ObjectMeta: metav1.ObjectMeta{Name: webhostingv1alpha1.WebhostingOperatorName}}
 
-	By("Scaling checksum-controller")
+	By("Scaling webhosting-operator")
 	controllerDeployment = &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: webhostingv1alpha1.WebhostingOperatorName, Namespace: webhostingv1alpha1.NamespaceSystem}}
 	scaleController(ctx, 3)
 
 	DeferCleanup(func(ctx SpecContext) {
-		By("Scaling checksum-controller")
+		By("Scaling webhosting-operator")
 		scaleController(ctx, 3)
 	}, NodeTimeout(ShortTimeout))
 
