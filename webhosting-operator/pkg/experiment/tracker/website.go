@@ -41,8 +41,6 @@ import (
 )
 
 var (
-	metricLabels = []string{"run_id"}
-
 	// NOTE: upper bound 5 is the SLO. Align buckets with SLO so that when p99 estimation grows above SLO we are sure
 	// that p99 is actually above SLO.
 	// See https://prometheus.io/docs/practices/histograms/#errors-of-quantile-estimation
@@ -55,7 +53,7 @@ var (
 		Help: "Latency from Website creation or spec update until the generation is observed as ready by a watch. " +
 			"This is an SLI for controller performance.",
 		Buckets: buckets,
-	}, metricLabels)
+	}, nil)
 	websiteBackfilledGenerations = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "experiment",
 		Subsystem: "website",
@@ -63,21 +61,18 @@ var (
 		Help: "Counter for Website generations that were never observed as ready before the next generation appeared. " +
 			"For such generations, the time when the next generation got ready is used for calculating the reconciliation latency. " +
 			"This metric serves as an indicator for how accurate the reconciliation latency measurement is.",
-	}, metricLabels)
+	}, nil)
 	watchLatency = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "experiment",
 		Name:      "watch_latency_seconds",
 		Help: "Latency from Website transition time until observed by a watch event in experiment. " +
 			"This metric serves as an indicator for how experiment itself is performing to ensure accurate measurements.",
 		Buckets: buckets,
-	}, metricLabels)
+	}, nil)
 )
 
 // WebsiteTracker tracks how long it takes for generations of Website objects to be reconciled and get ready.
 type WebsiteTracker struct {
-	// RunID is added as the run_id label to metrics.
-	RunID string
-
 	reader client.Reader
 
 	// objects maps an object's UID to the object's generation information.
@@ -125,7 +120,7 @@ func (w *WebsiteTracker) AddToManager(mgr manager.Manager) error {
 	w.objects = newObjectsTracker()
 
 	// initialize counters
-	websiteBackfilledGenerations.WithLabelValues(w.RunID).Add(0)
+	websiteBackfilledGenerations.WithLabelValues().Add(0)
 
 	// register all metrics
 	metrics.Registry.MustRegister(websiteReconciliationLatency, websiteBackfilledGenerations, watchLatency)
@@ -177,7 +172,7 @@ func (w *WebsiteTracker) observedNewReadyGeneration() predicate.Predicate {
 
 			// Record how long it took experiment to observe the transition.
 			if t := website.Status.LastTransitionTime; t != nil && !t.Equal(oldWebsite.Status.LastTransitionTime) {
-				watchLatency.WithLabelValues(w.RunID).Observe(time.Since(t.Time).Seconds())
+				watchLatency.WithLabelValues().Observe(time.Since(t.Time).Seconds())
 			}
 
 			// if the status changed and the website is ready, we observed a new generation becoming ready
@@ -251,21 +246,21 @@ func (w *WebsiteTracker) Reconcile(ctx context.Context, req reconcile.Request) (
 
 	var res reconcile.Result
 	w.objects.set(uid, func(generations *objectGenerations) {
-		res = generations.reconcile(log, w.RunID)
+		res = generations.reconcile(log)
 	})
 	return res, nil
 }
 
 // reconcile iterates over the object's generations and records newly observed finished reconciliations in the latency
 // metric.
-func (o *objectGenerations) reconcile(log logr.Logger, runID string) reconcile.Result {
+func (o *objectGenerations) reconcile(log logr.Logger) reconcile.Result {
 	o.lock.Lock()
 	defer o.lock.Unlock()
 
 	generations := generationsList(o.generations.sortedValues())
-	generations.backfillGenerations(runID)
+	generations.backfillGenerations()
 
-	if finished := generations.recordNewReadyGenerations(log, runID); !finished {
+	if finished := generations.recordNewReadyGenerations(log); !finished {
 		return reconcile.Result{Requeue: true}
 	}
 
@@ -278,7 +273,7 @@ type generationsList []*generationTimes
 // This might be necessary if we missed some watch events, or multiple generations were created in quick succession
 // where only a later one was reconciled by the controller to be ready.
 // The generations slice must be sorted by generation in ascending order.
-func (gg generationsList) backfillGenerations(runID string) {
+func (gg generationsList) backfillGenerations() {
 	var newerReadyTime time.Time
 	for i := len(gg) - 1; i >= 0; i-- {
 		g := gg[i]
@@ -291,7 +286,7 @@ func (gg generationsList) backfillGenerations(runID string) {
 			// this generation was not observed as ready,
 			// copy the ready time from the generation after it (if it has been observed as ready)
 			g.ready = newerReadyTime
-			websiteBackfilledGenerations.WithLabelValues(runID).Add(1)
+			websiteBackfilledGenerations.WithLabelValues().Add(1)
 		} else {
 			// this generation was observed as ready, copy the timestamp for backfilling earlier generations.
 			newerReadyTime = g.ready
@@ -301,7 +296,7 @@ func (gg generationsList) backfillGenerations(runID string) {
 
 // recordNewReadyGenerations records all newly observed ready generations.
 // Returns true if all generations have been recorded, false if there are unready generations left.
-func (gg generationsList) recordNewReadyGenerations(log logr.Logger, runID string) bool {
+func (gg generationsList) recordNewReadyGenerations(log logr.Logger) bool {
 	finished := true
 	for _, g := range gg {
 		if g.recorded {
@@ -319,7 +314,7 @@ func (gg generationsList) recordNewReadyGenerations(log logr.Logger, runID strin
 		}
 		log.V(logLevel).Info("Observed ready website", "latency", latency, "created", g.created, "ready", g.ready)
 
-		websiteReconciliationLatency.WithLabelValues(runID).Observe(latency.Seconds())
+		websiteReconciliationLatency.WithLabelValues().Observe(latency.Seconds())
 		g.recorded = true
 	}
 
