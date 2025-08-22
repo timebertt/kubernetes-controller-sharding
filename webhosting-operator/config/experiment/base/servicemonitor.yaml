@@ -13,6 +13,8 @@ spec:
     relabelings:
     - targetLabel: job
       replacement: experiment
+    - targetLabel: run_id
+      sourceLabels: [__meta_kubernetes_pod_uid]
   selector:
     matchLabels:
       app.kubernetes.io/name: experiment

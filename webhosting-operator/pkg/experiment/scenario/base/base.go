@@ -130,9 +130,7 @@ func (s *Scenario) Start(ctx context.Context) (err error) {
 	case <-time.After(30 * time.Second):
 	}
 
-	websiteTracker := &tracker.WebsiteTracker{
-		RunID: s.RunID,
-	}
+	websiteTracker := &tracker.WebsiteTracker{}
 	if err := websiteTracker.AddToManager(s.Manager); err != nil {
 		return fmt.Errorf("error adding website-tracker: %w", err)
 	}

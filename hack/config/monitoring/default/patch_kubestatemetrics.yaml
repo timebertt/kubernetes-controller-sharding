@@ -3,9 +3,11 @@
   path: /spec/template/spec/containers/0/args/-
   value:
     --namespaces=cert-manager,default,experiment,external-dns,ingress-nginx,kube-node-lease,kube-public,kube-system,kyverno,monitoring,parca,sharding-system,webhosting-system
-# add run_id label to kube_pod_labels to select metrics by experiment run ID
-# flag doesn't support wildcard patterns
+# label.prometheus.io/run_id is injected by experiment into observed pods (sharder and webhosting-operator).
+# Add the run_id label to kube_pod_labels. This allows joining cadvisor metrics with kube_pod_labels for selecting
+# metrics by experiment run ID.
 - op: add
   path: /spec/template/spec/containers/0/args/-
   value:
+    # this flag doesn't support wildcard patterns
     --metric-labels-allowlist=pods=[label.prometheus.io/run_id]
