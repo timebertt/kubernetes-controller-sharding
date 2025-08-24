@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": 5,
+  "id": 35,
   "links": [],
   "panels": [
     {
@@ -340,10 +340,22 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99,\n    sum by (run_id, le) (rate(\n        workqueue_queue_duration_seconds_bucket{\n            job=\"webhosting-operator\", name=\"website\", run_id=~\"$run_id\"\n        }[$__rate_interval]\n    ))\n)",
-          "legendFormat": "__auto",
+          "expr": "histogram_quantile(0.99,\n    sum by (run_id, le) (rate(\n        workqueue_queue_duration_seconds_bucket{\n            job=\"webhosting-operator\", name=\"website\", run_id=~\"$run_id\"\n        }[1m]\n    ))\n)",
+          "legendFormat": "{{run_id}}-1m",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P1809F7CD0C75ACF3"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99,\n    sum by (run_id, le) (rate(\n        workqueue_queue_duration_seconds_bucket{\n            job=\"webhosting-operator\", name=\"website\", run_id=~\"$run_id\"\n        }[15m]\n    ))\n)",
+          "hide": false,
+          "legendFormat": "{{run_id}}-15m",
+          "range": true,
+          "refId": "B"
         }
       ],
       "title": "Queue Latency (P99)",
@@ -443,10 +455,22 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99,\n    sum by (run_id, le) (rate(\n        experiment_website_reconciliation_duration_seconds_bucket{\n            job=\"experiment\", run_id=~\"$run_id\"\n        }[$__rate_interval]\n    ))\n)",
-          "legendFormat": "__auto",
+          "expr": "histogram_quantile(0.99,\n    sum by (run_id, le) (rate(\n        experiment_website_reconciliation_duration_seconds_bucket{\n            job=\"experiment\", run_id=~\"$run_id\"\n        }[1m]\n    ))\n)",
+          "legendFormat": "{{run_id}}-1m",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P1809F7CD0C75ACF3"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99,\n    sum by (run_id, le) (rate(\n        experiment_website_reconciliation_duration_seconds_bucket{\n            job=\"experiment\", run_id=~\"$run_id\"\n        }[15m]\n    ))\n)",
+          "hide": false,
+          "legendFormat": "{{run_id}}-15m",
+          "range": true,
+          "refId": "B"
         }
       ],
       "title": "Reconciliation Latency (P99)",
