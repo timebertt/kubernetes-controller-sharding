@@ -55,13 +55,6 @@ $(KUBECTL): $(call tool_version_file,$(KUBECTL),$(KUBECTL_VERSION))
 	curl -Lo $(KUBECTL) https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/$(shell uname -s | tr '[:upper:]' '[:lower:]')/$(shell uname -m | sed 's/x86_64/amd64/')/kubectl
 	chmod +x $(KUBECTL)
 
-KYVERNO := $(TOOLS_BIN_DIR)/kyverno
-# renovate: datasource=github-releases depName=kyverno/kyverno
-KYVERNO_VERSION ?= v1.15.1
-$(KYVERNO): $(call tool_version_file,$(KYVERNO),$(KYVERNO_VERSION))
-	curl -Lo - https://github.com/kyverno/kyverno/releases/download/$(KYVERNO_VERSION)/kyverno-cli_$(KYVERNO_VERSION)_$(shell uname -s | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed 's/aarch64/arm64/').tar.gz | tar -xzmf - -C $(TOOLS_BIN_DIR) kyverno
-	chmod +x $(KYVERNO)
-
 SETUP_ENVTEST := $(TOOLS_BIN_DIR)/setup-envtest
 CONTROLLER_RUNTIME_VERSION ?= $(call version_gomod,sigs.k8s.io/controller-runtime)
 $(SETUP_ENVTEST): $(call tool_version_file,$(SETUP_ENVTEST),$(CONTROLLER_RUNTIME_VERSION))

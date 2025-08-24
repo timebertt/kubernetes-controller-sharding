@@ -82,10 +82,6 @@ test: ## Run unit tests.
 test-integration: $(SETUP_ENVTEST) ## Run integration tests.
 	./hack/test-integration.sh ./test/integration/...
 
-.PHONY: test-kyverno
-test-kyverno: $(KYVERNO) ## Run kyverno policy tests.
-	$(KYVERNO) test --remove-color -v 4 .
-
 .PHONY: test-e2e
 test-e2e: $(GINKGO) ## Run e2e tests.
 	./hack/test-e2e.sh $(GINKGO_FLAGS) ./test/e2e/... ./webhosting-operator/test/e2e/...
@@ -102,7 +98,7 @@ lint: $(GOLANGCI_LINT) ## Run golangci-lint against code.
 	$(GOLANGCI_LINT) run ./... ./webhosting-operator/...
 
 .PHONY: check
-check: lint test test-integration test-kyverno ## Check everything (lint + test + test-integration + test-kyverno).
+check: lint test test-integration ## Check everything (lint + test + test-integration).
 
 .PHONY: verify-fmt
 verify-fmt: fmt ## Verify go code is formatted.
