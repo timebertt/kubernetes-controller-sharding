@@ -46,8 +46,8 @@ spec:
         spec:
           updatePolicy:
             updateMode: Off
-  # increases kube-controller-manager's client-side rate limits to speed up garbage collection after executing load tests
-  - name: increase-rate-limits
+  # disable kube-controller-manager's client-side rate limits similar to webhosting-operator
+  - name: disable-rate-limits
     match:
       any:
       - resources:
@@ -59,10 +59,7 @@ spec:
       patchesJson6902: |-
         - op: add
           path: /spec/template/spec/containers/0/command/-
-          value: "--kube-api-qps=2000"
-        - op: add
-          path: /spec/template/spec/containers/0/command/-
-          value: "--kube-api-burst=2200"
+          value: "--kube-api-qps=-1"
   # disable HTTP2 in kube-controller-manager's so that API requests are distributed across API server instances
   - name: disable-http2
     match:
