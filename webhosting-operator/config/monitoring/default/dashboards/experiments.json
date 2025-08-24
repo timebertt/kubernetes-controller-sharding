@@ -340,7 +340,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99,\n    sum by (run_id, le) (rate(\n        workqueue_queue_duration_seconds_bucket{\n            job=\"webhosting-operator\", name=\"website\", run_id=~\"$run_id\"\n        }[1m]\n    ))\n)",
+          "expr": "histogram_quantile($percentile/100,\n    sum by (run_id, le) (rate(\n        workqueue_queue_duration_seconds_bucket{\n            job=\"webhosting-operator\", name=\"website\", run_id=~\"$run_id\"\n        }[1m]\n    ))\n)",
           "legendFormat": "{{run_id}}-1m",
           "range": true,
           "refId": "A"
@@ -351,14 +351,14 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99,\n    sum by (run_id, le) (rate(\n        workqueue_queue_duration_seconds_bucket{\n            job=\"webhosting-operator\", name=\"website\", run_id=~\"$run_id\"\n        }[15m]\n    ))\n)",
+          "expr": "histogram_quantile($percentile/100,\n    sum by (run_id, le) (rate(\n        workqueue_queue_duration_seconds_bucket{\n            job=\"webhosting-operator\", name=\"website\", run_id=~\"$run_id\"\n        }[15m]\n    ))\n)",
           "hide": false,
           "legendFormat": "{{run_id}}-15m",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "Queue Latency (P99)",
+      "title": "Queue Latency (P$percentile)",
       "type": "timeseries"
     },
     {
@@ -455,7 +455,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99,\n    sum by (run_id, le) (rate(\n        experiment_website_reconciliation_duration_seconds_bucket{\n            job=\"experiment\", run_id=~\"$run_id\"\n        }[1m]\n    ))\n)",
+          "expr": "histogram_quantile($percentile/100,\n    sum by (run_id, le) (rate(\n        experiment_website_reconciliation_duration_seconds_bucket{\n            job=\"experiment\", run_id=~\"$run_id\"\n        }[1m]\n    ))\n)",
           "legendFormat": "{{run_id}}-1m",
           "range": true,
           "refId": "A"
@@ -466,14 +466,14 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99,\n    sum by (run_id, le) (rate(\n        experiment_website_reconciliation_duration_seconds_bucket{\n            job=\"experiment\", run_id=~\"$run_id\"\n        }[15m]\n    ))\n)",
+          "expr": "histogram_quantile($percentile/100,\n    sum by (run_id, le) (rate(\n        experiment_website_reconciliation_duration_seconds_bucket{\n            job=\"experiment\", run_id=~\"$run_id\"\n        }[15m]\n    ))\n)",
           "hide": false,
           "legendFormat": "{{run_id}}-15m",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "Reconciliation Latency (P99)",
+      "title": "Reconciliation Latency (P$percentile)",
       "type": "timeseries"
     },
     {
@@ -922,6 +922,33 @@
         "regex": "",
         "sort": 1,
         "type": "query"
+      },
+      {
+        "current": {
+          "text": "99",
+          "value": "99"
+        },
+        "label": "SLO Percentile",
+        "name": "percentile",
+        "options": [
+          {
+            "selected": false,
+            "text": "90",
+            "value": "90"
+          },
+          {
+            "selected": false,
+            "text": "95",
+            "value": "95"
+          },
+          {
+            "selected": true,
+            "text": "99",
+            "value": "99"
+          }
+        ],
+        "query": "90,95,99",
+        "type": "custom"
       }
     ]
   },
