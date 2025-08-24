@@ -2,7 +2,7 @@ apiVersion: kyverno.io/v1
 kind: Policy
 metadata:
   name: kube-controller-manager
-  namespace: shoot--timebertt--sharding
+  namespace: shoot--ixywdlfvei--sharding
 spec:
   failurePolicy: Ignore
   rules:

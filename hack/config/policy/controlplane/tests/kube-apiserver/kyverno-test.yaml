@@ -12,23 +12,23 @@ resources:
 # spec.replicas=0 -> expect skip
 - kube-apiserver-hibernated.yaml
 results:
-- policy: shoot--timebertt--sharding/kube-apiserver
+- policy: shoot--ixywdlfvei--sharding/kube-apiserver
   rule: replicas
   resources:
-  - shoot--timebertt--sharding/kube-apiserver-awake
+  - shoot--ixywdlfvei--sharding/kube-apiserver-awake
   kind: Deployment
   result: pass
   patchedResources: kube-apiserver-awake_expected.yaml
-- policy: shoot--timebertt--sharding/kube-apiserver
+- policy: shoot--ixywdlfvei--sharding/kube-apiserver
   rule: replicas
   resources:
-  - shoot--timebertt--sharding/kube-apiserver-null
+  - shoot--ixywdlfvei--sharding/kube-apiserver-null
   kind: Deployment
   result: pass
   patchedResources: kube-apiserver-null_expected.yaml
-- policy: shoot--timebertt--sharding/kube-apiserver
+- policy: shoot--ixywdlfvei--sharding/kube-apiserver
   rule: replicas
   resources:
-  - shoot--timebertt--sharding/kube-apiserver-hibernated
+  - shoot--ixywdlfvei--sharding/kube-apiserver-hibernated
   kind: Deployment
   result: skip

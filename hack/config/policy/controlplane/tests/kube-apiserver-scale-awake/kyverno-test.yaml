@@ -9,10 +9,10 @@ resources:
 - scale.yaml
 variables: variables.yaml
 results:
-- policy: shoot--timebertt--sharding/kube-apiserver-scale
+- policy: shoot--ixywdlfvei--sharding/kube-apiserver-scale
   rule: replicas-scale
   resources:
-  - shoot--timebertt--sharding/kube-apiserver
+  - shoot--ixywdlfvei--sharding/kube-apiserver
   kind: Scale
   result: pass
   patchedResources: scale_expected.yaml

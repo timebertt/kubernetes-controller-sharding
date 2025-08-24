@@ -2,6 +2,6 @@ kind: Scale
 apiVersion: autoscaling/v1
 metadata:
   name: kube-apiserver
-  namespace: shoot--timebertt--sharding
+  namespace: shoot--ixywdlfvei--sharding
 spec:
   replicas: 2

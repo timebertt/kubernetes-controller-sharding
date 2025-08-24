@@ -2,7 +2,7 @@ apiVersion: kyverno.io/v1
 kind: Policy
 metadata:
   name: kube-apiserver-scale
-  namespace: shoot--timebertt--sharding
+  namespace: shoot--ixywdlfvei--sharding
 spec:
   failurePolicy: Ignore
   # schema validation doesn't seem to work in combination with the /scale subresource, disable it for now
