@@ -141,6 +141,21 @@ The scale of the controller setup is measured in two dimensions:
 1. The number of API objects that the controller watches and reconciles.
 2. The churn rate of API objects, i.e., the rate of object creations, updates, and deletions.
 
+```yaml
+queries:
+- name: website-count # dimension 1
+  query: |
+    sum(kube_website_info)
+- name: website-churn # dimension 2
+  query: |
+    sum(rate(
+      controller_runtime_reconcile_total{
+        job="experiment", result!="error",
+        controller=~"website-(generator|deleter|mutator)"
+      }[1m]
+    )) by (controller)
+```
+
 ## SLIs / SLOs
 
 To consider a controller setup as performing adequately, the following SLOs
