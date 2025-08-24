@@ -15,8 +15,7 @@ spec:
           - Pod
           selector:
             matchLabels:
-              instance: etcd-main
-              name: etcd
+              app.kubernetes.io/name: etcd-main
     mutate:
       patchStrategicMerge:
         spec:
