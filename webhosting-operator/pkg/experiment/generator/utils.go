@@ -166,3 +166,12 @@ func CreateClusterScopedOwnerObject(ctx context.Context, c client.Client, opts .
 
 	return ownerObject, metav1.NewControllerRef(ownerObject, rbacv1.SchemeGroupVersion.WithKind("ClusterRole")), nil
 }
+
+var _ workqueue.TypedRateLimiter[reconcile.Request] = constantDelayRateLimiter(0)
+
+// constantDelayRateLimiter delays all requests with a constant duration.
+type constantDelayRateLimiter time.Duration
+
+func (d constantDelayRateLimiter) When(reconcile.Request) time.Duration { return time.Duration(d) }
+func (d constantDelayRateLimiter) Forget(reconcile.Request)             {}
+func (d constantDelayRateLimiter) NumRequeues(reconcile.Request) int    { return 0 }
