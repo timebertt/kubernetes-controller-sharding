@@ -37,21 +37,21 @@ import (
 
 var log = logf.Log
 
-// EmitN returns a source that emits exactly n events (reconcile.Request). The source ignores predicates.
+// EmitN returns a source that emits exactly n reconcile requests with the given delay.
 // Use it with the controller builder:
 //
-//	WatchesRawSource(EmitN(n), &handler.EnqueueRequestForObject{})
+//	WatchesRawSource(EmitN(n, time.Second))
 //
 // Or a plain controller:
 //
-//	Watch(EmitN(n), &handler.EnqueueRequestForObject{})
-func EmitN(n int) source.Source {
+//	Watch(EmitN(n, time.Second))
+func EmitN(n int, delay time.Duration) source.Source {
 	return source.TypedFunc[reconcile.Request](func(ctx context.Context, queue workqueue.TypedRateLimitingInterface[reconcile.Request]) error {
 		for i := 0; i < n; i++ {
-			queue.Add(reconcile.Request{NamespacedName: types.NamespacedName{
+			queue.AddAfter(reconcile.Request{NamespacedName: types.NamespacedName{
 				// use different object names, otherwise queue will merge the requests
 				Name: fmt.Sprintf("request-%d", n),
-			}})
+			}}, delay)
 		}
 
 		return nil
@@ -166,3 +166,12 @@ func CreateClusterScopedOwnerObject(ctx context.Context, c client.Client, opts .
 
 	return ownerObject, metav1.NewControllerRef(ownerObject, rbacv1.SchemeGroupVersion.WithKind("ClusterRole")), nil
 }
+
+var _ workqueue.TypedRateLimiter[reconcile.Request] = constantDelayRateLimiter(0)
+
+// constantDelayRateLimiter delays all requests with a constant duration.
+type constantDelayRateLimiter time.Duration
+
+func (d constantDelayRateLimiter) When(reconcile.Request) time.Duration { return time.Duration(d) }
+func (d constantDelayRateLimiter) Forget(reconcile.Request)             {}
+func (d constantDelayRateLimiter) NumRequeues(reconcile.Request) int    { return 0 }

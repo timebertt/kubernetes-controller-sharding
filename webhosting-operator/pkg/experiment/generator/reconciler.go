@@ -54,18 +54,33 @@ func (r *Every) AddToManager(mgr manager.Manager) error {
 		r.Client = mgr.GetClient()
 	}
 
+	initialDelay := time.Duration(0)
 	workers := defaultReconcileWorkers
 	if r.Workers > 0 {
 		workers = r.Workers
+	}
+
+	var rateLimiter workqueue.TypedRateLimiter[reconcile.Request] = &workqueue.TypedBucketRateLimiter[reconcile.Request]{
+		Limiter: rate.NewLimiter(r.Rate, int(r.Rate)),
+	}
+	if r.Rate < 1 {
+		// Special case for controllers running less frequent than every second:
+		// The token bucket rate limiter would not allow any events as burst is less than 1, so replace it with a custom
+		// rate limiter that always returns a constant delay.
+		// Also, delay the first request when starting the scenario.
+		every := time.Duration(1 / float64(r.Rate) * float64(time.Second))
+		rateLimiter = constantDelayRateLimiter(every)
+		initialDelay = every
+		workers = 1
 	}
 
 	return builder.ControllerManagedBy(mgr).
 		Named(r.Name).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: workers,
-			RateLimiter:             &workqueue.TypedBucketRateLimiter[reconcile.Request]{Limiter: rate.NewLimiter(r.Rate, int(r.Rate))},
+			RateLimiter:             rateLimiter,
 		}).
-		WatchesRawSource(EmitN(workers)).
+		WatchesRawSource(EmitN(workers, initialDelay)).
 		Complete(StopOnContextCanceled(r))
 }
 

@@ -86,7 +86,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 
 	log.Info("Starting resync of object assignments for ControllerRing")
 	defer func(start time.Time) {
-		log.V(1).Info("Finished resync of object assignments for ControllerRing", "duration", r.Clock.Since(start))
+		log.Info("Finished resync of object assignments for ControllerRing", "duration", r.Clock.Since(start))
 	}(r.Clock.Now())
 
 	if err := o.ResyncControllerRing(ctx, log); err != nil {

@@ -75,8 +75,10 @@ Usage:
   experiment [command]
 
 Available Scenarios
-  basic       Basic load test scenario (15m) that creates roughly 9k websites
-  scale-out   Scenario for testing scale-out with high churn rate
+Available Scenarios
+  basic       Basic load test, create 9k websites in 15 minutes
+  chaos       Create 4.5k websites over 15 minutes and terminate a random shard every 5 minutes
+  scale-out   Measure scale-out properties with a high churn rate
 ...
 ```
 
@@ -138,6 +140,21 @@ The scale of the controller setup is measured in two dimensions:
 
 1. The number of API objects that the controller watches and reconciles.
 2. The churn rate of API objects, i.e., the rate of object creations, updates, and deletions.
+
+```yaml
+queries:
+- name: website-count # dimension 1
+  query: |
+    sum(kube_website_info)
+- name: website-churn # dimension 2
+  query: |
+    sum(rate(
+      controller_runtime_reconcile_total{
+        job="experiment", result!="error",
+        controller=~"website-(generator|deleter|mutator)"
+      }[1m]
+    )) by (controller)
+```
 
 ## SLIs / SLOs
 
