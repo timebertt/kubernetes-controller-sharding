@@ -47,7 +47,7 @@ type scenario struct {
 }
 
 func (s *scenario) Description() string {
-	return "Scenario for testing scale-out with high churn rate"
+	return "Measure scale-out properties with a high churn rate"
 }
 
 func (s *scenario) LongDescription() string {

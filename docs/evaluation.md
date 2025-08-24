@@ -75,8 +75,10 @@ Usage:
   experiment [command]
 
 Available Scenarios
-  basic       Basic load test scenario (15m) that creates roughly 9k websites
-  scale-out   Scenario for testing scale-out with high churn rate
+Available Scenarios
+  basic       Basic load test, create 9k websites in 15 minutes
+  chaos       Create 4.5k websites over 15 minutes and terminate a random shard every 5 minutes
+  scale-out   Measure scale-out properties with a high churn rate
 ...
 ```
 
