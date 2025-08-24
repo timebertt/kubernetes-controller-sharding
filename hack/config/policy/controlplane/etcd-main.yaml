@@ -33,3 +33,16 @@ spec:
             env:
             - name: GOMAXPROCS
               value: "12"
+  - name: disable-vpa
+    match:
+      any:
+      - resources:
+          kinds:
+          - VerticalPodAutoscaler
+          names:
+          - etcd-main
+    mutate:
+      patchStrategicMerge:
+        spec:
+          updatePolicy:
+            updateMode: Off

@@ -57,3 +57,16 @@ spec:
             env:
             - name: GOMAXPROCS
               value: "12"
+  - name: disable-vpa
+    match:
+      any:
+      - resources:
+          kinds:
+          - VerticalPodAutoscaler
+          names:
+          - kube-apiserver-vpa
+    mutate:
+      patchStrategicMerge:
+        spec:
+          updatePolicy:
+            updateMode: Off
