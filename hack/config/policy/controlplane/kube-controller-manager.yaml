@@ -2,7 +2,7 @@ apiVersion: kyverno.io/v1
 kind: Policy
 metadata:
   name: kube-controller-manager
-  namespace: shoot--timebertt--sharding
+  namespace: shoot--ixywdlfvei--sharding
 spec:
   failurePolicy: Ignore
   rules:
@@ -46,27 +46,8 @@ spec:
         spec:
           updatePolicy:
             updateMode: Off
-  # schedule kube-controller-manager on high-cpu worker pool for stable performance
-  - name: add-scheduling-constraints
-    match:
-      any:
-      - resources:
-          kinds:
-          - Pod
-          selector:
-            matchLabels:
-              app: kubernetes
-              role: controller-manager
-    mutate:
-      patchesJson6902: |-
-        - op: add
-          path: "/spec/tolerations/-"
-          value: {"key":"high-cpu","operator":"Equal","value":"true","effect":"NoSchedule"}        
-        - op: add
-          path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms"
-          value: [{"matchExpressions": [{"key":"high-cpu","operator":"In","values":["true"]}]}]
-  # increases kube-controller-manager's client-side rate limits to speed up garbage collection after executing load tests
-  - name: increase-rate-limits
+  # disable kube-controller-manager's client-side rate limits similar to webhosting-operator
+  - name: disable-rate-limits
     match:
       any:
       - resources:
@@ -78,10 +59,7 @@ spec:
       patchesJson6902: |-
         - op: add
           path: /spec/template/spec/containers/0/command/-
-          value: "--kube-api-qps=2000"
-        - op: add
-          path: /spec/template/spec/containers/0/command/-
-          value: "--kube-api-burst=2200"
+          value: "--kube-api-qps=-1"
   # disable HTTP2 in kube-controller-manager's so that API requests are distributed across API server instances
   - name: disable-http2
     match:

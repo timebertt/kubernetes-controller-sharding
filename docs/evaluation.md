@@ -124,7 +124,8 @@ In addition to the described components, [kyverno](https://github.com/kyverno/ky
 In the cluster itself, kyverno policies are used for scheduling the sharder and webhosting-operator to the dedicated `sharding` worker pool and experiment to the dedicated `experiment` worker pool.
 This makes sure that these components run on machines isolated from other system components and don't content for compute resources during load tests.
 
-Furthermore, kyverno policies are added to the control plane to ensure a static size of etcd, kube-apiserver, and kube-controller-manager (requests=limits for guaranteed resources, disable vertical autoscaling, 4 replicas of kube-apiserver to disable horizontal autoscaling) and schedule them to a dedicated worker pool using a non-overcommit flavor with more CPU cores per machine.
+Furthermore, kyverno policies are added to the control plane to ensure a static size of etcd, kube-apiserver, and kube-controller-manager (requests=limits for guaranteed resources, disable vertical autoscaling, 4 replicas of kube-apiserver and disable horizontal autoscaling).
+Also, kube-controller-manager's client-side rate limiting is disabled (ref https://github.com/timebertt/kubernetes-controller-sharding/pull/610, [SIG api-machinery recommendation](https://kubernetes.slack.com/archives/C0EG7JC6T/p1680889646346859?thread_ts=1680791299.631439&cid=C0EG7JC6T)) and HTTP/2 is disabled so that API requests are distributed across API server instances (ref https://github.com/gardener/gardener/issues/8810).
 This is done to make load test experiments more stable and their results more reproducible.
 
 ## Measurements

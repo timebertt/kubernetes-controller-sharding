@@ -2,7 +2,7 @@ apiVersion: kyverno.io/v1
 kind: Policy
 metadata:
   name: etcd-main
-  namespace: shoot--timebertt--sharding
+  namespace: shoot--ixywdlfvei--sharding
 spec:
   failurePolicy: Fail
   rules:
@@ -15,8 +15,7 @@ spec:
           - Pod
           selector:
             matchLabels:
-              instance: etcd-main
-              name: etcd
+              app.kubernetes.io/name: etcd-main
     mutate:
       patchStrategicMerge:
         spec:
@@ -33,22 +32,16 @@ spec:
             env:
             - name: GOMAXPROCS
               value: "12"
-  # schedule etcd-main on high-cpu worker pool for stable performance
-  - name: add-scheduling-constraints
+  - name: disable-vpa
     match:
       any:
       - resources:
           kinds:
-          - Pod
-          selector:
-            matchLabels:
-              instance: etcd-main
-              name: etcd
+          - VerticalPodAutoscaler
+          names:
+          - etcd-main
     mutate:
-      patchesJson6902: |-
-        - op: add
-          path: "/spec/tolerations/-"
-          value: {"key":"high-cpu","operator":"Equal","value":"true","effect":"NoSchedule"}        
-        - op: replace
-          path: "/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms"
-          value: [{"matchExpressions": [{"key":"high-cpu","operator":"In","values":["true"]}]}]
+      patchStrategicMerge:
+        spec:
+          updatePolicy:
+            updateMode: Off
