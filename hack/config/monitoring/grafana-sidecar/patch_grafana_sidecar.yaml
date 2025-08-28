@@ -9,7 +9,7 @@ spec:
       automountServiceAccountToken: true
       containers:
       - name: grafana-sc-dashboard
-        image: quay.io/kiwigrid/k8s-sidecar:1.30.9
+        image: quay.io/kiwigrid/k8s-sidecar:1.30.10
         imagePullPolicy: IfNotPresent
         env:
         - name: METHOD
