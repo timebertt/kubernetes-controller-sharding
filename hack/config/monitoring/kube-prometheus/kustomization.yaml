@@ -22,6 +22,12 @@ resources:
 - grafana-serviceAccount.yaml
 - grafana-serviceMonitor.yaml
 - kubePrometheus-prometheusRule.yaml
+- kubernetesControlPlane-prometheusRule.yaml
+- kubernetesControlPlane-serviceMonitorApiserver.yaml
+- kubernetesControlPlane-serviceMonitorCoreDNS.yaml
+- kubernetesControlPlane-serviceMonitorKubeControllerManager.yaml
+- kubernetesControlPlane-serviceMonitorKubelet.yaml
+- kubernetesControlPlane-serviceMonitorKubeScheduler.yaml
 - kubeStateMetrics-clusterRole.yaml
 - kubeStateMetrics-clusterRoleBinding.yaml
 - kubeStateMetrics-deployment.yaml
@@ -30,12 +36,6 @@ resources:
 - kubeStateMetrics-service.yaml
 - kubeStateMetrics-serviceAccount.yaml
 - kubeStateMetrics-serviceMonitor.yaml
-- kubernetesControlPlane-prometheusRule.yaml
-- kubernetesControlPlane-serviceMonitorApiserver.yaml
-- kubernetesControlPlane-serviceMonitorCoreDNS.yaml
-- kubernetesControlPlane-serviceMonitorKubeControllerManager.yaml
-- kubernetesControlPlane-serviceMonitorKubeScheduler.yaml
-- kubernetesControlPlane-serviceMonitorKubelet.yaml
 - nodeExporter-clusterRole.yaml
 - nodeExporter-clusterRoleBinding.yaml
 - nodeExporter-daemonset.yaml
