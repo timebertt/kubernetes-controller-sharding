@@ -19,7 +19,7 @@ jobs:
       with:
         # fetch all history so that git describe works (needed by hack/prepare-image-metadata.sh)
         fetch-depth: 0
-    - uses: actions/setup-go@v5
+    - uses: actions/setup-go@v6
       with:
         go-version-file: go.mod
     - uses: ko-build/setup-ko@v0.9
