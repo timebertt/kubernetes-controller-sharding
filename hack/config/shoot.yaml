@@ -29,7 +29,7 @@ spec:
       mode: IPTables
     kubelet:
       serializeImagePulls: false
-    version: "1.32"
+    version: "1.33"
   maintenance:
     autoUpdate:
       kubernetesVersion: true
@@ -62,7 +62,7 @@ spec:
       floatingPoolName: floating-net
       networks:
         workers: 10.250.0.0/16
-    type: openstack
+    type: stackit
     workers:
     # runs system and monitoring components (default worker pool)
     - name: system
