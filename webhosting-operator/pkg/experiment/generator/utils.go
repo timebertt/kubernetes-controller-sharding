@@ -65,7 +65,7 @@ func StopOnContextCanceled(r reconcile.Reconciler) reconcile.Reconciler {
 	return reconcile.Func(func(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 		result, err := r.Reconcile(ctx, request)
 		if errors.Is(err, context.Canceled) {
-			err = nil
+			return reconcile.Result{}, nil
 		}
 		return result, err
 	})
