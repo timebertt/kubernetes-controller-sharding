@@ -16,6 +16,6 @@ images:
 
 resources:
 - ../controllerring
-- deployment.yaml
+- statefulset.yaml
 - rbac.yaml
 - serviceaccount.yaml

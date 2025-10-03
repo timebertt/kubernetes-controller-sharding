@@ -97,7 +97,7 @@ var (
 	controllerRing *shardingv1alpha1.ControllerRing
 	namespace      *corev1.Namespace
 
-	controllerDeployment *appsv1.Deployment
+	controller *appsv1.StatefulSet
 )
 
 var _ = BeforeEach(func(ctx SpecContext) {
@@ -138,12 +138,13 @@ var _ = BeforeEach(func(ctx SpecContext) {
 	}, NodeTimeout(ShortTimeout))
 
 	By("Set up test controller")
-	controllerDeployment = &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Namespace: namespace.Name, Name: checksumControllerName}}
+	// TODO: test with both Deployment and StatefulSet
+	controller = &appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Namespace: namespace.Name, Name: checksumControllerName}}
 
 	// Deploy a dedicated controller instance to this test case's namespace.
 	// Copy all relevant objects from the default namespace.
 	for _, objList := range []client.ObjectList{
-		&appsv1.DeploymentList{},
+		&appsv1.StatefulSetList{},
 		&corev1.ServiceAccountList{},
 		&rbacv1.RoleList{},
 		&rbacv1.RoleBindingList{},
@@ -157,7 +158,7 @@ var _ = BeforeEach(func(ctx SpecContext) {
 			obj.SetResourceVersion("")
 
 			switch o := obj.(type) {
-			case *appsv1.Deployment:
+			case *appsv1.StatefulSet:
 				o.Spec.Replicas = ptr.To[int32](3)
 				o.Spec.Template.Spec.Containers[0].Args = append(o.Spec.Template.Spec.Containers[0].Args,
 					"--controllerring="+controllerRing.Name,

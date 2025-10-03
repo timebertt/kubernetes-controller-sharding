@@ -148,10 +148,11 @@ func (o *options) run(ctx context.Context) error {
 		// SHARD LEASE
 		// Use manager's leader election mechanism for maintaining the shard lease.
 		// With this, controllers will only run as long as manager holds the shard lease.
-		// After graceful termination, the shard lease will be released.
+		// Don't release the lease on graceful termination to minimize unnecessary object
+		// reassignments on rolling updates.
 		LeaderElection:                      true,
 		LeaderElectionResourceLockInterface: shardLease,
-		LeaderElectionReleaseOnCancel:       true,
+		LeaderElectionReleaseOnCancel:       false,
 
 		// FILTERED WATCH CACHE
 		Cache: cache.Options{

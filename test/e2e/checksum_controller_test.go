@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -54,7 +55,7 @@ const (
 var _ = Describe("Checksum Controller", Label(checksumControllerName), func() {
 	Describe("setup", Ordered, func() {
 		itDeploymentShouldBeAvailable(ptr.To(&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "sharder", Namespace: shardingv1alpha1.NamespaceSystem}}), 2)
-		itDeploymentShouldBeAvailable(&controllerDeployment, 3)
+		itDeploymentShouldBeAvailable(&controller, 3)
 		itControllerRingShouldBeReady()
 		itShouldRecognizeReadyShardLeases(3)
 
@@ -228,7 +229,7 @@ func describeScaleController(text string, replicas int32) {
 		itShouldAssignObjectsToAvailableShards()
 
 		itScaleController(replicas)
-		itDeploymentShouldBeAvailable(&controllerDeployment, replicas)
+		itDeploymentShouldBeAvailable(&controller, replicas)
 		itControllerRingShouldHaveAvailableShards(replicas)
 		itShouldRecognizeReadyShardLeases(int(replicas))
 
@@ -246,15 +247,15 @@ func newSecret(name string) *corev1.Secret {
 	}
 }
 
-func itDeploymentShouldBeAvailable(deployment **appsv1.Deployment, expectedReplicas int32) {
+func itDeploymentShouldBeAvailable[T client.Object](deployment *T, expectedReplicas int32) {
 	GinkgoHelper()
 
 	name := "controller"
-	if *deployment != nil {
-		name = (*deployment).Name
+	if !reflect.ValueOf(*deployment).IsNil() {
+		name = (*deployment).GetName()
 	}
 
-	It(fmt.Sprintf("the %s Deployment should be available", name), func(ctx SpecContext) {
+	It(fmt.Sprintf("the %s %T should be available", name, *deployment), func(ctx SpecContext) {
 		Eventually(ctx, Object(*deployment)).Should(And(
 			HaveField("Spec.Replicas", HaveValue(BeEquivalentTo(expectedReplicas))),
 			HaveField("Status.Replicas", BeEquivalentTo(expectedReplicas)),
@@ -293,7 +294,7 @@ func itControllerRingShouldHaveAvailableShards(expectedAvailableShards int32) {
 				),
 			)),
 		))
-	}, SpecTimeout(ShortTimeout))
+	}, SpecTimeout(MediumTimeout))
 }
 
 var shards []string
@@ -361,7 +362,7 @@ func scaleController(ctx context.Context, replicas int32) {
 
 	patch := client.MergeFrom(&autoscalingv1.Scale{})
 	scale := &autoscalingv1.Scale{Spec: autoscalingv1.ScaleSpec{Replicas: replicas}}
-	Expect(testClient.SubResource("scale").Patch(ctx, controllerDeployment, patch, client.WithSubResourceBody(scale), &client.SubResourcePatchOptions{})).To(Succeed())
+	Expect(testClient.SubResource("scale").Patch(ctx, controller, patch, client.WithSubResourceBody(scale), &client.SubResourcePatchOptions{})).To(Succeed())
 
 	log.Info("Scaled controller", "replicas", replicas)
 }
