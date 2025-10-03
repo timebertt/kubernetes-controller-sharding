@@ -75,10 +75,10 @@ Usage:
   experiment [command]
 
 Available Scenarios
-Available Scenarios
-  basic       Basic load test, create 9k websites in 15 minutes
-  chaos       Create 4.5k websites over 15 minutes and terminate a random shard every 5 minutes
-  scale-out   Measure scale-out properties with a high churn rate
+  basic          Basic load test, create 9k websites in 15 minutes
+  chaos          Create 4.5k websites over 15 minutes and terminate a random shard every 5 minutes
+  rolling-update Create 9k websites in 15 minutes while rolling the operator
+  scale-out      Measure scale-out properties with a high churn rate
 ...
 ```
 
