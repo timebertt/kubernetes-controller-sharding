@@ -23,6 +23,7 @@ NAME                      READY   STATUS    RESTARTS   AGE
 sharder-99fcf97b4-hpm6w   1/1     Running   0          17s
 sharder-99fcf97b4-zr7rj   1/1     Running   0          17s
 $ kubectl get po
+TODO
 NAME                                  READY   STATUS    RESTARTS   AGE
 checksum-controller-c95c4fdb6-7jb2v   1/1     Running   0          18s
 checksum-controller-c95c4fdb6-hv8pb   1/1     Running   0          18s
@@ -44,6 +45,7 @@ We can observe that the sharder recognizes all shards as available by looking at
 
 ```bash
 $ kubectl get lease -L alpha.sharding.timebertt.dev/controllerring,alpha.sharding.timebertt.dev/state
+TODO
 NAME                                  HOLDER                                AGE   CONTROLLERRING        STATE
 checksum-controller-c95c4fdb6-7jb2v   checksum-controller-c95c4fdb6-7jb2v   44s   checksum-controller   ready
 checksum-controller-c95c4fdb6-hv8pb   checksum-controller-c95c4fdb6-hv8pb   44s   checksum-controller   ready
@@ -180,7 +182,7 @@ metadata:
 Let's create a few more `Secrets` and observe the distribution of objects across shards:
 
 ```bash
-$ for i in $(seq 1 9); do k create secret generic foo$i ; done
+$ for i in $(seq 1 9); do kubectl create secret generic foo$i ; done
 $ kubectl get secret,configmap -L shard.alpha.sharding.timebertt.dev/checksum-controller
 NAME          TYPE     DATA   AGE   CHECKSUM-CONTROLLER
 secret/foo    Opaque   1      39s   checksum-controller-c95c4fdb6-hv8pb
@@ -215,6 +217,7 @@ We can observe the actions that the sharder takes using `kubectl get secret --sh
 First, let's scale down the sharded controller to remove one shard from the ring:
 
 ```bash
+TODO
 $ kubectl scale deployment checksum-controller --replicas 2
 deployment.apps/checksum-controller scaled
 ```

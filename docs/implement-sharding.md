@@ -65,6 +65,15 @@ subjects:
   namespace: sharding-system
 ```
 
+## Choosing between Deployment and StatefulSet 
+
+When deploying your sharded controller, you can choose between using a `Deployment` or a `StatefulSet`.
+
+- with Deployment, release shard lease on graceful termination
+- with StatefulSet, don't release to minimize shard movements during rolling updates
+- when not releasing shard lease, we can't distinguish between scale down and failure
+- trade-off between fast reassignments on scale down and unnecessary reassignments on rolling updates -> choose based on your use case, and carefully select the lease duration
+
 ## Implementation Changes
 
 To support sharding in your Kubernetes controller, only three aspects need to be implemented:
@@ -146,10 +155,12 @@ func run() error {
 		// SHARD LEASE
 		// Use manager's leader election mechanism for maintaining the shard lease.
 		// With this, controllers will only run as long as manager holds the shard lease.
-		// After graceful termination, the shard lease will be released.
 		LeaderElection:                      true,
 		LeaderElectionResourceLockInterface: shardLease,
-		LeaderElectionReleaseOnCancel:       true,
+		// Release the shard lease on graceful termination.
+		// Enable this when using a Deployment to allow fast reassignments on scale down.
+		// Disable this when using a StatefulSet to minimize object reassignments during rolling updates.
+		LeaderElectionReleaseOnCancel: true,
 
 		// other options ...
 	})
