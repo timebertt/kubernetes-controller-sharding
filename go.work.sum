@@ -123,5 +123,5 @@ gopkg.in/go-jose/go-jose.v2 v2.6.3 h1:nt80fvSDlhKWQgSWyHyy5CfmlQr+asih51R8PTWNKK
 gopkg.in/go-jose/go-jose.v2 v2.6.3/go.mod h1:zzZDPkNNw/c9IE7Z9jr11mBZQhKQTMzoEEIoEdZlFBI=
 gopkg.in/natefinch/lumberjack.v2 v2.2.1 h1:bBRl1b0OH9s/DuPhuXpNl+VtCaJXFZ5/uEFST95x9zc=
 gopkg.in/natefinch/lumberjack.v2 v2.2.1/go.mod h1:YD8tP3GAjkrDg1eZH7EGmyESg/lsYskCTPBJVb9jqSc=
-k8s.io/kms v0.34.0 h1:u+/rcxQ3Jr7gC9AY5nXuEnBcGEB7ZOIJ9cdLdyHyEjQ=
-k8s.io/kms v0.34.0/go.mod h1:s1CFkLG7w9eaTYvctOxosx88fl4spqmixnNpys0JAtM=
+k8s.io/kms v0.34.1 h1:iCFOvewDPzWM9fMTfyIPO+4MeuZ0tcZbugxLNSHFG4w=
+k8s.io/kms v0.34.1/go.mod h1:s1CFkLG7w9eaTYvctOxosx88fl4spqmixnNpys0JAtM=
