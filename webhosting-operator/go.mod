@@ -14,7 +14,7 @@ require (
 	github.com/spf13/cobra v1.10.1
 	github.com/timebertt/kubernetes-controller-sharding v0.0.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/time v0.13.0
+	golang.org/x/time v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.34.1
 	k8s.io/apimachinery v0.34.1
