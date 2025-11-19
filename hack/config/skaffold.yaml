@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta12
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: cert-manager
@@ -30,7 +30,7 @@ deploy:
                 done
                 exit 1
 ---
-apiVersion: skaffold/v4beta12
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: cert-manager-resources
@@ -46,7 +46,7 @@ deploy:
         - --force-conflicts
     defaultNamespace: ""
 ---
-apiVersion: skaffold/v4beta12
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: ingress-nginx
@@ -86,7 +86,7 @@ profiles:
         paths:
           - hack/config/ingress-nginx/shoot
 ---
-apiVersion: skaffold/v4beta12
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: kyverno
@@ -123,7 +123,7 @@ deploy:
                 done
                 exit 1
 ---
-apiVersion: skaffold/v4beta12
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: policy
@@ -161,14 +161,14 @@ profiles:
         defaultNamespace: ""
         hooks:
           after:
-          - host:
-              command:
-              - /usr/bin/env
-              - bash
-              - -c
-              - kubectl wait --for=condition=Ready=true clusterpolicy no-requests-limits --timeout=30s
+            - host:
+                command:
+                  - /usr/bin/env
+                  - bash
+                  - -c
+                  - kubectl wait --for=condition=Ready=true clusterpolicy no-requests-limits --timeout=30s
 ---
-apiVersion: skaffold/v4beta12
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: sharder
@@ -214,7 +214,7 @@ profiles:
         path: /manifests/kustomize/paths/0
         value: hack/config/sharder/devel
 ---
-apiVersion: skaffold/v4beta12
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: checksum-controller
@@ -244,7 +244,7 @@ deploy:
         - --force-conflicts
     defaultNamespace: ""
 ---
-apiVersion: skaffold/v4beta12
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: monitoring-crds
@@ -260,7 +260,7 @@ deploy:
         - --force-conflicts
     defaultNamespace: ""
 ---
-apiVersion: skaffold/v4beta12
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: monitoring
@@ -304,7 +304,7 @@ profiles:
         path: /manifests/kustomize/paths/0
         value: hack/config/monitoring/shoot
 ---
-apiVersion: skaffold/v4beta12
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: profiling
@@ -333,7 +333,7 @@ profiles:
         port: http
         localPort: 7071
 ---
-apiVersion: skaffold/v4beta12
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: webhosting-operator
@@ -397,10 +397,10 @@ profiles:
         # singleton controller without sharding for comparison
         value: webhosting-operator/config/manager/overlays/non-sharded
   - name: non-sharded-devel
-    requiresAllActivations: true
     activation:
       - env: ENABLE_SHARDING=false
       - env: DEVEL=true
+    requiresAllActivations: true
     patches:
       - op: replace
         path: /manifests/kustomize/paths/0
@@ -419,38 +419,38 @@ profiles:
         path: /manifests/kustomize/paths/-
         value: webhosting-operator/config/policy
   - name: shoot-devel
-    requiresAllActivations: true
     activation:
       - kubeContext: .*--sharding.*
       - env: DEVEL=true
+    requiresAllActivations: true
     patches:
       - op: replace
         path: /manifests/kustomize/paths/0
         # default configuration + devel mode
         value: webhosting-operator/config/manager/overlays/shoot/devel
   - name: shoot-non-sharded
-    requiresAllActivations: true
     activation:
       - kubeContext: .*--sharding.*
       - env: ENABLE_SHARDING=false
+    requiresAllActivations: true
     patches:
       - op: replace
         path: /manifests/kustomize/paths/0
         # singleton controller without sharding for comparison
         value: webhosting-operator/config/manager/overlays/shoot/non-sharded
   - name: shoot-non-sharded-devel
-    requiresAllActivations: true
     activation:
       - kubeContext: .*--sharding.*
       - env: ENABLE_SHARDING=false
       - env: DEVEL=true
+    requiresAllActivations: true
     patches:
       - op: replace
         path: /manifests/kustomize/paths/0
         # non-sharded configuration + devel mode
         value: webhosting-operator/config/manager/overlays/shoot/non-sharded-devel
 ---
-apiVersion: skaffold/v4beta12
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: experiment
