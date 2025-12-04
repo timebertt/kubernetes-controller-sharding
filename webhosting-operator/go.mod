@@ -11,7 +11,7 @@ require (
 	github.com/onsi/gomega v1.38.2
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.67.4
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/timebertt/kubernetes-controller-sharding v0.0.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/time v0.14.0
