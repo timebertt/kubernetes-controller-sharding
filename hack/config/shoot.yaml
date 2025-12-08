@@ -10,10 +10,12 @@ spec:
   cloudProfile:
     kind: CloudProfile
     name: stackit
+  cloudProfileName: stackit
   controlPlane:
     highAvailability:
       failureTolerance:
         type: zone
+  credentialsBindingName: ixywdlfvei-infrastructure
   hibernation:
     schedules:
     - location: Europe/Berlin
@@ -53,11 +55,10 @@ spec:
     type: calico
   provider:
     controlPlaneConfig:
-      apiVersion: openstack.provider.extensions.gardener.cloud/v1alpha1
+      apiVersion: stackit.provider.extensions.gardener.cloud/v1alpha1
       kind: ControlPlaneConfig
-      loadBalancerProvider: stackit
     infrastructureConfig:
-      apiVersion: openstack.provider.extensions.gardener.cloud/v1alpha1
+      apiVersion: stackit.provider.extensions.gardener.cloud/v1alpha1
       kind: InfrastructureConfig
       floatingPoolName: floating-net
       networks:
@@ -138,4 +139,3 @@ spec:
       - eu01-3
   purpose: production
   region: RegionOne
-  secretBindingName: q5bzeseo8o
