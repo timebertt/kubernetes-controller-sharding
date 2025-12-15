@@ -22,7 +22,7 @@ jobs:
       with:
         go-version-file: go.mod
     - run: make ci-e2e-kind
-    - uses: actions/upload-artifact@v5
+    - uses: actions/upload-artifact@v6
       if: always()
       with:
         name: e2e-artifacts
