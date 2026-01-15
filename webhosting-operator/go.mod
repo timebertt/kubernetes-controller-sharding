@@ -2,7 +2,7 @@ module github.com/timebertt/kubernetes-controller-sharding/webhosting-operator
 
 go 1.24.0
 
-toolchain go1.25.5
+toolchain go1.25.6
 
 require (
 	github.com/go-logr/logr v1.4.3
