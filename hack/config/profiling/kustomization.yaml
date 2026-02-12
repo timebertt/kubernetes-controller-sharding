@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-- https://github.com/parca-dev/parca/releases/download/v0.24.2/kubernetes-manifest.yaml
+- https://github.com/parca-dev/parca/releases/download/v0.25.0/kubernetes-manifest.yaml
 - parca_ingress.yaml
 - parca_pvc.yaml
 # grant parca running in namespace "parca" permissions required for service discovery in namespace
