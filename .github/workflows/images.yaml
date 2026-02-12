@@ -15,7 +15,7 @@ jobs:
       # renovate: datasource=github-releases depName=ko-build/ko
       KO_VERSION: v0.18.1
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         # fetch all history so that git describe works (needed by hack/prepare-image-metadata.sh)
         fetch-depth: 0
