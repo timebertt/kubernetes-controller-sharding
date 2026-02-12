@@ -50,7 +50,7 @@ $(KO): $(call tool_version_file,$(KO),$(KO_VERSION))
 
 KUBECTL := $(TOOLS_BIN_DIR)/kubectl
 # renovate: datasource=github-releases depName=kubectl packageName=kubernetes/kubernetes
-KUBECTL_VERSION ?= v1.34.4
+KUBECTL_VERSION ?= v1.35.1
 $(KUBECTL): $(call tool_version_file,$(KUBECTL),$(KUBECTL_VERSION))
 	curl -Lo $(KUBECTL) https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/$(shell uname -s | tr '[:upper:]' '[:lower:]')/$(shell uname -m | sed 's/x86_64/amd64/')/kubectl
 	chmod +x $(KUBECTL)
