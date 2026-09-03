@@ -17,14 +17,14 @@ require (
 	github.com/spf13/pflag v1.0.10
 	go.uber.org/zap v1.27.1
 	gomodules.xyz/jsonpatch/v2 v2.5.0
-	k8s.io/api v0.34.4
-	k8s.io/apimachinery v0.34.4
-	k8s.io/client-go v0.34.4
-	k8s.io/code-generator v0.34.4
-	k8s.io/component-base v0.34.4
+	k8s.io/api v0.37.0
+	k8s.io/apimachinery v0.37.0
+	k8s.io/client-go v0.37.0
+	k8s.io/code-generator v0.37.0
+	k8s.io/component-base v0.37.0
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20260617174310-a95e086a2553
-	sigs.k8s.io/controller-runtime v0.22.5
+	sigs.k8s.io/controller-runtime v0.25.0
 )
 
 require (
